@@ -18,7 +18,42 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
     /* ============================================================
-       DESIGN TOKENS — v8.1 "Bank Mobile Navy — Premium Buttons & Icons"
+       DESIGN TOKENS — v8.11 "Mode Malam + Input Premium"
+       v8.11: (1) Mode malam ditambahkan — semua warna sudah berbasis
+       custom property (--color-*), jadi override cukup lewat atribut
+       [data-theme="dark"] di <html> (lihat blok DARK MODE di bawah),
+       tanpa mengubah CSS komponen manapun. Toggle tersedia di header
+       (ikon matahari/bulan, pojok kiri atas) & di Pengaturan ▸
+       Tampilan (switch), keduanya sinkron & tersimpan di localStorage
+       (fallback ke prefers-color-scheme kalau belum pernah diset).
+       (2) Tab Input direstruktur dari "form-section" polos jadi kartu
+       bernomor (.input-card, langkah 1-5) dengan header berikon +
+       deskripsi singkat per bagian, supaya alurnya terasa terstruktur
+       & premium — tidak ada field/ID yang diubah, murni pembungkus
+       visual, jadi seluruh logic wireForm/onSubmitForm tetap sama.
+       ============================================================ */
+    /* ============================================================
+       DESIGN TOKENS — v8.5 "Bank Mobile Navy — Structured Dashboard"
+       v8.5: tab Dashboard direstruktur — hero (total unit + ring
+       "Perlu Perhatian"), section "Distribusi Status Unit" (segmented
+       bar + legend, per unit fisik), section "Kondisi Alat" (3 kartu
+       AMAN/KRITIS/HABIS, per jenis alat/kode, dihitung dari
+       getStockStatusList — endpoint yang sama dipakai tab Stok, tidak
+       ada endpoint backend baru). Footnote menjelaskan beda basis
+       hitung (unit vs jenis alat) supaya tidak ambigu. kpi-chip-row
+       lama (5 chip sejajar) diganti; CSS-nya dibiarkan (tidak dipakai
+       lagi tapi tidak mengganggu).
+       v8.4: kartu Stok dipadatkan (Kode+Siap Pakai+Status sebaris,
+       grid detail 3 kolom) + field baru "Material" (PCD/TCT, opsional
+       dari sheet) tanpa menghilangkan Jenis/Brand/Ukuran yang sudah ada.
+       v8.3: kartu di tab Stok direstruktur jadi grid detail terstruktur
+       (Kode, Jenis, Brand, Ukuran) + baris footer (Mesin, Siap Pakai),
+       menggantikan satu baris teks ringkas.
+       v8.2: header dipangkas (teks status tidak lagi kepotong), kartu
+       ringkasan (kpi-strip) pindah jadi panel tab "Dashboard" sendiri;
+       tabbar dirombak jadi 5 tombol — Stok, Riwayat, Input (menonjol
+       di tengah ala tombol scan), Dashboard, Lainnya (menu ke Mesin
+       & Pengaturan).
        v8.0: header gradasi navy sudut bawah membulat, kartu ringkasan
        putih mengambang menimpa header, aksen biru terang di seluruh
        komponen.
@@ -48,6 +83,8 @@
       --color-warning-soft: #FEF1E1;
       --color-danger: #D62839;
       --color-danger-soft: #FDEAEC;
+      --color-info: #0B7285;
+      --color-info-soft: #E1F5F7;
 
       --space-xs: 4px;
       --space-sm: 8px;
@@ -94,6 +131,78 @@
       --shadow: var(--shadow-sm);
     }
 
+    /* ============================================================
+       DARK MODE — v8.11
+       Semua komponen sudah dibangun di atas custom properties
+       (--color-*), jadi override token di sini otomatis mengalir ke
+       seluruh UI tanpa menyentuh CSS komponen. Header tetap gradasi
+       navy (sudah gelap secara alami di kedua mode). Aktif lewat
+       atribut [data-theme="dark"] di <html>, diset oleh JS berdasar
+       preferensi tersimpan (localStorage) atau prefers-color-scheme.
+       ============================================================ */
+    html[data-theme="dark"] {
+      --color-bg: #0A0F1C;
+      --color-surface: #131B2C;
+      --color-surface-2: #1A2438;
+      --color-surface-3: #212C43;
+      --color-primary: #4C9BFF;
+      --color-primary-soft: #16283F;
+      --color-text: #EAF0FA;
+      --color-muted: #8E9FBD;
+      --color-border: #26314A;
+      --color-success: #3FD684;
+      --color-success-soft: #113322;
+      --color-warning: #FFB35C;
+      --color-warning-soft: #3A2409;
+      --color-danger: #FF7A88;
+      --color-danger-soft: #3B131A;
+      --color-info: #57D8E0;
+      --color-info-soft: #0C2E33;
+
+      --ink-faint: #55648A;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.32);
+      --shadow-md: 0 4px 16px -4px rgba(0,0,0,0.45);
+      --shadow-lg: 0 18px 34px -12px rgba(0,0,0,0.6);
+    }
+    html[data-theme="dark"] body { background: var(--color-bg); }
+    html[data-theme="dark"] .field select:disabled,
+    html[data-theme="dark"] .field input:disabled { opacity: 0.5; }
+    html[data-theme="dark"] .field select {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%238E9FBD" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>');
+    }
+    html[data-theme="dark"] .search-input {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%238E9FBD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+    }
+    body, .panel, .card, .kpi-card, .settings-card, nav.tabbar, header,
+    .field select, .field input, .field textarea, .search-input,
+    .input-card, .tag, .txn-icon, .kpi-icon {
+      transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    /* ---------- THEME TOGGLE (header, pojok kiri atas) ---------- */
+    .theme-toggle {
+      position: absolute;
+      top: 10px;
+      left: 16px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.16);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .theme-toggle:active { transform: scale(0.92); }
+    .theme-toggle svg { width: 16px; height: 16px; }
+    .theme-toggle .icon-moon { display: none; }
+    html[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+    html[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
@@ -125,65 +234,42 @@
       background:
         radial-gradient(140px 140px at 100% 0%, rgba(255,255,255,0.14), transparent 60%),
         linear-gradient(160deg, var(--grad-1), var(--grad-2));
-      padding: var(--space-md) 16px 40px;
+      padding: 34px 16px 18px;
       position: sticky;
       top: 0;
       z-index: 10;
       border-radius: 0 0 var(--radius-xl) var(--radius-xl);
       box-shadow: 0 8px 20px -10px rgba(5,44,99,0.45);
     }
-    .eyebrow {
-      font-family: var(--font-body);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: rgba(255,255,255,0.72);
-      text-transform: uppercase;
-      margin: 0 0 2px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .eyebrow .mark {
-      width: 14px; height: 14px;
-      color: #fff;
-      flex-shrink: 0;
-    }
-    .eyebrow .mark svg { width: 100%; height: 100%; }
-    .eyebrow .version-badge {
-      margin-left: auto;
-      font-size: 9.5px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      color: #fff;
-      background: rgba(255,255,255,0.18);
-      padding: 2px 7px;
-      border-radius: 999px;
-      text-transform: none;
-    }
     header h1 {
       font-family: var(--font-display);
-      font-size: 19px;
+      font-size: 23px;
       font-weight: 800;
       letter-spacing: -0.01em;
+      line-height: 1.2;
       margin: 0 0 6px;
       color: #fff;
     }
 
     /* ---------- CONNECTION STATUS COMPONENT ---------- */
-    /* Header ringkas: pill status dengan icon+warna+teks (bukan cuma
-       titik + teks polos). helper text opsional untuk state bermasalah. */
+    /* v8.9 — judul harus jadi elemen paling menonjol di header, jadi
+       pill status ini dikecilkan (font 9.5px) & judul digeser turun
+       (header padding-top) supaya tidak lagi berebut baris/terpotong
+       dengan pill di pojok kanan atas. */
     .conn-status {
+      position: absolute;
+      top: 10px;
+      right: 16px;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 10px 4px 8px;
+      gap: 5px;
+      padding: 3px 8px 3px 7px;
       border-radius: 999px;
-      font-size: 11.5px;
+      font-size: 9.5px;
       font-weight: 700;
       background: rgba(255,255,255,0.16);
       color: #fff;
-      max-width: 100%;
+      max-width: calc(100% - 32px);
     }
     .conn-status .live-dot {
       width: 7px; height: 7px;
@@ -218,7 +304,9 @@
       font-size: 12px;
       font-weight: 500;
       color: rgba(255,255,255,0.75);
+      min-height: 15px;
     }
+    header p#header-sub:empty { display: none; }
 
     /* P2-07/P2-08 — banner status koneksi & update SW. */
     .status-banner {
@@ -259,16 +347,14 @@
     .status-banner button:active { transform: scale(0.96); }
 
     /* ---------- KPI / HERO ---------- */
-    /* Kartu ringkasan "mengambang" menimpa lengkungan bawah header —
-       pola khas kartu saldo pada aplikasi m-banking. */
+    /* v8.2: kartu ringkasan pindah dari header ke panel tab "Dashboard"
+       sendiri (bukan lagi menimpa header) — header jadi lebih ringkas
+       dan teks status tidak lagi berpotensi kepotong. */
     .kpi-strip {
       display: flex;
       flex-direction: column;
       gap: var(--space-sm);
-      padding: 0 16px var(--space-xs);
-      margin-top: -30px;
-      position: relative;
-      z-index: 5;
+      padding: var(--space-sm) 0 var(--space-xs);
     }
 
     .hero-card {
@@ -304,6 +390,13 @@
       color: var(--color-muted);
       margin-top: 6px;
       font-weight: 600;
+    }
+    .hero-main .hero-sub {
+      font-size: 10.5px;
+      color: var(--color-muted);
+      margin-top: 3px;
+      font-weight: 500;
+      opacity: 0.85;
     }
 
     .hero-ring {
@@ -362,7 +455,7 @@
     .kpi-card .kpi-icon {
       width: 28px; height: 28px;
       border-radius: var(--radius-sm);
-      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
+      background: linear-gradient(150deg, var(--color-primary-soft), var(--color-surface));
       color: var(--color-primary);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
@@ -386,11 +479,151 @@
       font-weight: 700;
     }
     .kpi-card.warn .kpi-icon {
-      background: linear-gradient(150deg, var(--color-danger-soft), #FFFFFF);
+      background: linear-gradient(150deg, var(--color-danger-soft), var(--color-surface));
       color: var(--color-danger);
       box-shadow: 0 2px 6px -2px rgba(214,40,57,0.30), inset 0 0 0 1px rgba(214,40,57,0.08);
     }
     .kpi-card.warn .num { color: var(--color-danger); }
+
+    /* ---------- DASHBOARD: STRUCTURED SECTIONS (v8.5) ----------
+       Dashboard direstruktur jadi 3 blok berlapis: Hero (total unit +
+       ring "perlu perhatian"), Distribusi Status Unit (segmented bar +
+       legend, per unit fisik), Kondisi Alat (3 kartu status, per jenis
+       alat/kode). Footnote di bawah menjelaskan beda basis hitungnya
+       supaya tidak ambigu antara "unit" vs "jenis alat". */
+    .dash-section { margin-top: 22px; }
+    .dash-section:first-child { margin-top: 0; }
+    .dash-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+    .dash-section-head h3 {
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin: 0;
+    }
+    .dash-section-head .dash-hint {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+      padding: 2px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .dist-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 16px 16px 14px;
+      box-shadow: var(--shadow-md);
+    }
+    .dist-bar {
+      display: flex;
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--color-surface-3);
+      box-shadow: inset 0 0 0 1px rgba(9,20,40,0.05);
+    }
+    .dist-bar-seg { height: 100%; }
+    .dist-bar-seg.seg-siap { background: var(--color-success); }
+    .dist-bar-seg.seg-dipakai { background: var(--color-primary); }
+    .dist-bar-seg.seg-tunggu { background: var(--color-warning); }
+    .dist-bar-seg.seg-diasah { background: var(--color-info); }
+
+    .dist-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 13px 14px;
+      margin-top: 16px;
+    }
+    .dist-legend-item { display: flex; align-items: flex-start; gap: 8px; }
+    .dist-legend-dot {
+      width: 9px; height: 9px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .dist-legend-dot.seg-siap { background: var(--color-success); }
+    .dist-legend-dot.seg-dipakai { background: var(--color-primary); }
+    .dist-legend-dot.seg-tunggu { background: var(--color-warning); }
+    .dist-legend-dot.seg-diasah { background: var(--color-info); }
+    .dist-legend-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.01em;
+    }
+    .dist-legend-row { display: flex; align-items: baseline; gap: 5px; margin-top: 1px; }
+    .dist-legend-value {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--color-text);
+      line-height: 1.15;
+    }
+    .dist-legend-pct { font-size: 10.5px; font-weight: 700; color: var(--color-muted); }
+
+    .cond-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .cond-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 14px 8px 12px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .cond-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .cond-card.cond-aman::before { background: var(--color-success); }
+    .cond-card.cond-kritis::before { background: var(--color-warning); }
+    .cond-card.cond-habis::before { background: var(--color-danger); }
+    .cond-num {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .cond-card.cond-aman .cond-num { color: var(--color-success); }
+    .cond-card.cond-kritis .cond-num { color: var(--color-warning); }
+    .cond-card.cond-habis .cond-num { color: var(--color-danger); }
+    .cond-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-top: 5px;
+    }
+
+    .dash-footnote {
+      text-align: center;
+      font-size: 10.5px;
+      color: var(--color-muted);
+      margin-top: 18px;
+      line-height: 1.5;
+      padding: 0 6px;
+    }
+
+    .sk-dist { height: 138px; border-radius: var(--radius-lg); margin-top: 22px; }
+    .sk-cond { height: 76px; border-radius: var(--radius-md); margin-top: 22px; }
 
     /* ---------- MAIN PANELS ---------- */
     main { padding: var(--space-sm) 16px 24px; max-width: 640px; margin: 0 auto; }
@@ -412,7 +645,7 @@
     .section-title .st-icon {
       width: 24px; height: 24px;
       color: var(--color-primary);
-      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
+      background: linear-gradient(150deg, var(--color-primary-soft), var(--color-surface));
       border-radius: var(--radius-sm);
       padding: 5px;
       flex-shrink: 0;
@@ -442,7 +675,7 @@
       font-family: var(--font-mono);
       font-size: 11px;
       font-weight: 700;
-      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
+      background: linear-gradient(150deg, var(--color-primary-soft), var(--color-surface));
       border: 1px solid rgba(10,95,191,0.14);
       border-radius: var(--radius-sm);
       padding: 3px 7px;
@@ -466,55 +699,102 @@
     .badge.kritis { background: var(--color-warning-soft); color: var(--color-warning); border-color: rgba(180,101,10,0.18); }
     .badge.habis { background: var(--color-danger-soft); color: var(--color-danger); border-color: rgba(214,40,57,0.18); }
 
-    /* Kartu status stok — hierarchy visual: nama > spek > qty/status >
-       lokasi/tanggal, strip warna kiri sebagai indikator status sekilas. */
+    /* ---------- KARTU STATUS STOK ---------- */
+    /* v8.4: dipadatkan (padding/gap dikecilkan, siap-pakai jadi chip
+       inline sebaris dengan kode+status) supaya kartu tidak makan
+       banyak tempat, tapi detail (Kode/Jenis/Brand/Material/Ukuran)
+       tetap lengkap semua. Strip warna kiri = indikator status sekilas. */
     .stock-row {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
+      flex-direction: column;
       position: relative;
-      padding: 12px 12px 12px 14px;
+      padding: 10px 12px 10px 14px;
       border-left: 4px solid var(--ink-faint);
       border-radius: var(--radius-md);
-      transition: transform 0.15s ease;
     }
-    .stock-row:active { transform: scale(0.985); }
+    .stock-row:active { transform: scale(0.99); }
     .stock-row.status-aman { border-left-color: var(--color-success); }
     .stock-row.status-kritis { border-left-color: var(--color-warning); }
     .stock-row.status-habis { border-left-color: var(--color-danger); }
-    .stock-row .info { min-width: 0; flex: 1; }
-    .stock-row .nama {
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 4px;
-      color: var(--color-text);
+
+    /* v8.7 — setiap blok data di dalam kartu (header, qty, detail,
+       mesin) dipisah garis tipis + padding vertikal sendiri, supaya
+       kelompok informasi kelihatan terstruktur (bukan menempel jadi
+       satu gumpalan teks). */
+    .sc-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 9px;
     }
-    .stock-row .spek {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--color-muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .sc-top .tag { flex-shrink: 0; }
+
+    .sc-qty-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      padding: 8px 0;
+      border-top: 1px solid var(--color-border);
     }
-    .stock-row .siap {
+    .sc-qty-row .sc-qty-num {
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: 18px;
-      text-align: right;
-      flex-shrink: 0;
+      font-size: 19px;
+      line-height: 1;
       color: var(--color-text);
     }
-    .stock-row .siap span {
-      display: block;
+    .sc-qty-row .sc-qty-label {
       font-family: var(--font-body);
       font-weight: 600;
-      font-size: 9px;
-      letter-spacing: 0.02em;
+      font-size: 10px;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       color: var(--color-muted);
     }
+
+    .sc-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      column-gap: 8px;
+      row-gap: 8px;
+      padding: 9px 0 2px;
+      border-top: 1px solid var(--color-border);
+    }
+    .sc-detail-grid .sc-field.full { grid-column: 1 / -1; }
+    .sc-field .sc-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 2px;
+    }
+    .sc-field .sc-value {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--color-text);
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .sc-field .sc-value.muted { color: var(--color-muted); font-weight: 500; }
+
+    .sc-mesin {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--color-muted);
+      min-width: 0;
+      margin-top: 9px;
+      padding-top: 9px;
+      border-top: 1px dashed var(--color-border);
+    }
+    .sc-mesin .sc-mesin-icon { width: 13px; height: 13px; flex-shrink: 0; color: var(--ink-faint); }
+    .sc-mesin .sc-mesin-icon svg { width: 100%; height: 100%; }
+    .sc-mesin span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 
     /* ---------- STOK FILTER CHIPS (client-side, data existing) ---------- */
     .filter-chip-row {
@@ -559,15 +839,15 @@
       border-radius: var(--radius-md);
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(150deg, var(--color-surface-3), #FFFFFF);
+      background: linear-gradient(150deg, var(--color-surface-3), var(--color-surface));
       color: var(--color-muted);
       box-shadow: inset 0 0 0 1px rgba(16,32,58,0.05);
     }
     .txn-icon svg { width: 16px; height: 16px; }
-    .txn-icon.aman { background: linear-gradient(150deg, var(--color-success-soft), #FFFFFF); color: var(--color-success); box-shadow: inset 0 0 0 1px rgba(23,148,75,0.12); }
-    .txn-icon.kritis { background: linear-gradient(150deg, var(--color-warning-soft), #FFFFFF); color: var(--color-warning); box-shadow: inset 0 0 0 1px rgba(180,101,10,0.12); }
-    .txn-icon.habis { background: linear-gradient(150deg, var(--color-danger-soft), #FFFFFF); color: var(--color-danger); box-shadow: inset 0 0 0 1px rgba(214,40,57,0.12); }
-    .txn-icon.accent { background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF); color: var(--color-primary); box-shadow: inset 0 0 0 1px rgba(10,95,191,0.12); }
+    .txn-icon.aman { background: linear-gradient(150deg, var(--color-success-soft), var(--color-surface)); color: var(--color-success); box-shadow: inset 0 0 0 1px rgba(23,148,75,0.12); }
+    .txn-icon.kritis { background: linear-gradient(150deg, var(--color-warning-soft), var(--color-surface)); color: var(--color-warning); box-shadow: inset 0 0 0 1px rgba(180,101,10,0.12); }
+    .txn-icon.habis { background: linear-gradient(150deg, var(--color-danger-soft), var(--color-surface)); color: var(--color-danger); box-shadow: inset 0 0 0 1px rgba(214,40,57,0.12); }
+    .txn-icon.accent { background: linear-gradient(150deg, var(--color-primary-soft), var(--color-surface)); color: var(--color-primary); box-shadow: inset 0 0 0 1px rgba(10,95,191,0.12); }
     .txn-row .left { min-width: 0; flex: 1; }
     .txn-row .activity { font-size: 13.5px; font-weight: 700; color: var(--color-text); }
     .txn-row .meta { font-size: 11.5px; color: var(--color-muted); margin-top: 3px; }
@@ -675,6 +955,122 @@
       color: var(--color-muted);
       margin: 0 0 var(--space-sm);
     }
+
+    /* ---------- v8.11 — INPUT PANEL PREMIUM REDESIGN ---------- */
+    .input-hero {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: var(--space-xs) 0 var(--space-lg);
+    }
+    .input-hero-icon {
+      width: 42px; height: 42px;
+      flex-shrink: 0;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(150deg, var(--grad-1), var(--grad-2));
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 18px -8px rgba(5,44,99,0.5), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .input-hero-icon svg { width: 21px; height: 21px; }
+    .input-hero-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--color-text);
+      margin: 2px 0 3px;
+      letter-spacing: -0.01em;
+    }
+    .input-hero-sub {
+      font-size: 12.5px;
+      color: var(--color-muted);
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .input-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-md);
+      overflow: hidden;
+    }
+    .input-card-head {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+    }
+    .input-step {
+      width: 26px; height: 26px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .input-card-head-text { min-width: 0; flex: 1; }
+    .input-card-title {
+      font-family: var(--font-display);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin: 0;
+      letter-spacing: -0.005em;
+    }
+    .input-card-desc {
+      font-size: 11.5px;
+      color: var(--color-muted);
+      margin: 2px 0 0;
+      line-height: 1.35;
+    }
+    .input-card-optional {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--color-muted);
+      background: var(--color-surface-3);
+      border-radius: 999px;
+      padding: 3px 9px;
+      text-transform: uppercase;
+    }
+    .input-card-body {
+      padding: 16px;
+    }
+    .input-card-body .field:last-child { margin-bottom: 0; }
+
+    .input-step.tone-primary { background: var(--color-primary-soft); color: var(--color-primary); }
+    .input-step.tone-info { background: var(--color-info-soft); color: var(--color-info); }
+    .input-step.tone-warning { background: var(--color-warning-soft); color: var(--color-warning); }
+    .input-step.tone-success { background: var(--color-success-soft); color: var(--color-success); }
+
+    .input-card .field select,
+    .input-card .field input,
+    .input-card .field textarea {
+      background: var(--color-surface-2);
+      border-color: var(--color-border);
+    }
+    .input-card .field select:focus,
+    .input-card .field input:focus,
+    .input-card .field textarea:focus {
+      box-shadow: 0 0 0 3.5px var(--color-primary-soft);
+    }
+
+    .input-submit-note {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11.5px;
+      color: var(--color-muted);
+      margin: 10px 2px 0;
+      line-height: 1.4;
+    }
+    .input-submit-note svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--color-success); }
     .field { margin-bottom: var(--space-md); }
     .field:last-child { margin-bottom: 0; }
     .field label {
@@ -722,6 +1118,26 @@
     .field textarea { resize: vertical; min-height: 60px; }
     .field-row { display: flex; gap: 10px; }
     .field-row .field { flex: 1; }
+    /* v8.7 — grid based, bukan flex: label & select DIJAMIN sejajar
+       lintas kolom karena keduanya ditempatkan di grid-row yang sama
+       (row 1 = label, row 2 = select). Tinggi row 1 otomatis
+       menyesuaikan label terpanjang, jadi select di row 2 SELALU
+       mulai di y yang identik untuk kedua kolom — tidak bergantung
+       lagi pada trik min-height/flex-end yang rapuh. */
+    #stok-filter-select-row.field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      column-gap: 10px;
+      row-gap: 6px;
+    }
+    #stok-filter-select-row .field { display: contents; }
+    #stok-filter-select-row .field label { grid-row: 1; margin-bottom: 0; align-self: end; }
+    #stok-filter-select-row .field select { grid-row: 2; }
+    #stok-filter-select-row .field:nth-of-type(1) label,
+    #stok-filter-select-row .field:nth-of-type(1) select { grid-column: 1; }
+    #stok-filter-select-row .field:nth-of-type(2) label,
+    #stok-filter-select-row .field:nth-of-type(2) select { grid-column: 2; }
     .field-hint {
       font-size: 12px;
       color: var(--color-muted);
@@ -996,26 +1412,39 @@
       color: var(--color-muted);
       font-size: 12.5px;
     }
-
-    .fab {
-      position: fixed;
-      right: 16px;
-      bottom: calc(78px + env(safe-area-inset-bottom, 0));
-      width: 50px; height: 50px;
-      border-radius: 50%;
-      background: linear-gradient(150deg, var(--grad-1), var(--grad-2));
-      color: #fff;
-      border: none;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 10px 22px -6px rgba(5,44,99,0.55), inset 0 1px 0 rgba(255,255,255,0.35), 0 0 0 4px rgba(255,255,255,0.55);
-      cursor: pointer;
-      z-index: 19;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    /* ---------- SWITCH (mode malam) ---------- */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 26px;
+      flex-shrink: 0;
     }
-    .fab svg { width: 21px; height: 21px; }
-    .fab:active { transform: translateY(1px) scale(0.96); }
-    .fab:hover { box-shadow: 0 14px 26px -6px rgba(5,44,99,0.6), inset 0 1px 0 rgba(255,255,255,0.35), 0 0 0 4px rgba(255,255,255,0.55); }
-    .fab.hidden { display: none; }
+    .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+    .switch .switch-track {
+      position: absolute;
+      inset: 0;
+      background: var(--color-surface-3);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .switch .switch-track::before {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--color-surface);
+      box-shadow: 0 1px 3px rgba(9,20,40,0.3);
+      transition: transform 0.2s ease;
+    }
+    .switch input:checked + .switch-track {
+      background: linear-gradient(135deg, var(--grad-1), var(--grad-2));
+      border-color: transparent;
+    }
+    .switch input:checked + .switch-track::before { transform: translateX(18px); background: #fff; }
+    .switch input:focus-visible + .switch-track { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
     /* ---------- TAB BAR ---------- */
     nav.tabbar {
@@ -1056,26 +1485,114 @@
     nav.tabbar button .icon svg { width: 100%; height: 100%; }
     nav.tabbar button.active {
       color: var(--color-primary);
-      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
+      background: linear-gradient(150deg, var(--color-primary-soft), var(--color-surface));
       box-shadow: inset 0 0 0 1px rgba(10,95,191,0.12);
     }
     nav.tabbar button.active .icon { color: var(--color-primary); }
 
+    /* Tombol tengah "Input" — menonjol di atas tabbar, gaya tombol scan. */
+    nav.tabbar button.raised {
+      overflow: visible;
+    }
+    nav.tabbar button.raised .icon {
+      width: 52px; height: 52px;
+      margin-top: -30px;
+      border-radius: 50%;
+      background: linear-gradient(150deg, var(--grad-1), var(--grad-2));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 22px -6px rgba(5,44,99,0.55), inset 0 1px 0 rgba(255,255,255,0.35), 0 0 0 4px var(--color-surface);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    nav.tabbar button.raised .icon svg { width: 22px; height: 22px; }
+    nav.tabbar button.raised:active .icon { transform: scale(0.94); }
+    nav.tabbar button.raised.active .icon,
+    nav.tabbar button.raised .icon { color: #fff; }
+    nav.tabbar button.raised { color: var(--color-primary); font-weight: 800; }
+    nav.tabbar button.raised.active { background: none; box-shadow: none; }
+
+    /* ---------- PANEL BACK BUTTON (dari Mesin/Pengaturan ke Lainnya) ---------- */
+    .panel-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      padding: 4px 0 var(--space-sm);
+      margin-bottom: 2px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-primary);
+      cursor: pointer;
+    }
+    .panel-back-btn .icon { width: 18px; height: 18px; display: block; }
+    .panel-back-btn .icon svg { width: 100%; height: 100%; }
+
+    /* ---------- LAINNYA MENU ---------- */
+    .lainnya-menu {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .lainnya-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 14px 14px;
+      cursor: pointer;
+      text-align: left;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .lainnya-item:active { transform: scale(0.98); }
+    .lainnya-item .li-icon {
+      flex-shrink: 0;
+      width: 40px; height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lainnya-item .li-icon svg { width: 20px; height: 20px; }
+    .lainnya-item .li-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .lainnya-item .li-title { font-size: 14.5px; font-weight: 700; color: var(--color-text); }
+    .lainnya-item .li-desc { font-size: 12px; color: var(--color-muted); }
+    .lainnya-item .li-chevron { width: 18px; height: 18px; color: var(--ink-faint); flex-shrink: 0; }
+    .lainnya-item .li-chevron svg { width: 100%; height: 100%; }
+
   </style>
+  <script>
+    // Terapkan tema secepat mungkin (sebelum body dirender) supaya
+    // tidak ada "kedipan" mode terang sesaat sebelum beralih ke gelap.
+    (function () {
+      try {
+        const THEME_KEY = 'sawBladeMonitor_theme';
+        const saved = localStorage.getItem(THEME_KEY);
+        const theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (e) { /* localStorage tidak tersedia — abaikan, default mode terang */ }
+    })();
+  </script>
 </head>
 <body>
 
   <header>
-    <p class="eyebrow">
-      <span class="mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M 18.54 11.08 L 21.88 11.31 L 18.54 12.92 L 17.60 15.50 L 20.01 17.82 L 16.42 16.90 L 14.04 18.28 L 14.40 21.61 L 12.23 18.60 L 9.53 18.12 L 7.66 20.90 L 7.94 17.20 L 6.17 15.10 L 2.96 16.03 L 5.54 13.37 L 5.54 10.63 L 2.48 9.27 L 6.17 8.90 L 7.94 6.80 L 6.46 3.79 L 9.53 5.88 L 12.23 5.40 L 13.03 2.15 L 14.04 5.72 L 16.42 7.10 L 19.12 5.12 L 17.60 8.50 Z"></path></svg></span>
-      Tool Crib &middot; Gudang Alat
-      <span class="version-badge" id="version-badge">v8.1</span>
-    </p>
-    <h1>Monitoring Saw Blade &amp; Cutter</h1>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Ganti mode terang/gelap" title="Mode terang/gelap">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg>
+    </button>
     <div class="conn-status" id="conn-status">
       <span class="live-dot" id="live-dot"></span>
       <span id="conn-status-text">Terhubung</span>
     </div>
+    <h1>Monitoring Saw Blade &amp; Cutter</h1>
     <p id="header-sub">Memuat data…</p>
   </header>
 
@@ -1090,20 +1607,12 @@
     <button type="button" id="update-banner-btn">Reload</button>
   </div>
 
-  <div class="kpi-strip" id="kpi-strip">
-    <div class="skeleton-block sk-hero"></div>
-    <div class="kpi-chip-row">
-      <div class="skeleton-block sk-chip"></div>
-      <div class="skeleton-block sk-chip"></div>
-      <div class="skeleton-block sk-chip"></div>
-      <div class="skeleton-block sk-chip"></div>
-    </div>
-  </div>
+  <!-- kpi-strip dipindah ke dalam <section id="panel-summary"> (tab Dashboard) di bawah -->
 
   <main>
 
-    <!-- ============== PANEL: DASHBOARD / RIWAYAT ============== -->
-    <section class="panel active" id="panel-dashboard">
+    <!-- ============== PANEL: RIWAYAT (transaksi terbaru) ============== -->
+    <section class="panel" id="panel-dashboard">
       <div class="section-title">
         <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>
         Transaksi Terbaru
@@ -1117,99 +1626,151 @@
 
     <!-- ============== PANEL: INPUT TRANSAKSI ============== -->
     <section class="panel" id="panel-input">
-      <div class="section-title">
-        <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg></span>
-        Catat Transaksi Baru
+      <div class="input-hero">
+        <span class="input-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg></span>
+        <div>
+          <p class="input-hero-title">Catat Transaksi Baru</p>
+          <p class="input-hero-sub">Lengkapi tiap bagian secara berurutan — pilihan pada langkah 1 &amp; 2 menentukan opsi yang tersedia di langkah berikutnya.</p>
+        </div>
       </div>
 
       <div class="form-msg" id="form-msg"></div>
 
       <form id="movement-form">
-        <div class="form-section">
-          <p class="form-section-title">Jenis Transaksi</p>
-          <div class="field">
-            <label for="f-activity">Jenis Transaksi</label>
-            <select id="f-activity" required>
-              <option value="">Pilih jenis transaksi…</option>
-            </select>
+        <div class="input-card">
+          <div class="input-card-head">
+            <span class="input-step tone-primary">1</span>
+            <div class="input-card-head-text">
+              <p class="input-card-title">Jenis Transaksi</p>
+              <p class="input-card-desc">Pilih jenis pergerakan alat yang akan dicatat</p>
+            </div>
           </div>
-        </div>
-
-        <div class="form-section">
-          <p class="form-section-title">Detail Alat</p>
-
-          <!-- [REVISI-02] Untuk DIPASANG KE MESIN & KEMBALI KE GUDANG (TUMPUL),
-               Mesin dipilih DULUAN dan dipakai sebagai validasi: pilihan Kode
-               Alat & Unit di bawahnya otomatis dibatasi ke yang memang valid/ada
-               di mesin ini. Field ini disembunyikan untuk jenis transaksi lain. -->
-          <div class="field" id="f-mesin-driver-wrap" style="display:none;">
-            <label for="f-mesin-driver">Mesin</label>
-            <select id="f-mesin-driver">
-              <option value="">Pilih mesin…</option>
-            </select>
-            <div class="field-hint" id="f-mesin-driver-hint" style="display:none;"></div>
-          </div>
-
-          <div class="field">
-            <label for="f-kode-alat">Kode Alat</label>
-            <select id="f-kode-alat" required>
-              <option value="">Pilih kode alat…</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="f-unit-id">Unit</label>
-            <select id="f-unit-id" required disabled>
-              <option value="">Pilih kode alat dulu…</option>
-            </select>
-            <input type="text" id="f-unit-id-manual" placeholder="Ketik Unit_ID baru, mis. Hau-SB-02-006" style="display:none;">
-            <div class="field-hint" id="f-unit-id-hint" style="display:none;"></div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <p class="form-section-title">Mesin &amp; Jumlah</p>
-          <div class="field-row">
-            <div class="field" id="f-kode-mesin-wrap">
-              <label for="f-kode-mesin">Kode Mesin</label>
-              <select id="f-kode-mesin" disabled>
-                <option value="">—</option>
+          <div class="input-card-body">
+            <div class="field">
+              <label for="f-activity">Jenis Transaksi</label>
+              <select id="f-activity" required>
+                <option value="">Pilih jenis transaksi…</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        <div class="input-card">
+          <div class="input-card-head">
+            <span class="input-step tone-info">2</span>
+            <div class="input-card-head-text">
+              <p class="input-card-title">Detail Alat</p>
+              <p class="input-card-desc">Kode alat &amp; unit yang terlibat dalam transaksi ini</p>
+            </div>
+          </div>
+          <div class="input-card-body">
+            <!-- [REVISI-02] Untuk DIPASANG KE MESIN & KEMBALI KE GUDANG (TUMPUL),
+                 Mesin dipilih DULUAN dan dipakai sebagai validasi: pilihan Kode
+                 Alat & Unit di bawahnya otomatis dibatasi ke yang memang valid/ada
+                 di mesin ini. Field ini disembunyikan untuk jenis transaksi lain. -->
+            <div class="field" id="f-mesin-driver-wrap" style="display:none;">
+              <label for="f-mesin-driver">Mesin</label>
+              <select id="f-mesin-driver">
+                <option value="">Pilih mesin…</option>
+              </select>
+              <div class="field-hint" id="f-mesin-driver-hint" style="display:none;"></div>
+            </div>
+
             <div class="field">
-              <label for="f-qty">Qty</label>
-              <input type="number" id="f-qty" value="1" min="1" required>
+              <label for="f-kode-alat">Kode Alat</label>
+              <select id="f-kode-alat" required>
+                <option value="">Pilih kode alat…</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="f-unit-id">Unit</label>
+              <select id="f-unit-id" required disabled>
+                <option value="">Pilih kode alat dulu…</option>
+              </select>
+              <input type="text" id="f-unit-id-manual" placeholder="Ketik Unit_ID baru, mis. Hau-SB-02-006" style="display:none;">
+              <div class="field-hint" id="f-unit-id-hint" style="display:none;"></div>
             </div>
           </div>
         </div>
 
-        <div class="form-section">
-          <p class="form-section-title">PIC</p>
-          <div class="field">
-            <label for="f-pic">Nama PIC</label>
-            <input type="text" id="f-pic" placeholder="Nama yang mencatat" required>
+        <div class="input-card">
+          <div class="input-card-head">
+            <span class="input-step tone-warning">3</span>
+            <div class="input-card-head-text">
+              <p class="input-card-title">Mesin &amp; Jumlah</p>
+              <p class="input-card-desc">Lokasi mesin serta kuantitas alat yang dicatat</p>
+            </div>
+          </div>
+          <div class="input-card-body">
+            <div class="field-row">
+              <div class="field" id="f-kode-mesin-wrap">
+                <label for="f-kode-mesin">Kode Mesin</label>
+                <select id="f-kode-mesin" disabled>
+                  <option value="">—</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="f-qty">Qty</label>
+                <input type="number" id="f-qty" value="1" min="1" required>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="form-section">
-          <p class="form-section-title">Catatan</p>
-          <div class="field">
-            <label for="f-remark">Catatan (opsional)</label>
-            <textarea id="f-remark" placeholder="Mis. lokasi mesin, kondisi alat, dll"></textarea>
+        <div class="input-card">
+          <div class="input-card-head">
+            <span class="input-step tone-success">4</span>
+            <div class="input-card-head-text">
+              <p class="input-card-title">PIC</p>
+              <p class="input-card-desc">Nama penanggung jawab pencatatan transaksi</p>
+            </div>
+          </div>
+          <div class="input-card-body">
+            <div class="field">
+              <label for="f-pic">Nama PIC</label>
+              <input type="text" id="f-pic" placeholder="Nama yang mencatat" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-card">
+          <div class="input-card-head">
+            <span class="input-step tone-primary">5</span>
+            <div class="input-card-head-text">
+              <p class="input-card-title">Catatan</p>
+              <p class="input-card-desc">Keterangan tambahan seputar transaksi ini</p>
+            </div>
+            <span class="input-card-optional">Opsional</span>
+          </div>
+          <div class="input-card-body">
+            <div class="field">
+              <label for="f-remark">Catatan (opsional)</label>
+              <textarea id="f-remark" placeholder="Mis. lokasi mesin, kondisi alat, dll"></textarea>
+            </div>
           </div>
         </div>
 
         <button type="submit" class="btn-primary" id="btn-submit"><span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>Simpan Transaksi</button>
+        <p class="input-submit-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="9"></circle></svg>Data tersimpan langsung ke Google Sheets — pastikan koneksi internet aktif.</p>
       </form>
+    </section>
+
+    <!-- ============== PANEL: DASHBOARD (ringkasan/statistik) ============== -->
+    <section class="panel active" id="panel-summary">
+      <div class="section-title">
+        <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg></span>
+        Ringkasan Stok
+      </div>
+      <div class="kpi-strip" id="kpi-strip">
+        <div class="skeleton-block sk-hero"></div>
+        <div class="skeleton-block sk-dist"></div>
+        <div class="skeleton-block sk-cond"></div>
+      </div>
     </section>
 
     <!-- ============== PANEL: STOK ============== -->
     <section class="panel" id="panel-stok">
-      <div class="section-title">
-        <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V16L12 21L3 16V8L12 3Z"></path><path d="M3 8L12 13L21 8"></path><path d="M12 13V21"></path></svg></span>
-        Status Stok per Alat
-      </div>
-      <div class="stok-stat-row" id="stok-stat-row"></div>
       <input type="search" class="search-input" id="stok-search" placeholder="Cari kode atau nama alat…">
       <div class="filter-chip-row" id="stok-filter-row">
         <button type="button" class="filter-chip active" data-status="">Semua</button>
@@ -1219,13 +1780,13 @@
       </div>
       <div class="field-row" id="stok-filter-select-row">
         <div class="field">
-          <label for="stok-filter-mesin">Filter Mesin</label>
+          <label for="stok-filter-mesin">Mesin</label>
           <select id="stok-filter-mesin">
             <option value="">Semua mesin</option>
           </select>
         </div>
         <div class="field">
-          <label for="stok-filter-ukuran">Filter Ukuran / Spesifikasi</label>
+          <label for="stok-filter-ukuran">Ukuran / Spesifikasi</label>
           <select id="stok-filter-ukuran">
             <option value="">Semua ukuran</option>
           </select>
@@ -1240,6 +1801,7 @@
 
     <!-- ============== PANEL: MESIN (analitik per mesin) ============== -->
     <section class="panel" id="panel-mesin">
+      <button type="button" class="panel-back-btn" data-back="panel-lainnya"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span>Lainnya</button>
       <div class="section-title">
         <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg></span>
         Analitik per Mesin
@@ -1264,6 +1826,7 @@
 
     <!-- ============== PANEL: PENGATURAN (Phase 3A) ============== -->
     <section class="panel" id="panel-settings">
+      <button type="button" class="panel-back-btn" data-back="panel-lainnya"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span>Lainnya</button>
       <div class="section-title">
         <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg></span>
         Pengaturan
@@ -1297,6 +1860,17 @@
         </p>
       </div>
 
+      <p class="settings-group-title">Tampilan</p>
+      <div class="settings-list">
+        <div class="settings-list-row">
+          <span>Mode malam</span>
+          <label class="switch">
+            <input type="checkbox" id="settings-theme-switch">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+      </div>
+
       <p class="settings-group-title">Aplikasi</p>
       <div class="settings-list">
         <div class="settings-list-row">
@@ -1306,28 +1880,89 @@
       </div>
     </section>
 
+    <!-- ============== PANEL: KONTROL ASAH (FITUR-KONTROL-ASAH) ============== -->
+    <section class="panel" id="panel-kontrol-asah">
+      <button type="button" class="panel-back-btn" data-back="panel-lainnya"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span>Lainnya</button>
+      <div class="section-title">
+        <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>
+        Kontrol Asah
+      </div>
+
+      <p class="settings-group-title"><span class="sgt-icon sgt-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg></span>Performa Vendor Asah</p>
+      <p class="rank-desc">Lead time rata-rata &amp; maksimum per vendor, dari siklus asah yang sudah selesai.</p>
+      <div id="ka-vendor-list">
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+      </div>
+
+      <p class="settings-group-title"><span class="sgt-icon sgt-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"></path></svg></span>Menunggu Kirim ke Vendor</p>
+      <p class="rank-desc">Unit sudah tumpul, masih di gudang, belum dikirim ke vendor asah. Diurutkan dari yang paling lama menunggu.</p>
+      <div id="ka-menunggu-list">
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+      </div>
+
+      <p class="settings-group-title"><span class="sgt-icon sgt-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>Sedang Diasah di Vendor</p>
+      <p class="rank-desc">Unit sedang di tangan vendor. Ditandai "Terlambat" kalau sudah melewati rata-rata lead time vendor tersebut.</p>
+      <div id="ka-proses-list">
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+      </div>
+    </section>
+
+    <!-- ============== PANEL: LAINNYA (menu ke Mesin & Pengaturan) ============== -->
+    <section class="panel" id="panel-lainnya">
+      <div class="section-title">
+        <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg></span>
+        Lainnya
+      </div>
+      <div class="lainnya-menu">
+        <button type="button" class="lainnya-item" data-panel="panel-mesin">
+          <span class="li-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg></span>
+          <span class="li-text">
+            <span class="li-title">Mesin</span>
+            <span class="li-desc">Analitik pemakaian &amp; lead time per mesin</span>
+          </span>
+          <span class="li-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+        </button>
+        <button type="button" class="lainnya-item" data-panel="panel-kontrol-asah">
+          <span class="li-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>
+          <span class="li-text">
+            <span class="li-title">Kontrol Asah</span>
+            <span class="li-desc">Pantau unit menunggu kirim &amp; sedang diasah di vendor</span>
+          </span>
+          <span class="li-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+        </button>
+        <button type="button" class="lainnya-item" data-panel="panel-settings">
+          <span class="li-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg></span>
+          <span class="li-text">
+            <span class="li-title">Pengaturan</span>
+            <span class="li-desc">Koneksi Apps Script &amp; info aplikasi</span>
+          </span>
+          <span class="li-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+        </button>
+      </div>
+    </section>
 
   </main>
 
-  <button class="fab" id="fab-add" aria-label="Catat transaksi baru">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-  </button>
-
   <nav class="tabbar">
-    <button class="tab-btn active" data-panel="panel-dashboard">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>Riwayat
-    </button>
-    <button class="tab-btn" data-panel="panel-input">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg></span>Input
+    <button class="tab-btn active" data-panel="panel-summary">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg></span>Dashboard
     </button>
     <button class="tab-btn" data-panel="panel-stok">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V16L12 21L3 16V8L12 3Z"></path><path d="M3 8L12 13L21 8"></path><path d="M12 13V21"></path></svg></span>Stok
     </button>
-    <button class="tab-btn" data-panel="panel-mesin">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg></span>Mesin
+    <button class="tab-btn raised" data-panel="panel-input">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>Input
     </button>
-    <button class="tab-btn" data-panel="panel-settings">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg></span>Pengaturan
+    <button class="tab-btn" data-panel="panel-dashboard">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>Riwayat
+    </button>
+    <button class="tab-btn" data-panel="panel-lainnya">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg></span>Lainnya
     </button>
   </nav>
 
@@ -1365,8 +2000,8 @@
       return runtimeApiUrl_;
     }
     const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-    const APP_VERSION = 'v8.1.0-premium-buttons-icons'; // versi lengkap, dipakai di log developer
-    const APP_VERSION_SHORT = 'v8.1';    // versi ringkas, ditampilkan di badge UI
+    const APP_VERSION = 'v8.11.0-dark-mode-premium-input'; // versi lengkap, dipakai di log developer
+    const APP_VERSION_SHORT = 'v8.11';    // versi ringkas, ditampilkan di badge UI
 
     /**
      * Error terstruktur untuk semua kegagalan API, supaya frontend bisa
@@ -1567,10 +2202,10 @@
       if (badge) badge.textContent = APP_VERSION_SHORT;
       const versionVal = document.getElementById('settings-version-val');
       if (versionVal) versionVal.textContent = APP_VERSION;
+      wireThemeToggle_();
       wireTabBar();
       wireForm();
       wireStokSearch();
-      wireFab();
       wireConnectivityIndicator_();
       wireSettingsPanel_();
       registerServiceWorker_();
@@ -1579,8 +2214,46 @@
       loadTransactions();
       loadStockStatus();
       loadMachineAnalytics();
+      loadKontrolAsah();
       appHasLoadedOnce_ = true;
     });
+
+    /* ============================================================
+       v8.11 — MODE MALAM (dark mode toggle)
+       ============================================================ */
+    const THEME_STORAGE_KEY = 'sawBladeMonitor_theme';
+
+    function applyTheme_(theme) {
+      if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch (e) { /* abaikan */ }
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0A0F1C' : '#052C63');
+      const switchEl = document.getElementById('settings-theme-switch');
+      if (switchEl) switchEl.checked = (theme === 'dark');
+    }
+
+    function wireThemeToggle_() {
+      const btn = document.getElementById('theme-toggle');
+      const switchEl = document.getElementById('settings-theme-switch');
+      const currentTheme = function () {
+        return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      };
+      if (switchEl) switchEl.checked = (currentTheme() === 'dark');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          applyTheme_(currentTheme() === 'dark' ? 'light' : 'dark');
+        });
+      }
+      if (switchEl) {
+        switchEl.addEventListener('change', function () {
+          applyTheme_(switchEl.checked ? 'dark' : 'light');
+        });
+      }
+    }
 
     /* ============================================================
        P2-07/S/L — CONNECTIVITY INDICATOR
@@ -1596,6 +2269,7 @@
           loadTransactions();
           loadStockStatus();
           loadMachineAnalytics();
+          loadKontrolAsah();
         }
       });
       window.addEventListener('offline', updateConnIndicator_);
@@ -1823,25 +2497,32 @@
 
     /* ============================================================
        TAB NAVIGATION
+       v8.2: panel-mesin & panel-settings tidak lagi punya tombol tab
+       sendiri — diakses lewat panel "Lainnya". goToPanel() dipakai
+       untuk pindah panel dari mana saja (tabbar, menu Lainnya, tombol
+       back, atau state-card action) secara konsisten.
        ============================================================ */
-    function wireTabBar() {
-      document.querySelectorAll('.tab-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-          document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
-          btn.classList.add('active');
-          document.getElementById(btn.dataset.panel).classList.add('active');
+    function goToPanel(panelId) {
+      document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
+      const target = document.getElementById(panelId);
+      if (target) target.classList.add('active');
 
-          const fab = document.getElementById('fab-add');
-          fab.classList.toggle('hidden', btn.dataset.panel === 'panel-input');
-        });
-      });
+      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      // Mesin & Pengaturan tidak punya tab sendiri — sorot tab "Lainnya".
+      const tabPanelId = (panelId === 'panel-mesin' || panelId === 'panel-settings' || panelId === 'panel-kontrol-asah') ? 'panel-lainnya' : panelId;
+      const tabBtn = document.querySelector('.tab-btn[data-panel="' + tabPanelId + '"]');
+      if (tabBtn) tabBtn.classList.add('active');
     }
 
-    /** Tombol aksi cepat: lompat ke panel Input dari Riwayat/Stok. */
-    function wireFab() {
-      document.getElementById('fab-add').addEventListener('click', function () {
-        document.querySelector('.tab-btn[data-panel="panel-input"]').click();
+    function wireTabBar() {
+      document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { goToPanel(btn.dataset.panel); });
+      });
+      document.querySelectorAll('.lainnya-item').forEach(function (btn) {
+        btn.addEventListener('click', function () { goToPanel(btn.dataset.panel); });
+      });
+      document.querySelectorAll('.panel-back-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { goToPanel(btn.dataset.back); });
       });
     }
 
@@ -1849,8 +2530,18 @@
        DASHBOARD KPI
        ============================================================ */
     function loadDashboard() {
-      apiGet('getDashboardSummary')
-        .then(renderDashboard)
+      // v8.5: dashboard sekarang butuh 2 sumber — ringkasan angka unit
+      // (getDashboardSummary) DAN daftar per-jenis-alat (getStockStatusList,
+      // sama seperti yang dipakai tab Stok) supaya bisa hitung breakdown
+      // AMAN/KRITIS/HABIS per jenis alat untuk section "Kondisi Alat".
+      // Tidak ada endpoint baru di backend — dua-duanya sudah ada.
+      Promise.all([
+        apiGet('getDashboardSummary'),
+        apiGet('getStockStatusList')
+      ])
+        .then(function (results) {
+          renderDashboard(results[0], results[1] || []);
+        })
         .catch(function (err) {
           document.getElementById('header-sub').textContent =
             (err && err.code === 'CONFIGURATION_ERROR')
@@ -1866,48 +2557,96 @@
         });
     }
 
-    function renderDashboard(d) {
-      document.getElementById('header-sub').textContent =
-        d.total + ' unit terdaftar · ' + d.kritis + ' item butuh perhatian';
+    /* v8.5 — Dashboard direstruktur jadi 3 blok: (1) Hero — total unit +
+       ring "Perlu Perhatian" (item aman/kritis/habis, dari daftar per
+       jenis alat, bukan lagi dibagi total unit yang basisnya beda);
+       (2) Distribusi Status Unit — segmented bar + legend, basis PER
+       UNIT FISIK (siap/dipakai/tunggu/diasah, sesuai getDashboardSummary);
+       (3) Kondisi Alat — 3 kartu status, basis PER JENIS ALAT (kode),
+       dihitung dari rows getStockStatusList. Footnote menjelaskan beda
+       basis hitung supaya angkanya tidak disalahartikan. */
+    function renderDashboard(d, rows) {
+      document.getElementById('header-sub').textContent = '';
 
       const total = Number(d.total) || 0;
-      const kritis = Number(d.kritis) || 0;
-      const pct = total > 0 ? Math.round((kritis / total) * 100) : 0;
+      const siapPakai = Number(d.siapPakai) || 0;
+      const dipakai = Number(d.dipakai) || 0;
+      const tungguAsah = Number(d.tungguAsah) || 0;
+      const diasah = Number(d.diasah) || 0;
 
-      const chips = [
-        { key: 'siap', label: 'Siap Pakai', num: d.siapPakai, warn: false },
-        { key: 'dipakai', label: 'Dipakai', num: d.dipakai, warn: false },
-        { key: 'tunggu', label: 'Tunggu Asah', num: d.tungguAsah, warn: false },
-        { key: 'asah', label: 'Sedang Diasah', num: d.diasah, warn: false },
-        { key: 'warn', label: 'Kritis/Habis', num: d.kritis, warn: true }
-      ];
+      const list = rows || [];
+      const jenisAlat = list.length;
+      let amanCount = 0, kritisCount = 0, habisCount = 0;
+      list.forEach(function (r) {
+        const s = String(r.status || '').trim().toUpperCase();
+        if (s === 'AMAN') amanCount++;
+        else if (s === 'KRITIS') kritisCount++;
+        else if (s === 'HABIS') habisCount++;
+      });
+      const perluPerhatian = kritisCount + habisCount;
+      const pctRing = jenisAlat > 0 ? Math.round((perluPerhatian / jenisAlat) * 100) : 0;
 
       const heroHtml =
         '<div class="hero-card">' +
           '<div class="hero-main">' +
             '<div class="hero-num">' + total + '</div>' +
             '<div class="hero-label">Total Unit Terdaftar</div>' +
+            (jenisAlat > 0 ? '<div class="hero-sub">Dari ' + jenisAlat + ' jenis alat terdaftar</div>' : '') +
           '</div>' +
-          '<div class="hero-ring" style="--pct:' + pct + '">' +
+          '<div class="hero-ring" style="--pct:' + pctRing + '">' +
             '<div class="hero-ring-inner">' +
-              '<div class="hero-ring-num">' + kritis + '</div>' +
-              '<div class="hero-ring-label">Kritis</div>' +
+              '<div class="hero-ring-num">' + perluPerhatian + '</div>' +
+              '<div class="hero-ring-label">Perhatian</div>' +
             '</div>' +
           '</div>' +
         '</div>';
 
-      const chipsHtml =
-        '<div class="kpi-chip-row">' + chips.map(function (it) {
-          return '<div class="kpi-card' + (it.warn ? ' warn' : '') + '">' +
-            '<div class="kpi-icon">' + ICONS[it.key] + '</div>' +
-            '<div>' +
-              '<div class="num">' + it.num + '</div>' +
-              '<div class="label">' + it.label + '</div>' +
-            '</div>' +
-          '</div>';
-        }).join('') + '</div>';
+      const distItems = [
+        { seg: 'seg-siap', label: 'Siap Pakai', num: siapPakai },
+        { seg: 'seg-dipakai', label: 'Dipakai', num: dipakai },
+        { seg: 'seg-tunggu', label: 'Tunggu Asah', num: tungguAsah },
+        { seg: 'seg-diasah', label: 'Sedang Diasah', num: diasah }
+      ];
 
-      document.getElementById('kpi-strip').innerHTML = heroHtml + chipsHtml;
+      const distHtml =
+        '<div class="dash-section">' +
+          '<div class="dash-section-head"><h3>Distribusi Status Unit</h3><span class="dash-hint">' + total + ' unit</span></div>' +
+          '<div class="dist-card">' +
+            '<div class="dist-bar">' +
+              distItems.map(function (it) {
+                const w = total > 0 ? (it.num / total * 100) : 0;
+                return '<div class="dist-bar-seg ' + it.seg + '" style="width:' + w.toFixed(2) + '%"></div>';
+              }).join('') +
+            '</div>' +
+            '<div class="dist-legend">' +
+              distItems.map(function (it) {
+                const pct = total > 0 ? Math.round(it.num / total * 100) : 0;
+                return '<div class="dist-legend-item">' +
+                  '<span class="dist-legend-dot ' + it.seg + '"></span>' +
+                  '<div>' +
+                    '<div class="dist-legend-label">' + it.label + '</div>' +
+                    '<div class="dist-legend-row"><span class="dist-legend-value">' + it.num + '</span><span class="dist-legend-pct">' + pct + '%</span></div>' +
+                  '</div>' +
+                '</div>';
+              }).join('') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      const condHtml =
+        '<div class="dash-section">' +
+          '<div class="dash-section-head"><h3>Kondisi Alat</h3><span class="dash-hint">' + jenisAlat + ' jenis</span></div>' +
+          '<div class="cond-row">' +
+            '<div class="cond-card cond-aman"><div class="cond-num">' + amanCount + '</div><div class="cond-label">Aman</div></div>' +
+            '<div class="cond-card cond-kritis"><div class="cond-num">' + kritisCount + '</div><div class="cond-label">Kritis</div></div>' +
+            '<div class="cond-card cond-habis"><div class="cond-num">' + habisCount + '</div><div class="cond-label">Habis</div></div>' +
+          '</div>' +
+        '</div>';
+
+      const footnoteHtml =
+        '<p class="dash-footnote">Distribusi Status dihitung per unit fisik · Kondisi Alat dihitung per jenis alat (kode).</p>';
+
+      document.getElementById('kpi-strip').innerHTML = heroHtml + distHtml + condHtml + footnoteHtml;
     }
 
     /* ============================================================
@@ -1966,6 +2705,23 @@
         });
     }
 
+    /**
+     * v8.3 — "Nama Alat" di data sumber umumnya berformat "<Jenis>-<Brand>"
+     * (mis. "Saw Blade-Ake"). Dipisah di sisi client biar kartu bisa
+     * menampilkan Jenis & Brand sebagai field terpisah tanpa mengubah
+     * struktur sheet/backend. Kalau tidak ada tanda "-", seluruh teks
+     * dianggap Jenis dan Brand ditandai "—".
+     */
+    function splitJenisBrand_(namaAlat) {
+      const s = String(namaAlat || '').trim();
+      const idx = s.lastIndexOf('-');
+      if (idx <= 0 || idx >= s.length - 1) return { jenis: s || '—', brand: '—' };
+      return { jenis: s.slice(0, idx).trim(), brand: s.slice(idx + 1).trim() };
+    }
+
+    /* v8.4 — kartu dipadatkan: Kode + Siap Pakai + Status sebaris di
+       atas, grid 3 kolom (Jenis/Brand/Material) di bawahnya, Ukuran
+       full-width paling bawah. Mesin cuma dirender kalau datanya ada. */
     function renderStockList(rows) {
       const el = document.getElementById('stok-list');
       if (!rows || rows.length === 0) {
@@ -1974,16 +2730,24 @@
       }
       el.innerHTML = rows.map(function (r) {
         const cls = statusClass_(r.status);
+        const jb = splitJenisBrand_(r.namaAlat);
+        const material = r.bahan ? escapeHtml(r.bahan) : '<span class="sc-value muted">—</span>';
+        const ukuran = r.spesifikasi ? escapeHtml(r.spesifikasi) : '<span class="sc-value muted">—</span>';
         return '<div class="card stock-row status-' + cls + '">' +
-          '<div class="info">' +
-            '<div class="nama"><span class="tag">' + escapeHtml(r.kodeAlat) + '</span></div>' +
-            '<div class="spek">' + escapeHtml(r.namaAlat) + (r.spesifikasi ? ' · ' + escapeHtml(r.spesifikasi) : '') + '</div>' +
-            (r.mesin ? '<div class="spek" style="margin-top:2px;">🏭 ' + escapeHtml(r.mesin) + '</div>' : '') +
+          '<div class="sc-top">' +
+            '<span class="tag">' + escapeHtml(r.kodeAlat) + '</span>' +
+            statusBadge(r.status) +
           '</div>' +
-          '<div>' +
-            '<div class="siap">' + r.siapPakai + '<span>siap pakai</span></div>' +
-            '<div style="margin-top:6px; text-align:right;">' + statusBadge(r.status) + '</div>' +
+          '<div class="sc-qty-row"><span class="sc-qty-num">' + r.siapPakai + '</span><span class="sc-qty-label">Siap Pakai</span></div>' +
+          '<div class="sc-detail-grid">' +
+            '<div class="sc-field"><div class="sc-label">Jenis</div><div class="sc-value">' + escapeHtml(jb.jenis) + '</div></div>' +
+            '<div class="sc-field"><div class="sc-label">Brand</div><div class="sc-value' + (jb.brand === '—' ? ' muted' : '') + '">' + escapeHtml(jb.brand) + '</div></div>' +
+            '<div class="sc-field"><div class="sc-label">Material</div><div class="sc-value">' + material + '</div></div>' +
+            '<div class="sc-field full"><div class="sc-label">Ukuran</div><div class="sc-value">' + ukuran + '</div></div>' +
           '</div>' +
+          (r.mesin
+            ? '<div class="sc-mesin"><span class="sc-mesin-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg></span><span>' + escapeHtml(r.mesin) + '</span></div>'
+            : '') +
         '</div>';
       }).join('');
     }
@@ -2006,7 +2770,7 @@
       const iconError = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
       const iconConfig = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>';
       const action = kind === 'config'
-        ? '<button type="button" class="sc-action" onclick="document.querySelector(\'.tab-btn[data-panel=panel-settings]\').click()">' + escapeHtml(actionLabel) + '</button>'
+        ? '<button type="button" class="sc-action" onclick="goToPanel(\'panel-settings\')">' + escapeHtml(actionLabel) + '</button>'
         : '<button type="button" class="sc-action" onclick="' + onRetryFnName + '()">' + escapeHtml(actionLabel) + '</button>';
       return '<div class="state-card ' + kind + '">' +
         '<div class="sc-icon">' + (kind === 'config' ? iconConfig : iconError) + '</div>' +
@@ -2203,6 +2967,94 @@
           '<div class="rank-metric">' +
             '<div class="rk-num">' + r.avgLeadTime + '</div>' +
             '<div class="rk-unit">hari rata²</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    /* ============================================================
+       [FITUR-KONTROL-ASAH] KONTROL ASAH — panel Lainnya
+       ============================================================ */
+    let vendorPerfMap_ = {}; // vendor -> { avgLeadTime, maxLeadTime, selisihTelat }
+
+    function loadKontrolAsah() {
+      apiGet('getVendorPerformance')
+        .then(function (rows) {
+          vendorPerfMap_ = {};
+          (rows || []).forEach(function (v) { vendorPerfMap_[v.vendor] = v; });
+          renderVendorPerformance_(rows);
+        })
+        .catch(function (err) {
+          document.getElementById('ka-vendor-list').innerHTML =
+            (err && err.code === 'CONFIGURATION_ERROR')
+              ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
+              : stateCardHtml_('error', 'Data belum dapat dimuat', 'Periksa koneksi aplikasi.', 'Coba Lagi', 'loadKontrolAsah');
+          console.error(err);
+        });
+
+      apiGet('getKontrolAsahList')
+        .then(function (rows) {
+          const menunggu = (rows || []).filter(function (r) { return r.statusAsah === 'MENUNGGU KIRIM'; });
+          const proses = (rows || []).filter(function (r) { return r.statusAsah === 'PROSES ASAH'; });
+          renderKontrolAsahList_('ka-menunggu-list', menunggu, 'Belum ada unit yang menunggu kirim ke vendor.');
+          renderKontrolAsahList_('ka-proses-list', proses, 'Belum ada unit yang sedang diasah di vendor.');
+        })
+        .catch(function (err) {
+          const msg = (err && err.code === 'CONFIGURATION_ERROR')
+            ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
+            : stateCardHtml_('error', 'Data belum dapat dimuat', 'Periksa koneksi aplikasi.', 'Coba Lagi', 'loadKontrolAsah');
+          document.getElementById('ka-menunggu-list').innerHTML = msg;
+          document.getElementById('ka-proses-list').innerHTML = msg;
+          console.error(err);
+        });
+    }
+
+    /** Kartu ringkasan per vendor (rata-rata & maksimum lead time asah). */
+    function renderVendorPerformance_(rows) {
+      const el = document.getElementById('ka-vendor-list');
+      if (!rows || rows.length === 0) {
+        el.innerHTML = emptyStateHtml_('Belum ada data', 'Performa vendor akan muncul setelah ada siklus asah SELESAI.');
+        return;
+      }
+      el.innerHTML = '<div class="card">' + rows.map(function (v) {
+        return '<div class="rank-row">' +
+          '<div class="rank-info">' +
+            '<div class="rk-title">' + escapeHtml(v.vendor) + '</div>' +
+            '<div class="rk-sub">Maksimum ' + v.maxLeadTime + ' hari · selisih telat rata² ' + v.selisihTelat + ' hari</div>' +
+          '</div>' +
+          '<div class="rank-metric">' +
+            '<div class="rk-num">' + v.avgLeadTime + '</div>' +
+            '<div class="rk-unit">hari rata²</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    /**
+     * List unit dalam proses asah (dipakai untuk 2 seksi: menunggu kirim
+     * & sedang diasah). Untuk baris PROSES ASAH, dibandingkan ke rata-rata
+     * lead time vendornya (dari getVendorPerformance) — kalau sudah
+     * melewati rata-rata, dikasih badge "Terlambat".
+     */
+    function renderKontrolAsahList_(elId, rows, emptyText) {
+      const el = document.getElementById(elId);
+      if (!rows || rows.length === 0) {
+        el.innerHTML = emptyStateHtml_('Belum ada data', emptyText);
+        return;
+      }
+      el.innerHTML = '<div class="card">' + rows.map(function (r) {
+        const vp = vendorPerfMap_[r.vendor];
+        const isProses = r.statusAsah === 'PROSES ASAH';
+        const isTelat = isProses && vp && r.hariBerjalan > vp.avgLeadTime;
+        const badge = '<span class="badge ' + (isTelat ? 'kritis' : 'aman') + '">' + (isTelat ? 'Terlambat' : (isProses ? 'Normal' : 'Menunggu')) + '</span>';
+        return '<div class="rank-row">' +
+          '<div class="rank-info">' +
+            '<div class="rk-title">' + escapeHtml(r.kodeAlat) + ' · ' + escapeHtml(r.unitId) + ' ' + badge + '</div>' +
+            '<div class="rk-sub">' + escapeHtml(r.vendor || '—') + (r.mesin ? ' · ' + escapeHtml(r.mesin) : '') + '</div>' +
+          '</div>' +
+          '<div class="rank-metric">' +
+            '<div class="rk-num">' + r.hariBerjalan + '</div>' +
+            '<div class="rk-unit">hari</div>' +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
