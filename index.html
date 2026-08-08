@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Monitoring Saw Blade & Cutter</title>
-  <meta name="theme-color" content="#F0F2FA">
+  <meta name="theme-color" content="#052C63">
   <meta name="description" content="Monitoring stok &amp; sirkulasi saw blade dan cutter — gudang, mesin, vendor asah.">
   <!-- PWA: manifest + iOS home-screen support -->
   <link rel="manifest" href="./manifest.json">
@@ -18,27 +18,36 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
     /* ============================================================
-       DESIGN TOKENS — v7.0 "Industrial Premium Warehouse"
-       Phase 3B: compact, data-oriented, operational UI upgrade.
-       Warna identitas (indigo/purple) dipertahankan dari v6.
+       DESIGN TOKENS — v8.1 "Bank Mobile Navy — Premium Buttons & Icons"
+       v8.0: header gradasi navy sudut bawah membulat, kartu ringkasan
+       putih mengambang menimpa header, aksen biru terang di seluruh
+       komponen.
+       v8.1: seluruh emoji (🔴🟢🟡✓⚙🔥⏱) diganti ikon SVG konsisten;
+       tombol primary/secondary dapat shine overlay, inner highlight,
+       dan slot ikon; wadah ikon (kpi-icon, st-icon, txn-icon, tag,
+       FAB, tab aktif, filter-chip aktif) diberi gradasi lembut +
+       subtle glow/shadow untuk kesan lebih premium. Struktur HTML &
+       seluruh logic JS/GAS tidak diubah.
        ============================================================ */
     :root {
       /* -- spec token names -- */
-      --color-bg: #F1F3F9;
+      /* v8.0 "Bank Mobile Navy" — palet biru navy ala aplikasi m-banking:
+         header gradasi navy, kartu ringkasan putih mengambang, aksen biru terang. */
+      --color-bg: #EEF2F8;
       --color-surface: #FFFFFF;
-      --color-surface-2: #F5F6FB;
-      --color-surface-3: #ECEEF8;
-      --color-primary: #5B54E8;
-      --color-primary-soft: #EDEBFD;
-      --color-text: #16182C;
-      --color-muted: #6B7086;
-      --color-border: #E2E4F0;
-      --color-success: #16A34A;
-      --color-success-soft: #E8F8EE;
-      --color-warning: #B45309;
-      --color-warning-soft: #FEF3E0;
-      --color-danger: #DC2626;
-      --color-danger-soft: #FDEAEA;
+      --color-surface-2: #F4F7FB;
+      --color-surface-3: #E9EEF7;
+      --color-primary: #0A5FBF;
+      --color-primary-soft: #E4EFFC;
+      --color-text: #10203A;
+      --color-muted: #6B7A93;
+      --color-border: #E1E7F1;
+      --color-success: #17944B;
+      --color-success-soft: #E7F8ED;
+      --color-warning: #B4650A;
+      --color-warning-soft: #FEF1E1;
+      --color-danger: #D62839;
+      --color-danger-soft: #FDEAEC;
 
       --space-xs: 4px;
       --space-sm: 8px;
@@ -51,9 +60,9 @@
       --radius-lg: 16px;
       --radius-xl: 22px;
 
-      --shadow-sm: 0 1px 2px rgba(17,19,40,0.05);
-      --shadow-md: 0 4px 14px -4px rgba(17,19,40,0.10);
-      --shadow-lg: 0 14px 28px -10px rgba(91,84,232,0.30);
+      --shadow-sm: 0 1px 2px rgba(9,20,40,0.06);
+      --shadow-md: 0 4px 14px -4px rgba(9,20,40,0.12);
+      --shadow-lg: 0 16px 30px -10px rgba(6,40,90,0.28);
 
       /* -- legacy aliases kept so existing markup/JS keep working -- */
       --bg: var(--color-bg);
@@ -64,10 +73,10 @@
       --border-soft: var(--color-border);
       --ink: var(--color-text);
       --ink-muted: var(--color-muted);
-      --ink-faint: #A6AAC0;
+      --ink-faint: #A2ADC2;
 
-      --grad-1: #6A5CF0;
-      --grad-2: #4640C6;
+      --grad-1: #1573D6;
+      --grad-2: #052C63;
       --primary: var(--color-primary);
       --primary-ink: #FFFFFF;
       --primary-soft: var(--color-primary-soft);
@@ -111,20 +120,24 @@
        ============================================================ */
     h1, h2, h3 { margin: 0; }
 
-    /* ---------- HEADER (compact) ---------- */
+    /* ---------- HEADER (bank-app navy, sudut bawah membulat) ---------- */
     header {
-      background: var(--color-bg);
-      padding: var(--space-md) 16px var(--space-sm);
+      background:
+        radial-gradient(140px 140px at 100% 0%, rgba(255,255,255,0.14), transparent 60%),
+        linear-gradient(160deg, var(--grad-1), var(--grad-2));
+      padding: var(--space-md) 16px 40px;
       position: sticky;
       top: 0;
       z-index: 10;
+      border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+      box-shadow: 0 8px 20px -10px rgba(5,44,99,0.45);
     }
     .eyebrow {
       font-family: var(--font-body);
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.04em;
-      color: var(--color-muted);
+      color: rgba(255,255,255,0.72);
       text-transform: uppercase;
       margin: 0 0 2px;
       display: flex;
@@ -133,7 +146,7 @@
     }
     .eyebrow .mark {
       width: 14px; height: 14px;
-      color: var(--color-primary);
+      color: #fff;
       flex-shrink: 0;
     }
     .eyebrow .mark svg { width: 100%; height: 100%; }
@@ -142,8 +155,8 @@
       font-size: 9.5px;
       font-weight: 700;
       letter-spacing: 0.03em;
-      color: var(--color-primary);
-      background: var(--color-primary-soft);
+      color: #fff;
+      background: rgba(255,255,255,0.18);
       padding: 2px 7px;
       border-radius: 999px;
       text-transform: none;
@@ -154,7 +167,7 @@
       font-weight: 800;
       letter-spacing: -0.01em;
       margin: 0 0 6px;
-      color: var(--color-text);
+      color: #fff;
     }
 
     /* ---------- CONNECTION STATUS COMPONENT ---------- */
@@ -168,41 +181,43 @@
       border-radius: 999px;
       font-size: 11.5px;
       font-weight: 700;
-      background: var(--color-success-soft);
-      color: var(--color-success);
+      background: rgba(255,255,255,0.16);
+      color: #fff;
       max-width: 100%;
     }
     .conn-status .live-dot {
       width: 7px; height: 7px;
       border-radius: 50%;
-      background: currentColor;
+      background: #3DDC7A;
       flex-shrink: 0;
-      box-shadow: 0 0 0 0 rgba(22,163,74,0.55);
+      box-shadow: 0 0 0 0 rgba(61,220,122,0.55);
       animation: pulse-dot 2.2s ease-out infinite;
     }
     .conn-status.is-offline {
-      background: var(--color-danger-soft);
-      color: var(--color-danger);
+      background: rgba(255,255,255,0.16);
+      color: #fff;
     }
+    .conn-status.is-offline .live-dot { background: #FF7B7B; }
     .conn-status.is-unconfigured {
-      background: var(--color-warning-soft);
-      color: var(--color-warning);
+      background: rgba(255,255,255,0.16);
+      color: #fff;
     }
+    .conn-status.is-unconfigured .live-dot { background: #FFC163; }
     .conn-status.is-offline .live-dot,
     .conn-status.is-unconfigured .live-dot {
       box-shadow: none;
       animation: none;
     }
     @keyframes pulse-dot {
-      0%   { box-shadow: 0 0 0 0 rgba(22,163,74,0.45); }
-      70%  { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
-      100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+      0%   { box-shadow: 0 0 0 0 rgba(61,220,122,0.45); }
+      70%  { box-shadow: 0 0 0 6px rgba(61,220,122,0); }
+      100% { box-shadow: 0 0 0 0 rgba(61,220,122,0); }
     }
     header p#header-sub {
       margin: 6px 0 0;
       font-size: 12px;
       font-weight: 500;
-      color: var(--color-muted);
+      color: rgba(255,255,255,0.75);
     }
 
     /* P2-07/P2-08 — banner status koneksi & update SW. */
@@ -218,6 +233,9 @@
       font-weight: 600;
     }
     .status-banner.show { display: flex; }
+    .status-banner .banner-icon-row { display: inline-flex; align-items: center; gap: 8px; }
+    .status-banner .banner-icon { width: 16px; height: 16px; flex-shrink: 0; display: inline-flex; }
+    .status-banner .banner-icon svg { width: 100%; height: 100%; }
     #offline-banner {
       background: var(--color-danger-soft);
       color: var(--color-danger);
@@ -241,18 +259,20 @@
     .status-banner button:active { transform: scale(0.96); }
 
     /* ---------- KPI / HERO ---------- */
+    /* Kartu ringkasan "mengambang" menimpa lengkungan bawah header —
+       pola khas kartu saldo pada aplikasi m-banking. */
     .kpi-strip {
       display: flex;
       flex-direction: column;
       gap: var(--space-sm);
       padding: 0 16px var(--space-xs);
+      margin-top: -30px;
+      position: relative;
+      z-index: 5;
     }
 
     .hero-card {
-      background:
-        radial-gradient(120px 120px at 108% -10%, rgba(255,255,255,0.16), transparent 60%),
-        radial-gradient(160px 160px at 100% 100%, rgba(255,255,255,0.10), transparent 55%),
-        linear-gradient(135deg, var(--grad-1), var(--grad-2));
+      background: var(--color-surface);
       border-radius: var(--radius-lg);
       padding: 16px 18px;
       display: flex;
@@ -261,19 +281,27 @@
       box-shadow: var(--shadow-lg);
       position: relative;
       overflow: hidden;
+      border: 1px solid var(--color-border);
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--grad-1), var(--grad-2));
     }
     .hero-main .hero-num {
       font-family: var(--font-display);
       font-size: 30px;
       font-weight: 800;
       line-height: 1;
-      color: #fff;
+      color: var(--color-text);
       letter-spacing: -0.01em;
     }
     .hero-main .hero-label {
       font-size: 11px;
       letter-spacing: 0.02em;
-      color: rgba(255,255,255,0.80);
+      color: var(--color-muted);
       margin-top: 6px;
       font-weight: 600;
     }
@@ -282,7 +310,7 @@
       --pct: 0;
       width: 58px; height: 58px;
       border-radius: 50%;
-      background: conic-gradient(#fff calc(var(--pct) * 1%), rgba(255,255,255,0.28) 0);
+      background: conic-gradient(var(--color-primary) calc(var(--pct) * 1%), var(--color-surface-3) 0);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
       position: relative;
@@ -334,10 +362,11 @@
     .kpi-card .kpi-icon {
       width: 28px; height: 28px;
       border-radius: var(--radius-sm);
-      background: var(--color-primary-soft);
+      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
       color: var(--color-primary);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
+      box-shadow: 0 2px 6px -2px rgba(10,95,191,0.30), inset 0 0 0 1px rgba(10,95,191,0.08);
     }
     .kpi-card .kpi-icon svg { width: 14px; height: 14px; }
     .kpi-card .num {
@@ -356,7 +385,11 @@
       white-space: nowrap;
       font-weight: 700;
     }
-    .kpi-card.warn .kpi-icon { background: var(--color-danger-soft); color: var(--color-danger); }
+    .kpi-card.warn .kpi-icon {
+      background: linear-gradient(150deg, var(--color-danger-soft), #FFFFFF);
+      color: var(--color-danger);
+      box-shadow: 0 2px 6px -2px rgba(214,40,57,0.30), inset 0 0 0 1px rgba(214,40,57,0.08);
+    }
     .kpi-card.warn .num { color: var(--color-danger); }
 
     /* ---------- MAIN PANELS ---------- */
@@ -379,10 +412,11 @@
     .section-title .st-icon {
       width: 24px; height: 24px;
       color: var(--color-primary);
-      background: var(--color-primary-soft);
+      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
       border-radius: var(--radius-sm);
       padding: 5px;
       flex-shrink: 0;
+      box-shadow: 0 2px 6px -2px rgba(10,95,191,0.30), inset 0 0 0 1px rgba(10,95,191,0.08);
     }
     .section-title .st-icon svg { width: 100%; height: 100%; }
     .section-title::after {
@@ -408,8 +442,8 @@
       font-family: var(--font-mono);
       font-size: 11px;
       font-weight: 700;
-      background: var(--color-primary-soft);
-      border: none;
+      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
+      border: 1px solid rgba(10,95,191,0.14);
       border-radius: var(--radius-sm);
       padding: 3px 7px;
       display: inline-block;
@@ -426,10 +460,11 @@
       display: inline-block;
       white-space: nowrap;
       text-transform: uppercase;
+      border: 1px solid transparent;
     }
-    .badge.aman { background: var(--color-success-soft); color: var(--color-success); }
-    .badge.kritis { background: var(--color-warning-soft); color: var(--color-warning); }
-    .badge.habis { background: var(--color-danger-soft); color: var(--color-danger); }
+    .badge.aman { background: var(--color-success-soft); color: var(--color-success); border-color: rgba(23,148,75,0.18); }
+    .badge.kritis { background: var(--color-warning-soft); color: var(--color-warning); border-color: rgba(180,101,10,0.18); }
+    .badge.habis { background: var(--color-danger-soft); color: var(--color-danger); border-color: rgba(214,40,57,0.18); }
 
     /* Kartu status stok — hierarchy visual: nama > spek > qty/status >
        lokasi/tanggal, strip warna kiri sebagai indikator status sekilas. */
@@ -505,9 +540,10 @@
     }
     .filter-chip:active { transform: translateY(1px); }
     .filter-chip.active {
-      background: var(--color-primary);
-      border-color: var(--color-primary);
+      background: linear-gradient(135deg, var(--grad-1), var(--grad-2));
+      border-color: transparent;
       color: #fff;
+      box-shadow: 0 4px 10px -3px rgba(5,44,99,0.45);
     }
 
     .txn-row {
@@ -523,14 +559,15 @@
       border-radius: var(--radius-md);
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      background: var(--color-surface-3);
+      background: linear-gradient(150deg, var(--color-surface-3), #FFFFFF);
       color: var(--color-muted);
+      box-shadow: inset 0 0 0 1px rgba(16,32,58,0.05);
     }
     .txn-icon svg { width: 16px; height: 16px; }
-    .txn-icon.aman { background: var(--color-success-soft); color: var(--color-success); }
-    .txn-icon.kritis { background: var(--color-warning-soft); color: var(--color-warning); }
-    .txn-icon.habis { background: var(--color-danger-soft); color: var(--color-danger); }
-    .txn-icon.accent { background: var(--color-primary-soft); color: var(--color-primary); }
+    .txn-icon.aman { background: linear-gradient(150deg, var(--color-success-soft), #FFFFFF); color: var(--color-success); box-shadow: inset 0 0 0 1px rgba(23,148,75,0.12); }
+    .txn-icon.kritis { background: linear-gradient(150deg, var(--color-warning-soft), #FFFFFF); color: var(--color-warning); box-shadow: inset 0 0 0 1px rgba(180,101,10,0.12); }
+    .txn-icon.habis { background: linear-gradient(150deg, var(--color-danger-soft), #FFFFFF); color: var(--color-danger); box-shadow: inset 0 0 0 1px rgba(214,40,57,0.12); }
+    .txn-icon.accent { background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF); color: var(--color-primary); box-shadow: inset 0 0 0 1px rgba(10,95,191,0.12); }
     .txn-row .left { min-width: 0; flex: 1; }
     .txn-row .activity { font-size: 13.5px; font-weight: 700; color: var(--color-text); }
     .txn-row .meta { font-size: 11.5px; color: var(--color-muted); margin-top: 3px; }
@@ -704,11 +741,31 @@
       letter-spacing: 0.01em;
       cursor: pointer;
       margin-top: var(--space-xs);
-      box-shadow: var(--shadow-lg);
-      transition: transform 0.15s ease, filter 0.15s ease;
+      box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.22);
+      transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      isolation: isolate;
     }
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 35%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .btn-primary .btn-icon { width: 17px; height: 17px; flex-shrink: 0; }
+    .btn-primary .btn-icon svg { width: 100%; height: 100%; }
+    .btn-primary .btn-icon-spin svg { animation: spin-icon 0.85s linear infinite; }
+    @keyframes spin-icon { to { transform: rotate(360deg); } }
     .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
     .btn-primary:active:not(:disabled) { transform: translateY(1px); filter: brightness(0.96); }
+    .btn-primary:hover:not(:disabled) { box-shadow: 0 18px 32px -10px rgba(6,40,90,0.38), inset 0 1px 0 rgba(255,255,255,0.22); }
 
     .form-msg {
       font-size: 13px;
@@ -718,10 +775,12 @@
       margin-bottom: var(--space-md);
       display: none;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       border: 1px solid transparent;
     }
     .form-msg.show { display: flex; }
+    .form-msg .fm-icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .form-msg .fm-icon svg { width: 100%; height: 100%; }
     .form-msg.success { background: var(--color-success-soft); color: var(--color-success); }
     .form-msg.error { background: var(--color-danger-soft); color: var(--color-danger); }
 
@@ -792,7 +851,7 @@
     .settings-btn-row .btn-primary { margin-top: 0; }
     .btn-secondary {
       flex: 1;
-      background: var(--color-surface-2);
+      background: var(--color-surface);
       color: var(--color-text);
       border: 1.5px solid var(--color-border);
       border-radius: var(--radius-md);
@@ -801,15 +860,24 @@
       font-size: 13.5px;
       font-weight: 700;
       cursor: pointer;
-      transition: transform 0.15s ease;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
     }
+    .btn-secondary .btn-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .btn-secondary .btn-icon svg { width: 100%; height: 100%; }
     .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-secondary:active:not(:disabled) { transform: translateY(1px); }
+    .btn-secondary:hover:not(:disabled) { border-color: var(--color-primary); box-shadow: var(--shadow-md); }
     .btn-danger {
       color: var(--color-danger);
       border-color: var(--color-danger-soft);
       background: var(--color-danger-soft);
     }
+    .btn-danger:hover:not(:disabled) { border-color: var(--color-danger); }
     .settings-note {
       font-size: 11.5px;
       color: var(--color-muted);
@@ -847,6 +915,41 @@
       line-height: 1;
     }
 
+    /* ---------- MESIN PANEL — ranking cards (boros/cepat ganti & lead time) ---------- */
+    .rank-desc {
+      font-size: 12px;
+      color: var(--color-muted);
+      margin: -6px 0 var(--space-sm);
+      line-height: 1.4;
+    }
+    .rank-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    .rank-row + .rank-row { border-top: 1px solid var(--color-border); }
+    .rank-pos {
+      flex: 0 0 auto;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      color: var(--color-muted);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rank-row:nth-child(1) .rank-pos { background: var(--color-danger-soft); color: var(--color-danger); border-color: transparent; }
+    .rank-row:nth-child(2) .rank-pos { background: var(--color-warning-soft); color: var(--color-warning); border-color: transparent; }
+    .rank-info { flex: 1; min-width: 0; }
+    .rank-info .rk-title { font-weight: 700; font-size: 14px; color: var(--color-text); }
+    .rank-info .rk-sub { font-size: 11.5px; color: var(--color-muted); margin-top: 2px; }
+    .rank-metric { flex: 0 0 auto; text-align: right; }
+    .rank-metric .rk-num { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--color-text); line-height: 1; }
+    .rank-metric .rk-unit { font-size: 10px; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+
     /* ---------- SETTINGS LIST GROUP ---------- */
     .settings-group-title {
       font-size: 11px;
@@ -855,8 +958,21 @@
       text-transform: uppercase;
       color: var(--color-muted);
       margin: var(--space-lg) 0 var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: 7px;
     }
     .settings-group-title:first-child { margin-top: 0; }
+    .settings-group-title .sgt-icon {
+      width: 18px; height: 18px;
+      flex-shrink: 0;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 3px;
+    }
+    .settings-group-title .sgt-icon svg { width: 100%; height: 100%; }
+    .settings-group-title .sgt-icon.sgt-warn { background: var(--color-warning-soft); color: var(--color-warning); }
+    .settings-group-title .sgt-icon.sgt-primary { background: var(--color-primary-soft); color: var(--color-primary); }
     .settings-list {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
@@ -885,19 +1001,20 @@
       position: fixed;
       right: 16px;
       bottom: calc(78px + env(safe-area-inset-bottom, 0));
-      width: 48px; height: 48px;
+      width: 50px; height: 50px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--grad-1), var(--grad-2));
+      background: linear-gradient(150deg, var(--grad-1), var(--grad-2));
       color: #fff;
       border: none;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 8px 18px -6px rgba(70,64,198,0.5);
+      box-shadow: 0 10px 22px -6px rgba(5,44,99,0.55), inset 0 1px 0 rgba(255,255,255,0.35), 0 0 0 4px rgba(255,255,255,0.55);
       cursor: pointer;
       z-index: 19;
-      transition: transform 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .fab svg { width: 21px; height: 21px; }
     .fab:active { transform: translateY(1px) scale(0.96); }
+    .fab:hover { box-shadow: 0 14px 26px -6px rgba(5,44,99,0.6), inset 0 1px 0 rgba(255,255,255,0.35), 0 0 0 4px rgba(255,255,255,0.55); }
     .fab.hidden { display: none; }
 
     /* ---------- TAB BAR ---------- */
@@ -937,7 +1054,11 @@
       height: 20px;
     }
     nav.tabbar button .icon svg { width: 100%; height: 100%; }
-    nav.tabbar button.active { color: var(--color-primary); background: var(--color-primary-soft); }
+    nav.tabbar button.active {
+      color: var(--color-primary);
+      background: linear-gradient(150deg, var(--color-primary-soft), #FFFFFF);
+      box-shadow: inset 0 0 0 1px rgba(10,95,191,0.12);
+    }
     nav.tabbar button.active .icon { color: var(--color-primary); }
 
   </style>
@@ -948,7 +1069,7 @@
     <p class="eyebrow">
       <span class="mark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M 18.54 11.08 L 21.88 11.31 L 18.54 12.92 L 17.60 15.50 L 20.01 17.82 L 16.42 16.90 L 14.04 18.28 L 14.40 21.61 L 12.23 18.60 L 9.53 18.12 L 7.66 20.90 L 7.94 17.20 L 6.17 15.10 L 2.96 16.03 L 5.54 13.37 L 5.54 10.63 L 2.48 9.27 L 6.17 8.90 L 7.94 6.80 L 6.46 3.79 L 9.53 5.88 L 12.23 5.40 L 13.03 2.15 L 14.04 5.72 L 16.42 7.10 L 19.12 5.12 L 17.60 8.50 Z"></path></svg></span>
       Tool Crib &middot; Gudang Alat
-      <span class="version-badge" id="version-badge">v7.0</span>
+      <span class="version-badge" id="version-badge">v8.1</span>
     </p>
     <h1>Monitoring Saw Blade &amp; Cutter</h1>
     <div class="conn-status" id="conn-status">
@@ -960,12 +1081,12 @@
 
   <!-- P2-07 — indikator offline eksplisit, muncul cuma saat offline. -->
   <div class="status-banner" id="offline-banner">
-    <span>🔴 Offline — transaksi membutuhkan koneksi internet.</span>
+    <span class="banner-icon-row"><span class="banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0119 12.55"></path><path d="M5 12.55a10.94 10.94 0 015.17-2.39"></path><path d="M10.71 5.05A16 16 0 0122.58 9"></path><path d="M1.42 9a15.91 15.91 0 014.7-2.88"></path><path d="M8.53 16.11a6 6 0 016.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg></span>Offline — transaksi membutuhkan koneksi internet.</span>
   </div>
 
   <!-- P2-05 — muncul saat ada versi app-shell baru, user yang pilih reload. -->
   <div class="status-banner" id="update-banner">
-    <span>🟢 Versi baru tersedia.</span>
+    <span class="banner-icon-row"><span class="banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"></path></svg></span>Versi baru tersedia.</span>
     <button type="button" id="update-banner-btn">Reload</button>
   </div>
 
@@ -1016,6 +1137,19 @@
 
         <div class="form-section">
           <p class="form-section-title">Detail Alat</p>
+
+          <!-- [REVISI-02] Untuk DIPASANG KE MESIN & KEMBALI KE GUDANG (TUMPUL),
+               Mesin dipilih DULUAN dan dipakai sebagai validasi: pilihan Kode
+               Alat & Unit di bawahnya otomatis dibatasi ke yang memang valid/ada
+               di mesin ini. Field ini disembunyikan untuk jenis transaksi lain. -->
+          <div class="field" id="f-mesin-driver-wrap" style="display:none;">
+            <label for="f-mesin-driver">Mesin</label>
+            <select id="f-mesin-driver">
+              <option value="">Pilih mesin…</option>
+            </select>
+            <div class="field-hint" id="f-mesin-driver-hint" style="display:none;"></div>
+          </div>
+
           <div class="field">
             <label for="f-kode-alat">Kode Alat</label>
             <select id="f-kode-alat" required>
@@ -1036,7 +1170,7 @@
         <div class="form-section">
           <p class="form-section-title">Mesin &amp; Jumlah</p>
           <div class="field-row">
-            <div class="field">
+            <div class="field" id="f-kode-mesin-wrap">
               <label for="f-kode-mesin">Kode Mesin</label>
               <select id="f-kode-mesin" disabled>
                 <option value="">—</option>
@@ -1065,7 +1199,7 @@
           </div>
         </div>
 
-        <button type="submit" class="btn-primary" id="btn-submit">✓ Simpan Transaksi</button>
+        <button type="submit" class="btn-primary" id="btn-submit"><span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>Simpan Transaksi</button>
       </form>
     </section>
 
@@ -1083,7 +1217,45 @@
         <button type="button" class="filter-chip" data-status="KRITIS">Kritis</button>
         <button type="button" class="filter-chip" data-status="HABIS">Habis</button>
       </div>
+      <div class="field-row" id="stok-filter-select-row">
+        <div class="field">
+          <label for="stok-filter-mesin">Filter Mesin</label>
+          <select id="stok-filter-mesin">
+            <option value="">Semua mesin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="stok-filter-ukuran">Filter Ukuran / Spesifikasi</label>
+          <select id="stok-filter-ukuran">
+            <option value="">Semua ukuran</option>
+          </select>
+        </div>
+      </div>
       <div id="stok-list">
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+      </div>
+    </section>
+
+    <!-- ============== PANEL: MESIN (analitik per mesin) ============== -->
+    <section class="panel" id="panel-mesin">
+      <div class="section-title">
+        <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg></span>
+        Analitik per Mesin
+      </div>
+
+      <p class="settings-group-title"><span class="sgt-icon sgt-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"></path></svg></span>Mesin Paling Boros / Cepat Ganti</p>
+      <p class="rank-desc">Diurutkan dari jumlah alat kembali tumpul terbanyak. "Usia pakai" = rata-rata hari sejak dipasang sampai kembali tumpul.</p>
+      <div id="mesin-wear-list">
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+      </div>
+
+      <p class="settings-group-title"><span class="sgt-icon sgt-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>Lead Time Asah per Mesin</p>
+      <p class="rank-desc">Rata-rata hari proses asah (kirim vendor → selesai) untuk alat dari tiap mesin, siklus yang sudah SELESAI saja.</p>
+      <div id="mesin-leadtime-list">
         <div class="skeleton-block sk-row"></div>
         <div class="skeleton-block sk-row"></div>
         <div class="skeleton-block sk-row"></div>
@@ -1103,7 +1275,7 @@
 
         <div class="settings-status st-disconnected" id="settings-status">
           <span class="dot"></span>
-          <span id="settings-status-text">🔴 Belum dikonfigurasi</span>
+          <span id="settings-status-text">Belum dikonfigurasi</span>
         </div>
 
         <div class="form-msg" id="settings-msg"></div>
@@ -1113,10 +1285,10 @@
           <input type="url" id="f-api-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
         </div>
 
-        <button type="button" class="btn-primary" id="btn-settings-save">Simpan</button>
+        <button type="button" class="btn-primary" id="btn-settings-save"><span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg></span>Simpan</button>
         <div class="settings-btn-row">
-          <button type="button" class="btn-secondary" id="btn-settings-test">Uji Koneksi</button>
-          <button type="button" class="btn-secondary btn-danger" id="btn-settings-reset">Reset</button>
+          <button type="button" class="btn-secondary" id="btn-settings-test"><span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.93 4.93a10 10 0 0114.14 0"></path><path d="M7.76 7.76a6 6 0 018.48 0"></path><path d="M10.6 10.6a2 2 0 012.8 0"></path><circle cx="12" cy="16" r="1"></circle></svg></span>Uji Koneksi</button>
+          <button type="button" class="btn-secondary btn-danger" id="btn-settings-reset"><span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"></path></svg></span>Reset</button>
         </div>
 
         <p class="settings-note">
@@ -1150,6 +1322,9 @@
     </button>
     <button class="tab-btn" data-panel="panel-stok">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V16L12 21L3 16V8L12 3Z"></path><path d="M3 8L12 13L21 8"></path><path d="M12 13V21"></path></svg></span>Stok
+    </button>
+    <button class="tab-btn" data-panel="panel-mesin">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg></span>Mesin
     </button>
     <button class="tab-btn" data-panel="panel-settings">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg></span>Pengaturan
@@ -1190,8 +1365,8 @@
       return runtimeApiUrl_;
     }
     const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-    const APP_VERSION = 'v7.0.0-phase2-pwa'; // versi lengkap, dipakai di log developer
-    const APP_VERSION_SHORT = 'v7.0';    // versi ringkas, ditampilkan di badge UI
+    const APP_VERSION = 'v8.1.0-premium-buttons-icons'; // versi lengkap, dipakai di log developer
+    const APP_VERSION_SHORT = 'v8.1';    // versi ringkas, ditampilkan di badge UI
 
     /**
      * Error terstruktur untuk semua kegagalan API, supaya frontend bisa
@@ -1324,9 +1499,18 @@
     /* ============================================================
        STATE
        ============================================================ */
-    let masterTools = [];       // {kodeAlat, namaAlat, spesifikasi}
+    let masterTools = [];       // {kodeAlat, namaAlat, brand, cuttingTool, bahan, spesifikasi}
     let activityOptions = [];   // string[]
     let allStockRows = [];      // cache untuk search client-side
+    let machineList = [];       // {kodeMesin, mesin} — untuk dropdown "Mesin" di form input
+    // [REVISI-02] Cache unit yang tercatat ada di Mesin terpilih (mode
+    // KEMBALI KE GUDANG (TUMPUL)), diisi sekali saat Mesin dipilih lalu
+    // difilter di client per Kode Alat — supaya tidak perlu request ulang.
+    let mesinDrivenUnitsCache = [];
+
+    // [REVISI-02] Activity di mana Mesin dipilih LEBIH DULU dan dipakai
+    // sebagai validasi (Kode Alat & Unit yang muncul dibatasi ke mesin ini).
+    const MESIN_DRIVEN_ACTIVITIES = ['DIPASANG KE MESIN', 'KEMBALI KE GUDANG (TUMPUL)'];
 
     // Activity -> status unit yang relevan ditampilkan di dropdown Unit
     const STATUS_FILTER_BY_ACTIVITY = {
@@ -1394,6 +1578,7 @@
       loadFormReferenceData();
       loadTransactions();
       loadStockStatus();
+      loadMachineAnalytics();
       appHasLoadedOnce_ = true;
     });
 
@@ -1410,6 +1595,7 @@
           loadDashboard();
           loadTransactions();
           loadStockStatus();
+          loadMachineAnalytics();
         }
       });
       window.addEventListener('offline', updateConnIndicator_);
@@ -1471,7 +1657,7 @@
         runtimeApiUrl_ = raw; // update runtime configuration, tanpa reload halaman
         input.value = raw;
         setSettingsStatus_('untested');
-        showSettingsMsg_('success', '✓ URL berhasil disimpan.');
+        showSettingsMsg_('success', 'URL berhasil disimpan.');
         updateConnIndicator_();
       });
 
@@ -1499,7 +1685,7 @@
               throw new ApiError('API_RESPONSE_INVALID', 'Respons server tidak sesuai format yang diharapkan.');
             }
             setSettingsStatus_('connected');
-            showSettingsMsg_('success', '🟢 Terhubung. Google Apps Script dapat diakses.');
+            showSettingsMsg_('success', 'Terhubung. Google Apps Script dapat diakses.');
           })
           .catch(function (err) {
             console.error('[Uji Koneksi]', err); // 15 — detail error ke console, bukan ke user
@@ -1560,29 +1746,35 @@
       switch (state) {
         case 'connected':
           el.classList.add('st-connected');
-          text.textContent = '🟢 Terhubung';
+          text.textContent = 'Terhubung';
           break;
         case 'testing':
           el.classList.add('st-testing');
-          text.textContent = '🟡 Menguji koneksi...';
+          text.textContent = 'Menguji koneksi...';
           break;
         case 'untested':
           el.classList.add('st-untested');
-          text.textContent = '🟡 Belum diuji';
+          text.textContent = 'Belum diuji';
           break;
         case 'disconnected':
         default:
           el.classList.add('st-disconnected');
-          text.textContent = runtimeApiUrl_ ? '🔴 Tidak terhubung' : '🔴 Belum dikonfigurasi';
+          text.textContent = runtimeApiUrl_ ? 'Tidak terhubung' : 'Belum dikonfigurasi';
           break;
       }
     }
+
+    // Ikon SVG untuk pesan sukses/error (form-msg & settings-msg), sejalan
+    // dengan gaya ikon premium di seluruh aplikasi.
+    const FORM_MSG_ICON_SUCCESS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 12.3l2.4 2.4 4.6-5.4"></path></svg>';
+    const FORM_MSG_ICON_ERROR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="8" x2="12" y2="13"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
 
     function showSettingsMsg_(type, text) {
       const el = document.getElementById('settings-msg');
       if (!el) return;
       el.className = 'form-msg show ' + type;
-      el.textContent = text;
+      const icon = type === 'success' ? FORM_MSG_ICON_SUCCESS : FORM_MSG_ICON_ERROR;
+      el.innerHTML = '<span class="fm-icon">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
     }
 
     function hideSettingsMsg_() {
@@ -1662,7 +1854,7 @@
         .catch(function (err) {
           document.getElementById('header-sub').textContent =
             (err && err.code === 'CONFIGURATION_ERROR')
-              ? 'API belum dikonfigurasi. Buka ⚙ Pengaturan.'
+              ? 'API belum dikonfigurasi. Buka menu Pengaturan.'
               : 'Gagal memuat ringkasan.';
           const kpiEl = document.getElementById('kpi-strip');
           if (kpiEl) {
@@ -1760,6 +1952,7 @@
         .then(function (rows) {
           allStockRows = rows || [];
           renderStokStats_(allStockRows);
+          populateStokFilterOptions_(allStockRows);
           applyStokFilters_();
         })
         .catch(function (err) {
@@ -1785,6 +1978,7 @@
           '<div class="info">' +
             '<div class="nama"><span class="tag">' + escapeHtml(r.kodeAlat) + '</span></div>' +
             '<div class="spek">' + escapeHtml(r.namaAlat) + (r.spesifikasi ? ' · ' + escapeHtml(r.spesifikasi) : '') + '</div>' +
+            (r.mesin ? '<div class="spek" style="margin-top:2px;">🏭 ' + escapeHtml(r.mesin) + '</div>' : '') +
           '</div>' +
           '<div>' +
             '<div class="siap">' + r.siapPakai + '<span>siap pakai</span></div>' +
@@ -1851,6 +2045,18 @@
     // P3B — filter status pakai field `status` yang sudah ada di data
     // existing (AMAN/KRITIS/HABIS), bukan data baru. Digabung dengan search.
     let stokActiveStatus_ = '';
+    // [FITUR-MESIN/UKURAN] filter tambahan, sumber datanya field `mesin`
+    // dan `spesifikasi` yang sudah ada di tiap baris Stock Status —
+    // tidak butuh request API baru, cukup diagregasi di client.
+    let stokActiveMesin_ = '';
+    let stokActiveUkuran_ = '';
+
+    /** Cek apakah kode mesin yang dipilih ada di dalam field `mesin`/`kodeMesin` baris (bisa berisi >1 mesin). */
+    function rowMatchesMesin_(row, mesinFilter) {
+      if (!mesinFilter) return true;
+      const gabung = (String(row.mesin || '') + ' ' + String(row.kodeMesin || '')).toLowerCase();
+      return gabung.indexOf(mesinFilter.toLowerCase()) !== -1;
+    }
 
     function applyStokFilters_() {
       const q = document.getElementById('stok-search').value.trim().toLowerCase();
@@ -1858,12 +2064,54 @@
       if (stokActiveStatus_) {
         rows = rows.filter(function (r) { return statusClass_(r.status) === statusClass_(stokActiveStatus_); });
       }
+      if (stokActiveMesin_) {
+        rows = rows.filter(function (r) { return rowMatchesMesin_(r, stokActiveMesin_); });
+      }
+      if (stokActiveUkuran_) {
+        rows = rows.filter(function (r) { return r.spesifikasi === stokActiveUkuran_; });
+      }
       if (q) {
         rows = rows.filter(function (r) {
           return r.kodeAlat.toLowerCase().indexOf(q) !== -1 || r.namaAlat.toLowerCase().indexOf(q) !== -1;
         });
       }
       renderStockList(rows);
+    }
+
+    /**
+     * [FITUR-MESIN/UKURAN] Isi opsi dropdown "Filter Mesin" & "Filter
+     * Ukuran" dari data Stok yang sudah dimuat (client-side, tanpa
+     * request tambahan). Mesin bisa dipecah dari field gabungan
+     * (mis. "RDS017/RDS018/RDS019") supaya tiap kode berdiri sendiri.
+     */
+    function populateStokFilterOptions_(rows) {
+      const mesinSet = {};
+      const ukuranSet = {};
+      (rows || []).forEach(function (r) {
+        String(r.mesin || r.kodeMesin || '').split(/[\/,]/).forEach(function (m) {
+          const v = m.trim();
+          if (v) mesinSet[v] = true;
+        });
+        if (r.spesifikasi) ukuranSet[r.spesifikasi] = true;
+      });
+
+      const mesinSel = document.getElementById('stok-filter-mesin');
+      const ukuranSel = document.getElementById('stok-filter-ukuran');
+      const currentMesin = mesinSel.value;
+      const currentUkuran = ukuranSel.value;
+
+      mesinSel.innerHTML = '<option value="">Semua mesin</option>' +
+        Object.keys(mesinSet).sort().map(function (m) {
+          return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>';
+        }).join('');
+      ukuranSel.innerHTML = '<option value="">Semua ukuran</option>' +
+        Object.keys(ukuranSet).sort().map(function (u) {
+          return '<option value="' + escapeHtml(u) + '">' + escapeHtml(u) + '</option>';
+        }).join('');
+
+      // Pertahankan pilihan sebelumnya kalau masih ada di opsi baru (refresh data).
+      if (currentMesin && mesinSet[currentMesin]) mesinSel.value = currentMesin;
+      if (currentUkuran && ukuranSet[currentUkuran]) ukuranSel.value = currentUkuran;
     }
 
     function wireStokSearch() {
@@ -1876,6 +2124,88 @@
           applyStokFilters_();
         });
       });
+      document.getElementById('stok-filter-mesin').addEventListener('change', function (e) {
+        stokActiveMesin_ = e.target.value;
+        applyStokFilters_();
+      });
+      document.getElementById('stok-filter-ukuran').addEventListener('change', function (e) {
+        stokActiveUkuran_ = e.target.value;
+        applyStokFilters_();
+      });
+    }
+
+    /* ============================================================
+       [FITUR-MESIN] ANALITIK PER MESIN — boros/cepat ganti & lead time
+       ============================================================ */
+    function loadMachineAnalytics() {
+      apiGet('getMachineWearStats')
+        .then(renderMachineWear_)
+        .catch(function (err) {
+          document.getElementById('mesin-wear-list').innerHTML =
+            (err && err.code === 'CONFIGURATION_ERROR')
+              ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
+              : stateCardHtml_('error', 'Data belum dapat dimuat', 'Periksa koneksi aplikasi.', 'Coba Lagi', 'loadMachineAnalytics');
+          console.error(err);
+        });
+
+      apiGet('getLeadTimeByMachine')
+        .then(renderLeadTimeByMachine_)
+        .catch(function (err) {
+          document.getElementById('mesin-leadtime-list').innerHTML =
+            (err && err.code === 'CONFIGURATION_ERROR')
+              ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
+              : stateCardHtml_('error', 'Data belum dapat dimuat', 'Periksa koneksi aplikasi.', 'Coba Lagi', 'loadMachineAnalytics');
+          console.error(err);
+        });
+    }
+
+    /** Ranking mesin paling boros (jumlah alat kembali tumpul terbanyak). */
+    function renderMachineWear_(rows) {
+      const el = document.getElementById('mesin-wear-list');
+      if (!rows || rows.length === 0) {
+        el.innerHTML = emptyStateHtml_('Belum ada data', 'Riwayat "kembali tumpul" per mesin akan muncul di sini.');
+        return;
+      }
+      const top = rows.slice(0, 10); // ranking, top 10 paling boros
+      el.innerHTML = '<div class="card">' + top.map(function (r, i) {
+        const usia = (r.avgUsiaHari === null || r.avgUsiaHari === undefined)
+          ? '—'
+          : r.avgUsiaHari + ' hari';
+        return '<div class="rank-row">' +
+          '<div class="rank-pos">' + (i + 1) + '</div>' +
+          '<div class="rank-info">' +
+            '<div class="rk-title">' + escapeHtml(r.kodeMesin) + '</div>' +
+            '<div class="rk-sub">Rata-rata usia pakai: ' + escapeHtml(usia) + ' · ' + r.totalPasang + 'x dipasang</div>' +
+          '</div>' +
+          '<div class="rank-metric">' +
+            '<div class="rk-num">' + r.totalGanti + '</div>' +
+            '<div class="rk-unit">x tumpul</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    /** Ranking lead time asah rata-rata per mesin (siklus SELESAI saja). */
+    function renderLeadTimeByMachine_(rows) {
+      const el = document.getElementById('mesin-leadtime-list');
+      if (!rows || rows.length === 0) {
+        el.innerHTML = emptyStateHtml_('Belum ada data', 'Lead time asah per mesin akan muncul setelah ada siklus asah SELESAI.');
+        return;
+      }
+      const top = rows.slice(0, 10);
+      el.innerHTML = '<div class="card">' + top.map(function (r, i) {
+        return '<div class="rank-row">' +
+          '<div class="rank-pos">' + (i + 1) + '</div>' +
+          '<div class="rank-info">' +
+            '<div class="rk-title">' + escapeHtml(r.kodeMesin) + '</div>' +
+            '<div class="rk-sub">' + r.jumlahSiklus + ' siklus selesai · maks ' + r.maxLeadTime + ' hari</div>' +
+          '</div>' +
+          '<div class="rank-metric">' +
+            '<div class="rk-num">' + r.avgLeadTime + '</div>' +
+            '<div class="rk-unit">hari rata²</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
     }
 
     /* ============================================================
@@ -1897,28 +2227,191 @@
       apiGet('getMasterToolsList')
         .then(function (list) {
           masterTools = list || [];
-          const sel = document.getElementById('f-kode-alat');
-          masterTools.forEach(function (t) {
+          populateKodeAlatSelect_(masterTools);
+        })
+        .catch(console.error);
+
+      // [REVISI-02] Daftar mesin untuk field "Mesin" (mode mesin-dulu).
+      apiGet('getMachineList')
+        .then(function (list) {
+          machineList = list || [];
+          const sel = document.getElementById('f-mesin-driver');
+          machineList.forEach(function (m) {
             const opt = document.createElement('option');
-            opt.value = t.kodeAlat;
-            opt.textContent = t.kodeAlat + ' — ' + t.namaAlat;
+            opt.value = m.kodeMesin;
+            opt.textContent = m.kodeMesin + (m.mesin ? ' — ' + m.mesin : '');
+            opt.dataset.mesinName = m.mesin || '';
             sel.appendChild(opt);
           });
         })
         .catch(console.error);
     }
 
+    /**
+     * [REVISI-01] Label dropdown Kode Alat diperkaya dengan Brand, Bahan,
+     * dan Spesifikasi (ukuran) — sebelumnya cuma "kodeAlat — namaAlat",
+     * yang menyulitkan operator yang tidak hafal kode. Operator sekarang
+     * bisa cari berdasarkan merek/bahan/ukuran langsung dari label.
+     */
+    function kodeAlatOptionLabel_(t) {
+      const bits = [];
+      if (t.brand) bits.push(t.brand);
+      if (t.bahan) bits.push(t.bahan);
+      if (t.spesifikasi) bits.push(t.spesifikasi);
+      const extra = bits.length ? (' (' + bits.join(' · ') + ')') : '';
+      return t.kodeAlat + ' — ' + t.namaAlat + extra;
+    }
+
+    function populateKodeAlatSelect_(list) {
+      const sel = document.getElementById('f-kode-alat');
+      sel.innerHTML = '<option value="">Pilih kode alat…</option>' + (list || []).map(function (t) {
+        return '<option value="' + escapeAttr(t.kodeAlat) + '">' + escapeHtml(kodeAlatOptionLabel_(t)) + '</option>';
+      }).join('');
+    }
+
     function wireForm() {
       document.getElementById('f-kode-alat').addEventListener('change', onKodeAlatChange);
-      document.getElementById('f-activity').addEventListener('change', onKodeAlatChange);
+      document.getElementById('f-activity').addEventListener('change', onActivityChange);
+      document.getElementById('f-mesin-driver').addEventListener('change', onMesinDriverChange);
       document.getElementById('movement-form').addEventListener('submit', onSubmitForm);
     }
 
     const ACTIVITY_NEW_UNIT = 'PEMBELIAN BARU';
 
+    /**
+     * [REVISI-02] Dipanggil saat Activity berubah. Menentukan apakah
+     * transaksi ini "mesin-dulu" (DIPASANG KE MESIN / KEMBALI KE GUDANG
+     * (TUMPUL)) dan menyesuaikan tampilan form:
+     *  - mesin-dulu  -> tampilkan field Mesin, kunci Kode Alat sampai
+     *                   Mesin dipilih, sembunyikan field Kode Mesin lama.
+     *  - selain itu  -> field Mesin disembunyikan, Kode Alat kembali ke
+     *                   daftar lengkap (Master Tools), field Kode Mesin
+     *                   lama tampil normal (diisi via getMesinOptionsForKodeAlat).
+     */
+    function onActivityChange() {
+      const activity = document.getElementById('f-activity').value;
+      const driven = MESIN_DRIVEN_ACTIVITIES.indexOf(activity) !== -1;
+
+      const mesinDriverWrap = document.getElementById('f-mesin-driver-wrap');
+      const mesinDriverSel = document.getElementById('f-mesin-driver');
+      const kodeMesinWrap = document.getElementById('f-kode-mesin-wrap');
+      const kodeAlatSel = document.getElementById('f-kode-alat');
+
+      // Reset setiap kali activity berubah supaya tidak ada kombinasi lama
+      // yang nyangkut (mis. pindah dari TUMPUL ke PEMBELIAN BARU tapi Kode
+      // Alat masih hasil filter mesin sebelumnya).
+      mesinDriverSel.value = '';
+      mesinDrivenUnitsCache = [];
+
+      if (driven) {
+        mesinDriverWrap.style.display = 'block';
+        kodeMesinWrap.style.display = 'none';
+        kodeAlatSel.disabled = true;
+        kodeAlatSel.innerHTML = '<option value="">Pilih mesin dulu…</option>';
+      } else {
+        mesinDriverWrap.style.display = 'none';
+        kodeMesinWrap.style.display = 'block';
+        kodeAlatSel.disabled = false;
+        populateKodeAlatSelect_(masterTools);
+      }
+
+      // Downstream (Unit, Kode Mesin) ikut direset via onKodeAlatChange
+      // dengan Kode Alat kosong.
+      onKodeAlatChange();
+    }
+
+    /**
+     * [REVISI-02] Dipanggil saat Mesin (mode mesin-dulu) dipilih. Menarik
+     * daftar Kode Alat yang valid/ada di mesin ini, lalu mengunci field
+     * Kode Mesin lama ke nilai yang sama (dipakai apa adanya saat submit).
+     */
+    function onMesinDriverChange() {
+      const mesinSelEl = document.getElementById('f-mesin-driver');
+      const mesin = mesinSelEl.value;
+      const activity = document.getElementById('f-activity').value;
+      const kodeAlatSel = document.getElementById('f-kode-alat');
+      const mesinOpt = mesinSelEl.selectedOptions[0];
+      const mesinName = mesinOpt ? (mesinOpt.dataset.mesinName || '') : '';
+
+      mesinDrivenUnitsCache = [];
+      syncHiddenKodeMesin_(mesin, mesinName);
+
+      if (!mesin) {
+        kodeAlatSel.disabled = true;
+        kodeAlatSel.innerHTML = '<option value="">Pilih mesin dulu…</option>';
+        onKodeAlatChange();
+        return;
+      }
+
+      kodeAlatSel.disabled = true;
+      kodeAlatSel.innerHTML = '<option value="">Memuat kode alat…</option>';
+
+      function renderKodeAlatOptions(kodeAlatList, emptyMessage) {
+        if (!kodeAlatList.length) {
+          kodeAlatSel.innerHTML = '<option value="">' + emptyMessage + '</option>';
+          kodeAlatSel.disabled = true;
+          onKodeAlatChange();
+          return;
+        }
+        kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map(function (kodeAlat) {
+          const t = masterTools.find(function (mt) { return mt.kodeAlat === kodeAlat; });
+          const label = t ? kodeAlatOptionLabel_(t) : kodeAlat;
+          return '<option value="' + escapeAttr(kodeAlat) + '">' + escapeHtml(label) + '</option>';
+        }).join('');
+        kodeAlatSel.disabled = false;
+        onKodeAlatChange();
+      }
+
+      if (activity === 'KEMBALI KE GUDANG (TUMPUL)') {
+        // Hanya alat yang BENAR-BENAR sedang tercatat terpasang di mesin ini.
+        apiGet('getUnitsByMesin', { kodeMesin: mesin, statusFilter: 'DIPAKAI' })
+          .then(function (units) {
+            mesinDrivenUnitsCache = units || [];
+            const seen = {};
+            const kodeAlatList = [];
+            mesinDrivenUnitsCache.forEach(function (u) {
+              if (seen[u.kodeAlat]) return;
+              seen[u.kodeAlat] = true;
+              kodeAlatList.push(u.kodeAlat);
+            });
+            renderKodeAlatOptions(kodeAlatList, 'Tidak ada alat terpasang di mesin ini');
+          })
+          .catch(function (err) {
+            kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
+            console.error(err);
+          });
+      } else {
+        // DIPASANG KE MESIN — alat yang valid untuk dipasang di mesin ini
+        // (dari Mapping Alat Mesin), unit-nya sendiri masih ditarik dari
+        // GUDANG lewat getUnitsByKodeAlat seperti biasa di onKodeAlatChange.
+        apiGet('getKodeAlatOptionsForMesin', { kodeMesin: mesin })
+          .then(function (list) {
+            const kodeAlatList = (list || []).map(function (a) { return a.kodeAlat; });
+            renderKodeAlatOptions(kodeAlatList, 'Tidak ada alat valid untuk mesin ini');
+          })
+          .catch(function (err) {
+            kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
+            console.error(err);
+          });
+      }
+    }
+
+    /** Kunci field Kode Mesin lama ke 1 nilai hasil pilihan f-mesin-driver, supaya onSubmitForm tetap baca dari sana apa adanya. */
+    function syncHiddenKodeMesin_(kodeMesin, mesinName) {
+      const sel = document.getElementById('f-kode-mesin');
+      if (!kodeMesin) {
+        sel.innerHTML = '<option value="">—</option>';
+        sel.disabled = true;
+        return;
+      }
+      sel.innerHTML = '<option value="' + escapeAttr(kodeMesin) + '" data-mesin-name="' + escapeAttr(mesinName) + '" selected>' + escapeHtml(kodeMesin) + '</option>';
+      sel.disabled = true;
+    }
+
     function onKodeAlatChange() {
       const kodeAlat = document.getElementById('f-kode-alat').value;
       const activity = document.getElementById('f-activity').value;
+      const driven = MESIN_DRIVEN_ACTIVITIES.indexOf(activity) !== -1;
 
       const unitSel = document.getElementById('f-unit-id');
       const unitManual = document.getElementById('f-unit-id-manual');
@@ -1927,12 +2420,16 @@
 
       if (!kodeAlat) {
         setUnitMode_('select');
-        unitSel.innerHTML = '<option value="">Pilih kode alat dulu…</option>';
+        unitSel.innerHTML = '<option value="">' + (driven ? 'Pilih mesin & kode alat dulu…' : 'Pilih kode alat dulu…') + '</option>';
         unitSel.disabled = true;
         unitManual.value = '';
         unitHint.style.display = 'none';
-        mesinSel.innerHTML = '<option value="">—</option>';
-        mesinSel.disabled = true;
+        // Mode mesin-dulu: JANGAN reset mesinSel di sini — nilainya sumber
+        // kebenarannya f-mesin-driver dan sudah disinkron lewat syncHiddenKodeMesin_.
+        if (!driven) {
+          mesinSel.innerHTML = '<option value="">—</option>';
+          mesinSel.disabled = true;
+        }
         return;
       }
 
@@ -1957,6 +2454,23 @@
             unitHint.textContent = 'Gagal cek unit existing (tetap bisa lanjut input manual).';
             console.error(err);
           });
+      } else if (driven && activity === 'KEMBALI KE GUDANG (TUMPUL)') {
+        // [REVISI-02] Unit sudah ditarik sekaligus saat Mesin dipilih
+        // (getUnitsByMesin), di sini tinggal difilter per Kode Alat di
+        // client — tanpa request baru — supaya cuma unit yang memang
+        // tercatat ADA di mesin ini yang bisa dipilih operator.
+        setUnitMode_('select');
+        unitHint.style.display = 'none';
+        const units = mesinDrivenUnitsCache.filter(function (u) { return u.kodeAlat === kodeAlat; });
+        if (!units.length) {
+          unitSel.innerHTML = '<option value="">Tidak ada unit tersedia untuk status ini</option>';
+          unitSel.disabled = true;
+        } else {
+          unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map(function (u) {
+            return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + ' (' + escapeHtml(u.statusUnit) + ')</option>';
+          }).join('');
+          unitSel.disabled = false;
+        }
       } else {
         setUnitMode_('select');
         unitHint.style.display = 'none';
@@ -1980,6 +2494,13 @@
             unitSel.innerHTML = '<option value="">Gagal memuat unit</option>';
             console.error(err);
           });
+      }
+
+      // Mode mesin-dulu: Mesin sudah dikunci dari f-mesin-driver, tidak
+      // perlu lookup getMesinOptionsForKodeAlat lagi (itu akan menimpa
+      // nilai yang sudah disinkron lewat syncHiddenKodeMesin_).
+      if (driven) {
+        return;
       }
 
       mesinSel.disabled = true;
@@ -2098,7 +2619,7 @@
       isSubmittingTx = true;
       const btn = document.getElementById('btn-submit');
       btn.disabled = true;
-      btn.textContent = 'Menyimpan…';
+      btn.innerHTML = '<span class="btn-icon btn-icon-spin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.64L21 8"></path><path d="M21 3v5h-5"></path></svg></span>Menyimpan…';
 
       apiPost('addMovementRow', {
         requestId: requestId,
@@ -2125,9 +2646,19 @@
           document.getElementById('f-kode-mesin').innerHTML = '<option value="">—</option>';
           document.getElementById('f-kode-mesin').disabled = true;
           document.getElementById('f-qty').value = 1;
+          // [REVISI-02] form.reset() mengosongkan f-activity tapi TIDAK
+          // memicu event 'change', jadi field Mesin/Kode Alat mode
+          // mesin-dulu perlu direset manual balik ke tampilan default.
+          document.getElementById('f-mesin-driver-wrap').style.display = 'none';
+          document.getElementById('f-kode-mesin-wrap').style.display = 'block';
+          document.getElementById('f-mesin-driver').value = '';
+          mesinDrivenUnitsCache = [];
+          populateKodeAlatSelect_(masterTools);
+          document.getElementById('f-kode-alat').disabled = false;
           loadDashboard();
           loadTransactions();
           loadStockStatus();
+          loadMachineAnalytics();
         })
         .catch(function (err) {
           showFormMsg('error', mapErrorToMessage_(err, isNewUnit));
@@ -2141,14 +2672,15 @@
           // invalid response), jadi tombol tidak pernah macet di "Menyimpan…".
           isSubmittingTx = false;
           btn.disabled = false;
-          btn.textContent = '✓ Simpan Transaksi';
+          btn.innerHTML = '<span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>Simpan Transaksi';
         });
     }
 
     function showFormMsg(type, text) {
       const el = document.getElementById('form-msg');
       el.className = 'form-msg show ' + type;
-      el.textContent = text;
+      const icon = type === 'success' ? FORM_MSG_ICON_SUCCESS : FORM_MSG_ICON_ERROR;
+      el.innerHTML = '<span class="fm-icon">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
     }
 
     /* ============================================================
@@ -2214,7 +2746,7 @@
       }
       switch (err.code) {
         case 'CONFIGURATION_ERROR':
-          return 'API belum dikonfigurasi. Buka ⚙ Pengaturan dan masukkan Google Apps Script URL.';
+          return 'API belum dikonfigurasi. Buka menu Pengaturan dan masukkan Google Apps Script URL.';
         case 'TIMEOUT':
           return 'Request timeout. Periksa koneksi lalu coba lagi.';
         case 'NETWORK':
