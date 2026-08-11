@@ -2181,6 +2181,51 @@
       /* Panel Stok & Riwayat: filter row & tabel dapat 2 kolom filter
          sejajar (sudah .field-row di markup, cukup diberi lebar lebih
          lega lewat main yang sudah diperlebar di atas). */
+
+      /* v8.20 — PANEL STOK: 2 KOLOM (filter kiri sempit, list kanan lebar)
+         Tidak ada wrapper baru di markup -- 4 anak langsung #panel-stok
+         (search, filter-chip-row, field-row select, stok-list) ditempatkan
+         eksplisit via grid-column/grid-row, jadi HTML lama tetap utuh &
+         JS (render/filter logic berbasis getElementById) tidak perlu
+         diubah sama sekali. */
+      #panel-stok {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        column-gap: 24px;
+        align-items: start;
+      }
+      #stok-search { grid-column: 1; grid-row: 1; }
+      #stok-filter-row {
+        grid-column: 1; grid-row: 2;
+        flex-wrap: wrap;
+        overflow-x: visible;
+        padding-bottom: 0;
+      }
+      #stok-filter-select-row { grid-column: 1; grid-row: 3; }
+      /* Mesin & Ukuran ditumpuk 1 kolom di sidebar filter (260px terlalu
+         sempit utk 2 select sejajar) -- override grid-trick 2-kolom yang
+         dipakai versi mobile (lihat blok asli #stok-filter-select-row.field-row
+         di atas), diganti flex-column sederhana. */
+      #stok-filter-select-row.field-row {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+      }
+      #stok-filter-select-row .field { display: block; }
+      #stok-filter-select-row .field label { grid-row: auto; margin-bottom: 6px; align-self: auto; }
+      /* List alat: dari stack kartu vertikal (pola mobile) -> grid
+         auto-fit multi-kolom, mengisi kolom kanan yang sudah lebar.
+         Rentang baris 1/4 supaya tingginya nyamain 3 elemen filter di
+         kolom kiri (search+chip+select), bukan cuma row pertama. */
+      #stok-list {
+        grid-column: 2;
+        grid-row: 1 / 4;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-sm);
+        align-content: start;
+      }
+      #stok-list .card { margin-bottom: 0; }
     }
 
     /* ---------- PANEL BACK BUTTON (dari Mesin/Pengaturan ke Lainnya) ---------- */
@@ -3493,6 +3538,20 @@
         // Dashboard, lihat syncHeaderVisibility_), tidak ada gunanya
         // toggle .is-collapsed di elemen yang display:none.
         if (headerEl.style.display === 'none') return;
+        // v8.19 — FIX: di desktop (sidebar aktif, breakpoint >=1080px)
+        // collapse-on-scroll TIDAK relevan lagi -- sidebar sudah
+        // membebaskan ruang vertikal yg tadinya jadi alasan header perlu
+        // menyusut demi ruang konten (itu murni kebutuhan mobile/layar
+        // sempit). Sebelum fix ini, scroll dikit di desktop bikin header
+        // menyusut (brand-mark & judul mengecil, eyebrow "SAW BLADE
+        // MONITOR" hilang) padahal sidebar sudah ada -- redundan & keliatan
+        // seperti glitch. matchMedia dicek tiap scroll (bukan sekali di
+        // awal) supaya tetap benar kalau window di-resize lintas breakpoint
+        // tanpa reload.
+        if (window.matchMedia('(min-width: 1080px)').matches) {
+          headerEl.classList.remove('is-collapsed');
+          return;
+        }
         const y = window.scrollY || document.documentElement.scrollTop || 0;
         headerEl.classList.toggle('is-collapsed', y > HEADER_COLLAPSE_THRESHOLD);
       }
