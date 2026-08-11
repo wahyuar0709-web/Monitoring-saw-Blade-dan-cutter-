@@ -291,6 +291,10 @@
       --space-md: 12px;
       --space-lg: 20px;
       --space-xl: 28px;
+      /* v8.19 — lebar sidebar navigasi desktop (icon-only, breakpoint
+         >=1080px). Dipakai sbg offset kiri utk header/minibar/main saat
+         sidebar aktif menggantikan bottom-nav mobile. */
+      --sidebar-w: 64px;
 
       --radius-sm: 8px;
       --radius-md: 12px;
@@ -1415,13 +1419,75 @@
       line-height: 1.45;
     }
 
+    /* ---------- v9.0 PREMIUM WIZARD — progress bar di bawah hero ----------
+       Menunjukkan berapa langkah wajib yang sudah lengkap dari total 4
+       (langkah "Catatan" opsional, tidak dihitung). Dihitung ulang oleh
+       updateInputWizardProgress_() setiap kali field relevan berubah. */
+    .input-progress {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 var(--space-lg);
+    }
+    .input-progress-track {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--color-surface-3);
+      overflow: hidden;
+    }
+    .input-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--grad-1), var(--grad-2));
+      transition: width 0.35s cubic-bezier(.4,0,.2,1);
+    }
+    .input-progress-label {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: var(--color-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- v9.0 PREMIUM WIZARD — kartu langkah bernomor ----------
+       .input-wizard membungkus semua .input-card supaya bisa digambar
+       garis penghubung vertikal (::before) DI BELAKANG kartu (z-index
+       lebih rendah). Garis hanya "terlihat" di celah antar-kartu (margin-
+       bottom kartu transparan), menghasilkan efek stepper tanpa perlu
+       memecah tiap kartu jadi badge-di-luar + body-di-dalam terpisah. */
+    .input-wizard {
+      position: relative;
+    }
+    .input-wizard::before {
+      content: '';
+      position: absolute;
+      top: 26px;
+      bottom: 26px;
+      left: 29px;
+      width: 2px;
+      background: linear-gradient(180deg, var(--color-border), var(--color-border) 100%);
+      z-index: 0;
+    }
     .input-card {
+      position: relative;
+      z-index: 1;
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-sm);
       margin-bottom: var(--space-md);
       overflow: hidden;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .input-card.is-active {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3.5px var(--color-primary-soft), var(--shadow-sm);
+    }
+    .input-card.is-complete {
+      border-color: var(--color-success);
     }
     .input-card-head {
       display: flex;
@@ -1439,7 +1505,9 @@
       font-size: 12px;
       font-weight: 800;
       display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
     }
+    .input-step svg { width: 13px; height: 13px; }
     .input-card-head-text { min-width: 0; flex: 1; }
     .input-card-title {
       font-family: var(--font-display);
@@ -1475,6 +1543,7 @@
     .input-step.tone-info { background: var(--color-info-soft); color: var(--color-info); }
     .input-step.tone-warning { background: var(--color-warning-soft); color: var(--color-warning); }
     .input-step.tone-success { background: var(--color-success-soft); color: var(--color-success); }
+    .input-step.is-complete { background: var(--color-success) !important; color: #fff !important; }
 
     .input-card .field select,
     .input-card .field input,
@@ -1487,6 +1556,43 @@
     .input-card .field textarea:focus {
       box-shadow: 0 0 0 3.5px var(--color-primary-soft);
     }
+
+    /* ---------- v9.0 PREMIUM WIZARD — field "cerdas" (Mesin) ----------
+       Menandai visual bahwa field ini akan menentukan opsi Kode Alat &
+       Unit di bawahnya, supaya operator tidak bingung kenapa field lain
+       terkunci sebelum field ini diisi. */
+    .field.field-smart {
+      padding: 12px;
+      border: 1.5px dashed var(--color-primary);
+      border-radius: var(--radius-md);
+      background: var(--color-primary-soft);
+    }
+    .field.field-smart label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field.field-smart label::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      flex-shrink: 0;
+    }
+    .field.field-smart select {
+      background: var(--color-surface);
+    }
+    .field-smart-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--color-primary);
+      margin-top: 8px;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+    .field-smart-note svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
 
     .input-submit-note {
       display: flex;
@@ -1940,6 +2046,143 @@
     nav.tabbar button.raised { color: var(--color-primary); font-weight: 800; }
     nav.tabbar button.raised.active { background: none; box-shadow: none; }
 
+    /* ============================================================
+       v8.19 — SIDEBAR NAVIGASI DESKTOP (icon-only + tooltip)
+       Base state: disembunyikan total (mobile & tablet tetap pakai
+       nav.tabbar seperti biasa, tidak berubah sama sekali). Ditampilkan
+       HANYA lewat breakpoint >=1080px di blok "DESKTOP LAYOUT" di bawah.
+       Tombol pakai class "tab-btn" yang SAMA dgn bottom-nav supaya
+       wireTabBar()/goToPanel() jalan tanpa logika baru. Label teks
+       (kalau ada, mis. hasil applyRoleUI_ utk tombol Input) disembunyikan
+       visual via font-size:0 pada button -- ukuran .icon tidak
+       terpengaruh krn di-set lewat width/height, bukan font-size --
+       identitas tab disampaikan lewat tooltip (::after, attr(data-tooltip))
+       saat hover, bukan teks permanen, sesuai keputusan "icon-only".
+       ============================================================ */
+    nav.sidebar-nav {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 18px 0;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      z-index: 30;
+    }
+    nav.sidebar-nav button {
+      width: 44px; height: 44px;
+      flex: 0 0 auto;
+      background: none;
+      border: none;
+      border-radius: var(--radius-md);
+      color: var(--ink-faint);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      font-size: 0;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+    nav.sidebar-nav button:active { transform: scale(0.96); }
+    nav.sidebar-nav button .icon { display: block; width: 20px; height: 20px; }
+    nav.sidebar-nav button .icon svg { width: 100%; height: 100%; }
+    nav.sidebar-nav button.active {
+      color: var(--color-primary);
+      background: linear-gradient(150deg, var(--color-primary-soft), var(--color-surface));
+      box-shadow: inset 0 0 0 1px rgba(10,95,191,0.12);
+    }
+    nav.sidebar-nav button.active .icon { color: var(--color-primary); }
+    /* Tombol Input tetap ditandai warna primer spt di bottom-nav, tapi
+       TANPA efek bubble melayang (nav.tabbar button.raised) -- selector
+       itu sengaja tidak dipakai di sini supaya sidebar tetap flat/rapi. */
+    nav.sidebar-nav button.raised { color: var(--color-primary); }
+    nav.sidebar-nav button.raised .icon { color: var(--color-primary); }
+    nav.sidebar-nav button.raised.active .icon { color: var(--color-primary); }
+    /* Tooltip hover, muncul di kanan icon. */
+    nav.sidebar-nav button::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: calc(100% + 10px);
+      top: 50%;
+      transform: translateY(-50%) translateX(-4px);
+      background: var(--ink, #16213a);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 31;
+    }
+    nav.sidebar-nav button:hover::after {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    /* ============================================================
+       v8.19 — DESKTOP LAYOUT (breakpoint >=1080px)
+       Semua rule mobile di atas TIDAK diubah -- breakpoint ini murni
+       override tambahan, pola sama seperti Truck Monitoring. Di bawah
+       1080px tidak ada satupun rule di blok ini yang aktif.
+       ============================================================ */
+    @media (min-width: 1080px) {
+      nav.tabbar { display: none; }
+      nav.sidebar-nav { display: flex; }
+
+      body { padding-bottom: 24px; }
+
+      header, .app-minibar {
+        margin-left: var(--sidebar-w);
+      }
+
+      main {
+        max-width: 1040px;
+        margin-left: calc(var(--sidebar-w) + (100% - var(--sidebar-w) - 1040px) / 2);
+        margin-right: auto;
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+      /* Fallback kalau viewport belum cukup lebar utk max-width penuh
+         1040px + sidebar -- tetap nempel rapi di kanan sidebar, tidak
+         overflow/ke-cut. */
+      @media (max-width: 1300px) {
+        main { margin-left: calc(var(--sidebar-w) + 24px); margin-right: 24px; }
+      }
+
+      /* Dashboard KPI: strip horizontal-scroll (pola mobile) -> grid
+         auto-fit, jumlah kolom menyesuaikan lebar layar, bukan angka
+         tetap 3/4 kolom (sesuai keputusan). */
+      .kpi-chip-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        overflow-x: visible;
+        padding-bottom: 0;
+      }
+      .kpi-card { min-width: 0; }
+
+      /* Form Input Transaksi: step-card wizard vertikal -> 2 kolom
+         sejajar. Card "Catatan" (opsional, textarea) dibiarkan melebar
+         penuh 1 baris sendiri supaya tidak kepotong sempit. */
+      .input-wizard {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-md);
+        align-items: start;
+      }
+      #input-card-5 { grid-column: 1 / -1; }
+
+      /* Panel Stok & Riwayat: filter row & tabel dapat 2 kolom filter
+         sejajar (sudah .field-row di markup, cukup diberi lebar lebih
+         lega lewat main yang sudah diperlebar di atas). */
+    }
+
     /* ---------- PANEL BACK BUTTON (dari Mesin/Pengaturan ke Lainnya) ---------- */
     .panel-back-btn {
       display: inline-flex;
@@ -2253,6 +2496,35 @@
        toggle kanan). Urutan DOM ditukar; targetnya appendChild di JS
        tetap sama (querySelector('.header-controls')), tidak terpengaruh
        posisi elemen dlm DOM. -->
+  <!-- v8.19 — SIDEBAR NAVIGASI DESKTOP (icon-only + tooltip hover),
+       breakpoint >=1080px (lihat blok "DESKTOP LAYOUT" di CSS). Duplikat
+       5 tab dari nav.tabbar (data-panel & urutan SAMA) supaya goToPanel()/
+       wireTabBar() yang sudah ada otomatis jalan tanpa logika baru --
+       cukup pakai class "tab-btn" yang sama. TIDAK diberi class "raised"
+       di tombol Input supaya efek bubble bottom-nav (nav.tabbar
+       button.raised) tidak ikut ke sidebar; label tombol tengah ini tetap
+       disinkronkan role admin/operator lewat applyRoleUI_() yang sudah
+       diubah ke querySelectorAll (lihat JS). Disembunyikan total di
+       mobile (display:none default), jadi tidak makan DOM/tap-target di
+       layar kecil. -->
+  <nav class="sidebar-nav" aria-label="Navigasi utama">
+    <button class="tab-btn active" data-panel="panel-summary" data-tooltip="Dashboard">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg></span>
+    </button>
+    <button class="tab-btn" data-panel="panel-stok" data-tooltip="Stok">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V16L12 21L3 16V8L12 3Z"></path><path d="M3 8L12 13L21 8"></path><path d="M12 13V21"></path></svg></span>
+    </button>
+    <button class="tab-btn raised" data-panel="panel-input" data-tooltip="Input">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
+    </button>
+    <button class="tab-btn" data-panel="panel-dashboard" data-tooltip="Riwayat">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>
+    </button>
+    <button class="tab-btn" data-panel="panel-lainnya" data-tooltip="Lainnya">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg></span>
+    </button>
+  </nav>
+
   <header>
     <div class="header-top">
       <span class="brand-mark" title="Monitoring Saw Blade &amp; Cutter" aria-hidden="true">
@@ -2338,117 +2610,127 @@
 
       <div class="form-msg" id="form-msg"></div>
 
+      <div class="input-progress">
+        <div class="input-progress-track"><div class="input-progress-fill" id="input-progress-fill"></div></div>
+        <span class="input-progress-label" id="input-progress-label">0/4 langkah</span>
+      </div>
+
       <form id="movement-form">
-        <div class="input-card">
-          <div class="input-card-head">
-            <span class="input-step tone-primary">1</span>
-            <div class="input-card-head-text">
-              <p class="input-card-title">Jenis Transaksi</p>
-              <p class="input-card-desc">Pilih jenis pergerakan alat yang akan dicatat</p>
+        <div class="input-wizard">
+          <div class="input-card" id="input-card-1" data-step="1">
+            <div class="input-card-head">
+              <span class="input-step tone-primary" id="input-step-1">1</span>
+              <div class="input-card-head-text">
+                <p class="input-card-title">Jenis Transaksi</p>
+                <p class="input-card-desc">Pilih jenis pergerakan alat yang akan dicatat</p>
+              </div>
             </div>
-          </div>
-          <div class="input-card-body">
-            <div class="field">
-              <label for="f-activity">Jenis Transaksi</label>
-              <select id="f-activity" required>
-                <option value="">Pilih jenis transaksi…</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="input-card">
-          <div class="input-card-head">
-            <span class="input-step tone-info">2</span>
-            <div class="input-card-head-text">
-              <p class="input-card-title">Detail Alat</p>
-              <p class="input-card-desc">Kode alat &amp; unit yang terlibat dalam transaksi ini</p>
-            </div>
-          </div>
-          <div class="input-card-body">
-            <!-- [REVISI-02] Untuk DIPASANG KE MESIN & KEMBALI KE GUDANG (TUMPUL),
-                 Mesin dipilih DULUAN dan dipakai sebagai validasi: pilihan Kode
-                 Alat & Unit di bawahnya otomatis dibatasi ke yang memang valid/ada
-                 di mesin ini. Field ini disembunyikan untuk jenis transaksi lain. -->
-            <div class="field" id="f-mesin-driver-wrap" style="display:none;">
-              <label for="f-mesin-driver">Mesin</label>
-              <select id="f-mesin-driver">
-                <option value="">Pilih mesin…</option>
-              </select>
-              <div class="field-hint" id="f-mesin-driver-hint" style="display:none;"></div>
-            </div>
-
-            <div class="field">
-              <label for="f-kode-alat">Kode Alat</label>
-              <select id="f-kode-alat" required>
-                <option value="">Pilih kode alat…</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="f-unit-id">Unit</label>
-              <select id="f-unit-id" required disabled>
-                <option value="">Pilih kode alat dulu…</option>
-              </select>
-              <input type="text" id="f-unit-id-manual" placeholder="Ketik Unit_ID baru, mis. Hau-SB-02-006" style="display:none;">
-              <div class="field-hint" id="f-unit-id-hint" style="display:none;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="input-card">
-          <div class="input-card-head">
-            <span class="input-step tone-warning">3</span>
-            <div class="input-card-head-text">
-              <p class="input-card-title">Mesin &amp; Jumlah</p>
-              <p class="input-card-desc">Lokasi mesin serta kuantitas alat yang dicatat</p>
-            </div>
-          </div>
-          <div class="input-card-body">
-            <div class="field-row">
-              <div class="field" id="f-kode-mesin-wrap">
-                <label for="f-kode-mesin">Kode Mesin</label>
-                <select id="f-kode-mesin" disabled>
-                  <option value="">—</option>
+            <div class="input-card-body">
+              <div class="field">
+                <label for="f-activity">Jenis Transaksi</label>
+                <select id="f-activity" required>
+                  <option value="">Pilih jenis transaksi…</option>
                 </select>
               </div>
+            </div>
+          </div>
+
+          <div class="input-card" id="input-card-2" data-step="2">
+            <div class="input-card-head">
+              <span class="input-step tone-info" id="input-step-2">2</span>
+              <div class="input-card-head-text">
+                <p class="input-card-title">Detail Alat</p>
+                <p class="input-card-desc">Kode alat &amp; unit yang terlibat dalam transaksi ini</p>
+              </div>
+            </div>
+            <div class="input-card-body">
+              <!-- [REVISI-02] Untuk DIPASANG KE MESIN & KEMBALI KE GUDANG (TUMPUL),
+                   Mesin dipilih DULUAN dan dipakai sebagai validasi: pilihan Kode
+                   Alat & Unit di bawahnya otomatis dibatasi ke yang memang valid/ada
+                   di mesin ini. Field ini disembunyikan untuk jenis transaksi lain.
+                   [v9.0] Ditandai .field-smart supaya operator langsung sadar field
+                   ini "mengunci" pilihan Kode Alat & Unit di bawahnya. -->
+              <div class="field field-smart" id="f-mesin-driver-wrap" style="display:none;">
+                <label for="f-mesin-driver">Mesin</label>
+                <select id="f-mesin-driver">
+                  <option value="">Pilih mesin…</option>
+                </select>
+                <div class="field-hint" id="f-mesin-driver-hint" style="display:none;"></div>
+                <p class="field-smart-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v-4M12 8h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>Menentukan pilihan Kode Alat &amp; Unit di bawah — pilih mesin dulu.</p>
+              </div>
+
               <div class="field">
-                <label for="f-qty">Qty</label>
-                <input type="number" id="f-qty" value="1" min="1" required>
+                <label for="f-kode-alat">Kode Alat</label>
+                <select id="f-kode-alat" required>
+                  <option value="">Pilih kode alat…</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="f-unit-id">Unit</label>
+                <select id="f-unit-id" required disabled>
+                  <option value="">Pilih kode alat dulu…</option>
+                </select>
+                <input type="text" id="f-unit-id-manual" placeholder="Ketik Unit_ID baru, mis. Hau-SB-02-006" style="display:none;">
+                <div class="field-hint" id="f-unit-id-hint" style="display:none;"></div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="input-card">
-          <div class="input-card-head">
-            <span class="input-step tone-success">4</span>
-            <div class="input-card-head-text">
-              <p class="input-card-title">PIC</p>
-              <p class="input-card-desc">Nama penanggung jawab pencatatan transaksi</p>
+          <div class="input-card" id="input-card-3" data-step="3">
+            <div class="input-card-head">
+              <span class="input-step tone-warning" id="input-step-3">3</span>
+              <div class="input-card-head-text">
+                <p class="input-card-title">Mesin &amp; Jumlah</p>
+                <p class="input-card-desc">Lokasi mesin serta kuantitas alat yang dicatat</p>
+              </div>
+            </div>
+            <div class="input-card-body">
+              <div class="field-row">
+                <div class="field" id="f-kode-mesin-wrap">
+                  <label for="f-kode-mesin">Kode Mesin</label>
+                  <select id="f-kode-mesin" disabled>
+                    <option value="">—</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="f-qty">Qty</label>
+                  <input type="number" id="f-qty" value="1" min="1" required>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="input-card-body">
-            <div class="field">
-              <label for="f-pic">Nama PIC</label>
-              <input type="text" id="f-pic" placeholder="Nama yang mencatat" required>
-            </div>
-          </div>
-        </div>
 
-        <div class="input-card">
-          <div class="input-card-head">
-            <span class="input-step tone-primary">5</span>
-            <div class="input-card-head-text">
-              <p class="input-card-title">Catatan</p>
-              <p class="input-card-desc">Keterangan tambahan seputar transaksi ini</p>
+          <div class="input-card" id="input-card-4" data-step="4">
+            <div class="input-card-head">
+              <span class="input-step tone-success" id="input-step-4">4</span>
+              <div class="input-card-head-text">
+                <p class="input-card-title">PIC</p>
+                <p class="input-card-desc">Nama penanggung jawab pencatatan transaksi</p>
+              </div>
             </div>
-            <span class="input-card-optional">Opsional</span>
+            <div class="input-card-body">
+              <div class="field">
+                <label for="f-pic">Nama PIC</label>
+                <input type="text" id="f-pic" placeholder="Nama yang mencatat" required>
+              </div>
+            </div>
           </div>
-          <div class="input-card-body">
-            <div class="field">
-              <label for="f-remark">Catatan (opsional)</label>
-              <textarea id="f-remark" placeholder="Mis. lokasi mesin, kondisi alat, dll"></textarea>
+
+          <div class="input-card" id="input-card-5" data-step="5">
+            <div class="input-card-head">
+              <span class="input-step tone-primary" id="input-step-5">5</span>
+              <div class="input-card-head-text">
+                <p class="input-card-title">Catatan</p>
+                <p class="input-card-desc">Keterangan tambahan seputar transaksi ini</p>
+              </div>
+              <span class="input-card-optional">Opsional</span>
+            </div>
+            <div class="input-card-body">
+              <div class="field">
+                <label for="f-remark">Catatan (opsional)</label>
+                <textarea id="f-remark" placeholder="Mis. lokasi mesin, kondisi alat, dll"></textarea>
+              </div>
             </div>
           </div>
         </div>
@@ -2662,11 +2944,23 @@
       </div>
       <p class="rank-desc">Alat sudah tumpul dan mau dikembalikan ke WH? Ajukan di sini. WH akan cek fisik alat dan konfirmasi sebelum tercatat resmi.</p>
 
+      <!-- [REVISI] Urutan disamakan dgn form Input admin (mode "mesin-dulu"):
+           Mesin dipilih PALING AWAL dan dipakai sebagai validasi -- Kode Alat
+           & Unit yang muncul otomatis dibatasi ke yang BENAR-BENAR terpasang
+           di mesin ini (sumber data sama: getUnitsByMesin, yang sudah dipakai
+           & teruji di form Input admin). -->
       <form id="ajukan-tumpul-form">
+        <div class="field field-smart">
+          <label for="at-mesin">Mesin</label>
+          <select id="at-mesin" required>
+            <option value="">Pilih mesin…</option>
+          </select>
+          <p class="field-smart-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16v-4M12 8h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>Menentukan pilihan Kode Alat &amp; Unit di bawah — pilih mesin dulu.</p>
+        </div>
         <div class="field">
           <label for="at-kode-alat">Kode Alat</label>
-          <select id="at-kode-alat" required>
-            <option value="">Pilih kode alat…</option>
+          <select id="at-kode-alat" required disabled>
+            <option value="">Pilih mesin dulu…</option>
           </select>
         </div>
         <div class="field">
@@ -2675,10 +2969,6 @@
             <option value="">Pilih Kode Alat dulu…</option>
           </select>
           <div class="field-hint" id="at-unit-hint" style="display:none;"></div>
-        </div>
-        <div class="field">
-          <label for="at-mesin">Mesin (info, tercatat otomatis)</label>
-          <input type="text" id="at-mesin" readonly placeholder="—">
         </div>
         <div class="form-msg" id="ajukan-tumpul-msg"></div>
         <button type="submit" class="btn-primary" id="ajukan-tumpul-submit">Ajukan ke WH</button>
@@ -2855,17 +3145,43 @@
      * backend (addMovementRow) TETAP menolak operator secara independen,
      * jadi sembunyi/tampil di sini bukan satu-satunya lapis pengamanan.
      */
+    // [REVISI] Ikon & label asli tab tengah (raised) utk role admin --
+    // disimpan sekali di sini supaya applyRoleUI_ bisa mengembalikannya
+    // kalau login berganti dari operator ke admin di device yang sama
+    // (mis. logout lalu login ulang sbg admin), tanpa perlu reload halaman.
+    const RAISED_TAB_HTML_ADMIN_ = '<span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>Input';
+    const RAISED_TAB_HTML_OPERATOR_ = '<span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l5-5v3h9v4H8v3l-5-5z"></path></svg></span>Ajukan Tumpul';
+
     function applyRoleUI_() {
       const op = isOperatorRole_();
-      const inputTab = document.querySelector('.tab-btn[data-panel="panel-input"]');
+      // v8.19 — querySelectorAll: sinkron ke tombol Input/Ajukan Tumpul
+      // di BOTH bottom-nav mobile & sidebar desktop (dua elemen DOM
+      // terpisah, sama-sama class .raised), bukan cuma salah satu.
+      const inputTabs = document.querySelectorAll('.tab-btn.raised');
       const lainnyaMesinItem = document.querySelector('.lainnya-item[data-panel="panel-mesin"]');
       const lainnyaKontrolAsahItem = document.querySelector('.lainnya-item[data-panel="panel-kontrol-asah"]');
       const lainnyaAjukanItem = document.querySelector('.lainnya-item[data-panel="panel-ajukan-tumpul"]');
       const lainnyaKonfirmasiItem = document.querySelector('.lainnya-item[data-panel="panel-konfirmasi-tumpul"]');
-      if (inputTab) inputTab.style.display = op ? 'none' : '';
+      // [REVISI] Tab tengah (raised) tidak lagi disembunyikan utk operator --
+      // sekarang DIALIHKAN ke "Ajukan Tumpul" (satu-satunya transaksi yang
+      // memang boleh dimulai operator), sementara utk admin tetap "Input"
+      // seperti semula. Backend (addMovementRow) tetap independen menegakkan
+      // role, jadi ini murni navigasi/kosmetik.
+      inputTabs.forEach(function (inputTab) {
+        inputTab.dataset.panel = op ? 'panel-ajukan-tumpul' : 'panel-input';
+        inputTab.innerHTML = op ? RAISED_TAB_HTML_OPERATOR_ : RAISED_TAB_HTML_ADMIN_;
+        // Sidebar icon-only pakai tooltip (::after, attr(data-tooltip)),
+        // bukan label teks permanen -- disinkronkan terpisah dari
+        // innerHTML supaya tooltip ikut benar walau teks visualnya
+        // disembunyikan (font-size:0) di sidebar.
+        inputTab.dataset.tooltip = op ? 'Ajukan Tumpul' : 'Input';
+      });
       if (lainnyaMesinItem) lainnyaMesinItem.style.display = op ? 'none' : '';
       if (lainnyaKontrolAsahItem) lainnyaKontrolAsahItem.style.display = op ? 'none' : '';
-      if (lainnyaAjukanItem) lainnyaAjukanItem.style.display = op ? '' : 'none';
+      // [REVISI] Item "Ajukan Pengembalian Tumpul" di menu Lainnya dihapus
+      // dari tampilan operator (sekarang aksesnya lewat tab tengah, bukan
+      // lagi lewat Lainnya) -- tetap disembunyikan dari admin seperti semula.
+      if (lainnyaAjukanItem) lainnyaAjukanItem.style.display = 'none';
       if (lainnyaKonfirmasiItem) lainnyaKonfirmasiItem.style.display = op ? 'none' : '';
       // Kalau operator sedang berdiri di panel yang baru saja disembunyikan
       // (mis. reload persis di tab Input), lempar balik ke Dashboard.
@@ -2895,8 +3211,23 @@
       return runtimeApiUrl_;
     }
     const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-    const APP_VERSION = 'v8.17.0-header-dashboard-only'; // versi lengkap, dipakai di log developer
-    const APP_VERSION_SHORT = 'v8.17.0';    // versi ringkas, ditampilkan di badge UI
+    const APP_VERSION = 'v8.18.0-api-error-surface'; // versi lengkap, dipakai di log developer
+    const APP_VERSION_SHORT = 'v8.18.0';    // versi ringkas, ditampilkan di badge UI
+    // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
+    // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
+    // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
+    // sesuai kontrak jsonOutput_() backend) -- jadi kalau backend menolak
+    // action (mis. deployment live masih versi lama, belum kenal
+    // 'getMachineList'), .then() tetap resolve dgn objek {error:...},
+    // lalu `machineList.forEach(...)` melempar TypeError yg ketangkep diam2
+    // oleh .catch(console.error). [1] apiGet() sekarang melempar ApiError
+    // eksplisit kalau body berbentuk {error: string} tanpa field `success`
+    // (bentuk khas GET; TIDAK menyentuh alur apiPost yang sudah pakai
+    // {success,error:{code,message}} & sudah dicek manual di tiap caller).
+    // [2] loadFormReferenceData() sekarang menampilkan hint visible di
+    // dropdown Mesin kalau gagal load, bukan cuma log ke console.
+    // [3] Log versi backend LIVE (via action getBackendVersion) saat start,
+    // supaya deployment basi bisa ketahuan langsung dari console browser.
 
     /**
      * Error terstruktur untuk semua kegagalan API, supaya frontend bisa
@@ -2988,6 +3319,20 @@
 
       function attempt(n) {
         return apiRequest_(url.toString(), { method: 'GET' })
+          .then(function (body) {
+            // [v8.18.0] Kontrak GET backend (jsonOutput_ di handleApiRequest_):
+            // sukses -> data apa adanya; gagal -> {error: "pesan"} dgn HTTP 200
+            // tetap. Sebelumnya field `error` ini TIDAK pernah dicek di sini,
+            // jadi caller (mis. loadFormReferenceData) diam-diam menerima
+            // objek {error:...} seolah data valid. Dibedakan dari bentuk
+            // POST ({success,error:{code,message}}) via absennya field
+            // `success`, supaya alur apiPost yg sudah punya pengecekan
+            // manual sendiri di tiap caller tidak ikut berubah.
+            if (body && typeof body === 'object' && typeof body.error === 'string' && !('success' in body)) {
+              throw new ApiError('API_ERROR', body.error);
+            }
+            return body;
+          })
           .catch(function (err) {
             const retryable = err.code === 'TIMEOUT' || err.code === 'NETWORK';
             if (retryable && n < maxAttempts) {
@@ -3772,11 +4117,26 @@
       if (target) target.classList.add('active');
 
       document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-      // Mesin & Pengaturan tidak punya tab sendiri — sorot tab "Lainnya".
-      const NO_OWN_TAB = ['panel-mesin', 'panel-settings', 'panel-kontrol-asah', 'panel-ajukan-tumpul', 'panel-konfirmasi-tumpul'];
-      const tabPanelId = NO_OWN_TAB.indexOf(panelId) >= 0 ? 'panel-lainnya' : panelId;
-      const tabBtn = document.querySelector('.tab-btn[data-panel="' + tabPanelId + '"]');
-      if (tabBtn) tabBtn.classList.add('active');
+      // Mesin, Pengaturan, Kontrol Asah, Konfirmasi Pengajuan tidak pernah
+      // punya tab sendiri — sorot tab "Lainnya". [REVISI] panel-ajukan-tumpul
+      // DIKELUARKAN dari daftar ini: sekarang punya tab sendiri (tab tengah)
+      // khusus utk role operator (lihat applyRoleUI_) -- kalau tab tengah
+      // sedang menunjuk ke panel ini, querySelector di bawah otomatis
+      // menemukannya lewat data-panel yang sudah dialihkan. Utk admin (tab
+      // tengahnya masih "panel-input"), tetap fallback ke "Lainnya".
+      const NO_OWN_TAB = ['panel-mesin', 'panel-settings', 'panel-kontrol-asah', 'panel-konfirmasi-tumpul'];
+      let tabPanelId = panelId;
+      if (NO_OWN_TAB.indexOf(panelId) >= 0) {
+        tabPanelId = 'panel-lainnya';
+      } else if (panelId === 'panel-ajukan-tumpul' && !isOperatorRole_()) {
+        tabPanelId = 'panel-lainnya';
+      }
+      // v8.19 — querySelectorAll (bukan querySelector) supaya tombol yang
+      // sama di sidebar desktop DAN bottom-nav mobile dua-duanya kesorot
+      // "active", bukan cuma yang pertama ketemu di DOM.
+      document.querySelectorAll('.tab-btn[data-panel="' + tabPanelId + '"]').forEach(function (b) {
+        b.classList.add('active');
+      });
 
       const headerTitleEl = document.getElementById('header-title');
       if (headerTitleEl && TAB_TITLES[panelId]) headerTitleEl.textContent = TAB_TITLES[panelId];
@@ -4258,70 +4618,104 @@
     /* ============================================================
        [WO-ROLE] AJUKAN PENGEMBALIAN TUMPUL — panel Operator
        ============================================================ */
-    let ajukanTumpulKodeAlatLoaded_ = false;
+    let ajukanTumpulMesinLoaded_ = false;
+    // [REVISI] Cache unit yang tercatat DIPAKAI di Mesin terpilih, diisi
+    // sekali saat Mesin dipilih (getUnitsByMesin) lalu difilter per Kode
+    // Alat di client -- pola SAMA persis dgn mesinDrivenUnitsCache di form
+    // Input admin (lihat onMesinDriverChange), supaya perilaku operator &
+    // admin konsisten dan pakai jalur backend yang sama-sama sudah teruji.
+    let ajukanTumpulUnitsCache_ = [];
 
     function loadAjukanTumpulPanel_() {
-      populateAjukanKodeAlatOptions_();
+      populateAjukanMesinOptions_();
       loadRiwayatPengajuanSaya_();
     }
 
-    function populateAjukanKodeAlatOptions_() {
-      const sel = document.getElementById('at-kode-alat');
-      if (!sel || ajukanTumpulKodeAlatLoaded_ || !masterTools || masterTools.length === 0) return;
-      masterTools.forEach(function (t) {
+    function populateAjukanMesinOptions_() {
+      const sel = document.getElementById('at-mesin');
+      if (!sel || ajukanTumpulMesinLoaded_ || !machineList || machineList.length === 0) return;
+      machineList.forEach(function (m) {
         const opt = document.createElement('option');
-        opt.value = t.kodeAlat;
-        opt.textContent = t.kodeAlat + ' — ' + (t.namaAlat || '');
+        opt.value = m.kodeMesin;
+        opt.dataset.mesinName = m.mesin || '';
+        opt.textContent = (m.mesin ? (m.mesin + ' — ') : '') + m.kodeMesin;
         sel.appendChild(opt);
       });
-      ajukanTumpulKodeAlatLoaded_ = true;
+      ajukanTumpulMesinLoaded_ = true;
     }
 
+    /** [REVISI] Dipanggil saat Mesin dipilih -- menarik Kode Alat yang BENAR-BENAR terpasang (DIPAKAI) di mesin ini, sama seperti onMesinDriverChange di form Input admin. */
+    function onAjukanMesinChange_() {
+      const kodeMesin = document.getElementById('at-mesin').value;
+      const kodeAlatSel = document.getElementById('at-kode-alat');
+      const unitSel = document.getElementById('at-unit-id');
+      const unitHint = document.getElementById('at-unit-hint');
+
+      ajukanTumpulUnitsCache_ = [];
+      unitSel.innerHTML = '<option value="">Pilih Kode Alat dulu…</option>';
+      unitSel.disabled = true;
+      unitHint.style.display = 'none';
+
+      if (!kodeMesin) {
+        kodeAlatSel.innerHTML = '<option value="">Pilih mesin dulu…</option>';
+        kodeAlatSel.disabled = true;
+        return;
+      }
+
+      kodeAlatSel.disabled = true;
+      kodeAlatSel.innerHTML = '<option value="">Memuat kode alat…</option>';
+
+      apiGet('getUnitsByMesin', { kodeMesin: kodeMesin, statusFilter: 'DIPAKAI' })
+        .then(function (units) {
+          ajukanTumpulUnitsCache_ = units || [];
+          const seen = {};
+          const kodeAlatList = [];
+          ajukanTumpulUnitsCache_.forEach(function (u) {
+            if (seen[u.kodeAlat]) return;
+            seen[u.kodeAlat] = true;
+            kodeAlatList.push(u.kodeAlat);
+          });
+          if (!kodeAlatList.length) {
+            kodeAlatSel.innerHTML = '<option value="">Tidak ada alat terpasang di mesin ini</option>';
+            kodeAlatSel.disabled = true;
+            return;
+          }
+          kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map(function (kodeAlat) {
+            const t = (masterTools || []).find(function (mt) { return mt.kodeAlat === kodeAlat; });
+            const label = t ? (kodeAlat + ' — ' + (t.namaAlat || '')) : kodeAlat;
+            return '<option value="' + escapeAttr(kodeAlat) + '">' + escapeHtml(label) + '</option>';
+          }).join('');
+          kodeAlatSel.disabled = false;
+        })
+        .catch(function (err) {
+          kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
+          console.error(err);
+        });
+    }
+
+    /** [REVISI] Unit sudah ditarik sekaligus saat Mesin dipilih (getUnitsByMesin) -- di sini tinggal difilter per Kode Alat di client, tanpa request baru. */
     function onAjukanKodeAlatChange_() {
       const kodeAlat = document.getElementById('at-kode-alat').value;
       const unitSel = document.getElementById('at-unit-id');
       const unitHint = document.getElementById('at-unit-hint');
-      const mesinInput = document.getElementById('at-mesin');
-      unitSel.innerHTML = '<option value="">Memuat…</option>';
-      unitSel.disabled = true;
-      mesinInput.value = '';
       unitHint.style.display = 'none';
       if (!kodeAlat) {
         unitSel.innerHTML = '<option value="">Pilih Kode Alat dulu…</option>';
+        unitSel.disabled = true;
         return;
       }
-      apiGet('getUnitsByKodeAlat', { kodeAlat: kodeAlat, statusFilter: 'DIPAKAI' })
-        .then(function (units) {
-          unitSel.innerHTML = '<option value="">Pilih unit…</option>';
-          if (!units || units.length === 0) {
-            unitSel.innerHTML = '<option value="">Tidak ada unit sedang dipakai</option>';
-            unitHint.textContent = 'Tidak ada unit dengan Kode Alat ini yang statusnya sedang dipakai di mesin.';
-            unitHint.style.display = '';
-            return;
-          }
-          units.forEach(function (u) {
-            const opt = document.createElement('option');
-            opt.value = u.unitId;
-            opt.dataset.kodeMesin = u.kodeMesin || '';
-            opt.textContent = u.unitId;
-            unitSel.appendChild(opt);
-          });
-          unitSel.disabled = false;
-        })
-        .catch(function (err) {
-          unitSel.innerHTML = '<option value="">Gagal memuat unit</option>';
-          unitHint.textContent = (err && err.message) || 'Gagal memuat daftar unit.';
-          unitHint.style.display = '';
-        });
-    }
-
-    function onAjukanUnitChange_() {
-      const unitSel = document.getElementById('at-unit-id');
-      const mesinInput = document.getElementById('at-mesin');
-      const opt = unitSel.options[unitSel.selectedIndex];
-      const kodeMesin = opt ? opt.dataset.kodeMesin : '';
-      const found = (machineList || []).find(function (m) { return m.kodeMesin === kodeMesin; });
-      mesinInput.value = found ? (found.mesin + ' (' + kodeMesin + ')') : (kodeMesin || '—');
+      const units = ajukanTumpulUnitsCache_.filter(function (u) { return u.kodeAlat === kodeAlat; });
+      if (!units.length) {
+        unitSel.innerHTML = '<option value="">Tidak ada unit tersedia</option>';
+        unitSel.disabled = true;
+        unitHint.textContent = 'Tidak ada unit dengan Kode Alat ini yang statusnya sedang dipakai di mesin ini.';
+        unitHint.style.display = '';
+        return;
+      }
+      unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map(function (u) {
+        return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + '</option>';
+      }).join('');
+      unitSel.disabled = false;
     }
 
     function showAjukanTumpulMsg_(type, text) {
@@ -4374,19 +4768,18 @@
     function wireAjukanTumpulForm_() {
       const form = document.getElementById('ajukan-tumpul-form');
       if (!form) return;
+      document.getElementById('at-mesin').addEventListener('change', onAjukanMesinChange_);
       document.getElementById('at-kode-alat').addEventListener('change', onAjukanKodeAlatChange_);
-      document.getElementById('at-unit-id').addEventListener('change', onAjukanUnitChange_);
       form.addEventListener('submit', function (e) {
         e.preventDefault();
+        const mesinSel = document.getElementById('at-mesin');
+        const kodeMesin = mesinSel.value;
+        const mesinOpt = mesinSel.options[mesinSel.selectedIndex];
+        const mesin = mesinOpt ? (mesinOpt.dataset.mesinName || '') : '';
         const kodeAlat = document.getElementById('at-kode-alat').value;
-        const unitSel = document.getElementById('at-unit-id');
-        const unitId = unitSel.value;
-        const opt = unitSel.options[unitSel.selectedIndex];
-        const kodeMesin = opt ? opt.dataset.kodeMesin : '';
-        const found = (machineList || []).find(function (m) { return m.kodeMesin === kodeMesin; });
-        const mesin = found ? found.mesin : '';
-        if (!kodeAlat || !unitId) {
-          showAjukanTumpulMsg_('error', 'Pilih Kode Alat dan Unit terlebih dahulu.');
+        const unitId = document.getElementById('at-unit-id').value;
+        if (!kodeMesin || !kodeAlat || !unitId) {
+          showAjukanTumpulMsg_('error', 'Pilih Mesin, Kode Alat, dan Unit terlebih dahulu.');
           return;
         }
         const btn = document.getElementById('ajukan-tumpul-submit');
@@ -4402,9 +4795,11 @@
           }
           showAjukanTumpulMsg_('success', 'Pengajuan terkirim (' + res.id + '). Menunggu konfirmasi WH.');
           form.reset();
+          document.getElementById('at-kode-alat').innerHTML = '<option value="">Pilih mesin dulu…</option>';
+          document.getElementById('at-kode-alat').disabled = true;
           document.getElementById('at-unit-id').innerHTML = '<option value="">Pilih Kode Alat dulu…</option>';
           document.getElementById('at-unit-id').disabled = true;
-          document.getElementById('at-mesin').value = '';
+          ajukanTumpulUnitsCache_ = [];
           loadRiwayatPengajuanSaya_();
         }).catch(function (err) {
           btn.disabled = false;
@@ -4611,7 +5006,29 @@
             sel.appendChild(opt);
           });
         })
-        .catch(console.error);
+        .catch(function (err) {
+          // [v8.18.0] Sebelumnya cuma console.error -- operator tidak
+          // pernah tahu kenapa dropdown Mesin kosong. Sekarang tampil
+          // hint visible langsung di bawah field-nya.
+          console.error(err);
+          const hint = document.getElementById('f-mesin-driver-hint');
+          if (hint) {
+            hint.textContent = 'Gagal memuat daftar mesin (' + (err && err.message ? err.message : 'error tidak diketahui') + '). Coba refresh; kalau masih gagal, cek deployment backend sudah versi terbaru.';
+            hint.style.display = 'block';
+          }
+        });
+
+      // [v8.18.0] Log versi backend LIVE ke console saat startup, supaya
+      // deployment lama/basi (belum punya action terbaru seperti
+      // getMachineList) bisa langsung ketahuan tanpa harus reverse-
+      // engineer dari gejala UI seperti dropdown kosong.
+      apiGet('getBackendVersion')
+        .then(function (res) {
+          console.log('[APP] Backend version:', (res && res.version) || '(tidak diketahui)');
+        })
+        .catch(function (err) {
+          console.warn('[APP] Gagal cek versi backend (kemungkinan deployment lama, belum punya action getBackendVersion):', err && err.message);
+        });
     }
 
     /**
@@ -4641,6 +5058,83 @@
       document.getElementById('f-activity').addEventListener('change', onActivityChange);
       document.getElementById('f-mesin-driver').addEventListener('change', onMesinDriverChange);
       document.getElementById('movement-form').addEventListener('submit', onSubmitForm);
+
+      // [v9.0] Progress wizard — hitung ulang tiap kali field apapun di
+      // form berubah/diketik, supaya progress bar & badge langkah selalu
+      // sinkron tanpa perlu dipanggil manual di tiap handler perubahan.
+      const formEl = document.getElementById('movement-form');
+      formEl.addEventListener('input', updateInputWizardProgress_);
+      formEl.addEventListener('change', updateInputWizardProgress_);
+      updateInputWizardProgress_();
+    }
+
+    /**
+     * [v9.0] PREMIUM WIZARD — hitung progres pengisian form input
+     * berdasarkan field WAJIB tiap kartu (langkah 5/Catatan opsional,
+     * tidak dihitung sebagai wajib). Field yang sedang disabled/hidden
+     * (mis. Kode Mesin lama saat mode mesin-dulu aktif) diabaikan dari
+     * perhitungan supaya tidak membuat progress "nyangkut" walau field
+     * itu memang tidak perlu diisi user secara langsung.
+     */
+    const INPUT_WIZARD_STEP_IDS = ['1', '2', '3', '4'];
+    const CHECK_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+    function stepFieldIsFilled_(el) {
+      if (!el || el.disabled) return true; // field nonaktif tidak dihitung sbg penghalang
+      if (el.type === 'number') return el.value !== '' && Number(el.value) >= (Number(el.min) || 0);
+      return String(el.value || '').trim() !== '';
+    }
+
+    function inputCardIsComplete_(cardEl) {
+      // Field "cerdas" (Mesin) hanya wajib kalau sedang ditampilkan.
+      const mesinWrap = cardEl.querySelector('#f-mesin-driver-wrap');
+      if (mesinWrap && mesinWrap.style.display !== 'none') {
+        if (!stepFieldIsFilled_(document.getElementById('f-mesin-driver'))) return false;
+      }
+
+      // Unit: field select ATAU input manual, tergantung mode mana yang aktif.
+      const unitManual = cardEl.querySelector('#f-unit-id-manual');
+      if (unitManual && unitManual.style.display !== 'none') {
+        if (!stepFieldIsFilled_(unitManual)) return false;
+      }
+
+      const requiredEls = cardEl.querySelectorAll('select[required], input[required]');
+      for (let i = 0; i < requiredEls.length; i++) {
+        if (!stepFieldIsFilled_(requiredEls[i])) return false;
+      }
+      return true;
+    }
+
+    function updateInputWizardProgress_() {
+      let completedCount = 0;
+      let activeAssigned = false;
+
+      INPUT_WIZARD_STEP_IDS.forEach(function (stepNum) {
+        const cardEl = document.getElementById('input-card-' + stepNum);
+        const badgeEl = document.getElementById('input-step-' + stepNum);
+        if (!cardEl || !badgeEl) return;
+
+        const complete = inputCardIsComplete_(cardEl);
+        cardEl.classList.toggle('is-complete', complete);
+        badgeEl.classList.toggle('is-complete', complete);
+        badgeEl.innerHTML = complete ? CHECK_ICON_SVG : stepNum;
+
+        if (complete) {
+          completedCount++;
+          cardEl.classList.remove('is-active');
+        } else if (!activeAssigned) {
+          cardEl.classList.add('is-active');
+          activeAssigned = true;
+        } else {
+          cardEl.classList.remove('is-active');
+        }
+      });
+
+      const total = INPUT_WIZARD_STEP_IDS.length;
+      const fillEl = document.getElementById('input-progress-fill');
+      const labelEl = document.getElementById('input-progress-label');
+      if (fillEl) fillEl.style.width = Math.round((completedCount / total) * 100) + '%';
+      if (labelEl) labelEl.textContent = completedCount + '/' + total + ' langkah';
     }
 
     const ACTIVITY_NEW_UNIT = 'PEMBELIAN BARU';
@@ -4718,6 +5212,7 @@
           kodeAlatSel.innerHTML = '<option value="">' + emptyMessage + '</option>';
           kodeAlatSel.disabled = true;
           onKodeAlatChange();
+          updateInputWizardProgress_();
           return;
         }
         kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map(function (kodeAlat) {
@@ -4727,6 +5222,7 @@
         }).join('');
         kodeAlatSel.disabled = false;
         onKodeAlatChange();
+        updateInputWizardProgress_();
       }
 
       if (activity === 'KEMBALI KE GUDANG (TUMPUL)') {
@@ -4838,6 +5334,7 @@
           }).join('');
           unitSel.disabled = false;
         }
+        updateInputWizardProgress_();
       } else {
         setUnitMode_('select');
         unitHint.style.display = 'none';
@@ -4850,16 +5347,19 @@
             if (!units || units.length === 0) {
               unitSel.innerHTML = '<option value="">Tidak ada unit tersedia untuk status ini</option>';
               unitSel.disabled = true;
+              updateInputWizardProgress_();
               return;
             }
             unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map(function (u) {
               return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + ' (' + escapeHtml(u.statusUnit) + ')</option>';
             }).join('');
             unitSel.disabled = false;
+            updateInputWizardProgress_();
           })
           .catch(function (err) {
             unitSel.innerHTML = '<option value="">Gagal memuat unit</option>';
             console.error(err);
+            updateInputWizardProgress_();
           });
       }
 
@@ -5031,6 +5531,7 @@
           mesinDrivenUnitsCache = [];
           populateKodeAlatSelect_(masterTools);
           document.getElementById('f-kode-alat').disabled = false;
+          updateInputWizardProgress_();
           loadDashboard();
           loadTransactions();
           loadStockStatus();
