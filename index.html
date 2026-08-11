@@ -2226,6 +2226,92 @@
         align-content: start;
       }
       #stok-list .card { margin-bottom: 0; }
+
+      /* v8.21 — FONT SIZE DESKTOP (+-12%)
+         Ukuran font desktop dinaikkan (bukan cuma layout diperlebar spt
+         v8.19/v8.20) -- di layar >=1080px teks berbasis desain mobile
+         (10-16px) kerasa kekecilan dibaca dari jarak duduk normal desktop.
+         Tiap rule di bawah SENGAJA cuma override property font-size (bukan
+         re-declare seluruh rule) supaya warna/weight/margin dari rule asli
+         di atas tetap dipakai apa adanya -- override presisi, bukan
+         duplikasi. Dikecualikan dari daftar ini: login-gate-* (layar
+         sebelum masuk app, belum sempat direvisi desktop), nav.tabbar
+         button (bottom-nav mobile, disembunyikan total di desktop),
+         nav.sidebar-nav button::after (tooltip icon, sengaja kecil). */
+      #header-app-name { font-size: 11px; }
+      header h1 { font-size: 23.5px; }
+      .conn-status { font-size: 10.5px; }
+      header p#header-sub { font-size: 13.5px; }
+      .minibar-appname { font-size: 15.5px; }
+      .status-banner { font-size: 13.5px; }
+      .status-banner button { font-size: 13px; }
+      .hero-main .hero-num { font-size: 34px; }
+      .hero-main .hero-label { font-size: 12.5px; }
+      .hero-main .hero-sub { font-size: 12px; }
+      .hero-ring-num { font-size: 17px; }
+      .hero-ring-label { font-size: 8px; }
+      .kpi-card .num { font-size: 18px; }
+      .kpi-card .label { font-size: 10px; }
+      .dash-section-head h3 { font-size: 13px; }
+      .dash-section-head .dash-hint { font-size: 12px; }
+      .dist-legend-label { font-size: 12px; }
+      .dist-legend-value { font-size: 18px; }
+      .dist-legend-pct { font-size: 12px; }
+      .cond-num { font-size: 24.5px; }
+      .cond-label { font-size: 11px; }
+      .dash-footnote { font-size: 12px; }
+      .section-title { font-size: 17px; }
+      .tag { font-size: 12.5px; }
+      .badge { font-size: 11px; }
+      .sc-qty-row .sc-qty-num { font-size: 21px; }
+      .sc-qty-row .sc-qty-label { font-size: 11px; }
+      .sc-field .sc-label { font-size: 10px; }
+      .sc-field .sc-value { font-size: 14px; }
+      .sc-mesin { font-size: 13px; }
+      .filter-chip { font-size: 14px; }
+      .txn-row .activity { font-size: 15px; }
+      .txn-row .meta { font-size: 13px; }
+      .txn-row .tanggal { font-size: 12px; }
+      .empty-state .es-title { font-size: 15px; }
+      .empty-state .es-sub { font-size: 13.5px; }
+      .state-card .sc-title { font-size: 17px; }
+      .state-card .sc-sub { font-size: 14px; }
+      .state-card .sc-action { font-size: 14.5px; }
+      .form-section-title { font-size: 12.5px; }
+      .input-hero-title { font-size: 20px; }
+      .input-hero-sub { font-size: 14px; }
+      .input-progress-label { font-size: 12.5px; }
+      .input-step { font-size: 13.5px; }
+      .input-card-title { font-size: 15px; }
+      .input-card-desc { font-size: 13px; }
+      .input-card-optional { font-size: 11px; }
+      .field-smart-note { font-size: 13px; }
+      .input-submit-note { font-size: 13px; }
+      .field label { font-size: 14.5px; }
+      .field textarea { font-size: 16px; }
+      .field-hint { font-size: 13.5px; }
+      .btn-primary { font-size: 16px; }
+      .form-msg { font-size: 14.5px; }
+      .search-input { font-size: 15.5px; }
+      .settings-card-title { font-size: 15.5px; }
+      .settings-status { font-size: 14px; }
+      .field input#f-api-url { font-size: 14px; }
+      .btn-secondary { font-size: 15px; }
+      .settings-note { font-size: 13px; }
+      .stok-stat-card .ssc-label { font-size: 10.5px; }
+      .stok-stat-card .ssc-num { font-size: 22.5px; }
+      .rank-desc { font-size: 13.5px; }
+      .rank-pos { font-size: 13.5px; }
+      .rank-info .rk-title { font-size: 15.5px; }
+      .rank-info .rk-sub { font-size: 13px; }
+      .rank-metric .rk-num { font-size: 20px; }
+      .rank-metric .rk-unit { font-size: 11px; }
+      .settings-group-title { font-size: 12.5px; }
+      .settings-list-row { font-size: 15px; }
+      .settings-list-row .val { font-size: 14px; }
+      .panel-back-btn { font-size: 14.5px; }
+      .lainnya-item .li-title { font-size: 16px; }
+      .lainnya-item .li-desc { font-size: 13.5px; }
     }
 
     /* ---------- PANEL BACK BUTTON (dari Mesin/Pengaturan ke Lainnya) ---------- */
@@ -2735,7 +2821,7 @@
                 <div class="field" id="f-kode-mesin-wrap">
                   <label for="f-kode-mesin">Kode Mesin</label>
                   <select id="f-kode-mesin" disabled>
-                    <option value="">—</option>
+                    <option value="">Belum di-set</option>
                   </select>
                 </div>
                 <div class="field">
@@ -4741,7 +4827,11 @@
           }
           kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map(function (kodeAlat) {
             const t = (masterTools || []).find(function (mt) { return mt.kodeAlat === kodeAlat; });
-            const label = t ? (kodeAlat + ' — ' + (t.namaAlat || '')) : kodeAlat;
+            // [REVISI] Label dipersamakan dengan form Input admin — pakai
+            // kodeAlatOptionLabel_ supaya Brand/Bahan/Spesifikasi (ukuran)
+            // ikut tampil, bukan cuma "kode — nama". Operator jarang hafal
+            // kode alat, jadi info ukuran ini membantu cari alat yang tepat.
+            const label = t ? kodeAlatOptionLabel_(t) : kodeAlat;
             return '<option value="' + escapeAttr(kodeAlat) + '">' + escapeHtml(label) + '</option>';
           }).join('');
           kodeAlatSel.disabled = false;
@@ -4771,8 +4861,13 @@
         unitHint.style.display = '';
         return;
       }
+      // [REVISI] Ukuran/spesifikasi ikut ditampilkan di label Unit --
+      // spesifikasi melekat ke Kode Alat (bukan per unit), jadi cukup
+      // dilihat sekali dari masterTools, tidak perlu request tambahan.
+      const toolForUkuran = (masterTools || []).find(function (mt) { return mt.kodeAlat === kodeAlat; });
+      const ukuranSuffix = toolForUkuran && toolForUkuran.spesifikasi ? (' (' + toolForUkuran.spesifikasi + ')') : '';
       unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map(function (u) {
-        return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + '</option>';
+        return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId + ukuranSuffix) + '</option>';
       }).join('');
       unitSel.disabled = false;
     }
@@ -5322,7 +5417,7 @@
     function syncHiddenKodeMesin_(kodeMesin, mesinName) {
       const sel = document.getElementById('f-kode-mesin');
       if (!kodeMesin) {
-        sel.innerHTML = '<option value="">—</option>';
+        sel.innerHTML = '<option value="">Belum di-set</option>';
         sel.disabled = true;
         return;
       }
@@ -5349,7 +5444,7 @@
         // Mode mesin-dulu: JANGAN reset mesinSel di sini — nilainya sumber
         // kebenarannya f-mesin-driver dan sudah disinkron lewat syncHiddenKodeMesin_.
         if (!driven) {
-          mesinSel.innerHTML = '<option value="">—</option>';
+          mesinSel.innerHTML = '<option value="">Belum di-set</option>';
           mesinSel.disabled = true;
         }
         return;
@@ -5434,7 +5529,11 @@
       apiGet('getMesinOptionsForKodeAlat', { kodeAlat: kodeAlat })
         .then(function (mesinList) {
           if (!mesinList || mesinList.length === 0) {
-            mesinSel.innerHTML = '<option value="">—</option>';
+            // [REVISI] Alat yang belum punya mapping mesin sama sekali di
+            // Master (belum sempat di-set admin) tetap boleh dipakai untuk
+            // transaksi -- field ini memang opsional. Label "Belum di-set"
+            // dipakai supaya jelas ini beda dari "mesin dipilih kosong".
+            mesinSel.innerHTML = '<option value="">Belum di-set</option>';
             mesinSel.disabled = true;
             return;
           }
@@ -5578,7 +5677,7 @@
           document.getElementById('f-unit-id-manual').value = '';
           document.getElementById('f-unit-id-hint').style.display = 'none';
           setUnitMode_('select');
-          document.getElementById('f-kode-mesin').innerHTML = '<option value="">—</option>';
+          document.getElementById('f-kode-mesin').innerHTML = '<option value="">Belum di-set</option>';
           document.getElementById('f-kode-mesin').disabled = true;
           document.getElementById('f-qty').value = 1;
           // [REVISI-02] form.reset() mengosongkan f-activity tapi TIDAK
