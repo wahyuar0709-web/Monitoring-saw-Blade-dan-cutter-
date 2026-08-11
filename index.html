@@ -1548,7 +1548,14 @@
     .input-card .field select,
     .input-card .field input,
     .input-card .field textarea {
-      background: var(--color-surface-2);
+      /* [FIX] Sebelumnya pakai shorthand `background:` -- ini reset
+         background-repeat/position/size jadi default (repeat/0% 0%/auto)
+         krn selector ini (.input-card .field select) lebih spesifik drpd
+         `.field select` yg set no-repeat utk ikon chevron custom. Akibatnya
+         ikon chevron ke-tile berulang di seluruh lebar select pada semua
+         field form wizard input transaksi. `background-color` hanya set
+         warna, tidak menyentuh repeat/position/size punya rule lain. */
+      background-color: var(--color-surface-2);
       border-color: var(--color-border);
     }
     .input-card .field select:focus,
@@ -1580,7 +1587,10 @@
       flex-shrink: 0;
     }
     .field.field-smart select {
-      background: var(--color-surface);
+      /* [FIX] sama seperti .input-card .field select -- background-color
+         saja, jangan shorthand, supaya no-repeat/position/size ikon
+         chevron dari `.field select` tidak ke-reset. */
+      background-color: var(--color-surface);
     }
     .field-smart-note {
       display: flex;
@@ -3066,6 +3076,10 @@
           </select>
           <div class="field-hint" id="at-unit-hint" style="display:none;"></div>
         </div>
+        <div class="field">
+          <label for="at-pic">Nama PIC</label>
+          <input type="text" id="at-pic" placeholder="Nama yang mengajukan" required>
+        </div>
         <div class="form-msg" id="ajukan-tumpul-msg"></div>
         <button type="submit" class="btn-primary" id="ajukan-tumpul-submit">Ajukan ke WH</button>
       </form>
@@ -3307,8 +3321,8 @@
       return runtimeApiUrl_;
     }
     const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-    const APP_VERSION = 'v8.22.0-panel-stok-revert-1col'; // versi lengkap, dipakai di log developer
-    const APP_VERSION_SHORT = 'v8.22.0';    // versi ringkas, ditampilkan di badge UI
+    const APP_VERSION = 'v8.23.1-tampilkan-pic-pengajuan'; // versi lengkap, dipakai di log developer
+    const APP_VERSION_SHORT = 'v8.23.1';    // versi ringkas, ditampilkan di badge UI
     // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
     // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
     // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
@@ -4897,15 +4911,19 @@
         const mesin = mesinOpt ? (mesinOpt.dataset.mesinName || '') : '';
         const kodeAlat = document.getElementById('at-kode-alat').value;
         const unitId = document.getElementById('at-unit-id').value;
-        if (!kodeMesin || !kodeAlat || !unitId) {
-          showAjukanTumpulMsg_('error', 'Pilih Mesin, Kode Alat, dan Unit terlebih dahulu.');
+        // [REVISI] Tambah field PIC (Nama PIC) -- wajib diisi, sama seperti
+        // di form Input Transaksi admin (f-pic), supaya pengajuan asah dari
+        // operator juga tercatat siapa yang mengajukan.
+        const pic = document.getElementById('at-pic').value.trim();
+        if (!kodeMesin || !kodeAlat || !unitId || !pic) {
+          showAjukanTumpulMsg_('error', 'Pilih Mesin, Kode Alat, Unit, dan isi Nama PIC terlebih dahulu.');
           return;
         }
         const btn = document.getElementById('ajukan-tumpul-submit');
         btn.disabled = true;
         apiPost('submitPengajuanTumpul', {
           sessionToken: runtimeSessionToken_,
-          kodeAlat: kodeAlat, unitId: unitId, mesin: mesin, kodeMesin: kodeMesin
+          kodeAlat: kodeAlat, unitId: unitId, mesin: mesin, kodeMesin: kodeMesin, pic: pic
         }).then(function (res) {
           btn.disabled = false;
           if (!res || res.success !== true) {
@@ -4961,7 +4979,14 @@
             return '<div class="rank-row" data-pengajuan-id="' + escapeAttr(r.id) + '">' +
               '<div class="rank-info">' +
                 '<div class="rk-title">' + escapeHtml(r.unitId) + ' · ' + escapeHtml(r.kodeAlat) + '</div>' +
-                '<div class="rk-sub">' + escapeHtml(r.actorName) + ' · ' + escapeHtml(r.mesin || r.kodeMesin || '—') + ' · ' + escapeHtml(r.timestamp) + '</div>' +
+                // [REVISI] Tampilkan PIC (nama yang mengajukan, diisi manual)
+                // sebagai info utama -- WH perlu mencocokkan ke orang yang
+                // bawa fisik alatnya. Nama akun login (actorName) tetap
+                // ditampilkan sebagai info sekunder kalau beda dari PIC
+                // (mis. device dipakai bergantian).
+                '<div class="rk-sub">' + escapeHtml(r.pic || r.actorName) +
+                  (r.pic && r.pic !== r.actorName ? ' <span style="opacity:.7">(akun: ' + escapeHtml(r.actorName) + ')</span>' : '') +
+                  ' · ' + escapeHtml(r.mesin || r.kodeMesin || '—') + ' · ' + escapeHtml(r.timestamp) + '</div>' +
               '</div>' +
               '<div class="rank-metric" style="display:flex; gap:6px;">' +
                 '<button type="button" class="btn-secondary kt-reject-btn" data-id="' + escapeAttr(r.id) + '">Tolak</button>' +
