@@ -2182,50 +2182,15 @@
          sejajar (sudah .field-row di markup, cukup diberi lebar lebih
          lega lewat main yang sudah diperlebar di atas). */
 
-      /* v8.20 — PANEL STOK: 2 KOLOM (filter kiri sempit, list kanan lebar)
-         Tidak ada wrapper baru di markup -- 4 anak langsung #panel-stok
-         (search, filter-chip-row, field-row select, stok-list) ditempatkan
-         eksplisit via grid-column/grid-row, jadi HTML lama tetap utuh &
-         JS (render/filter logic berbasis getElementById) tidak perlu
-         diubah sama sekali. */
-      #panel-stok {
-        display: grid;
-        grid-template-columns: 260px 1fr;
-        column-gap: 24px;
-        align-items: start;
-      }
-      #stok-search { grid-column: 1; grid-row: 1; }
-      #stok-filter-row {
-        grid-column: 1; grid-row: 2;
-        flex-wrap: wrap;
-        overflow-x: visible;
-        padding-bottom: 0;
-      }
-      #stok-filter-select-row { grid-column: 1; grid-row: 3; }
-      /* Mesin & Ukuran ditumpuk 1 kolom di sidebar filter (260px terlalu
-         sempit utk 2 select sejajar) -- override grid-trick 2-kolom yang
-         dipakai versi mobile (lihat blok asli #stok-filter-select-row.field-row
-         di atas), diganti flex-column sederhana. */
-      #stok-filter-select-row.field-row {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-md);
-      }
-      #stok-filter-select-row .field { display: block; }
-      #stok-filter-select-row .field label { grid-row: auto; margin-bottom: 6px; align-self: auto; }
-      /* List alat: dari stack kartu vertikal (pola mobile) -> grid
-         auto-fit multi-kolom, mengisi kolom kanan yang sudah lebar.
-         Rentang baris 1/4 supaya tingginya nyamain 3 elemen filter di
-         kolom kiri (search+chip+select), bukan cuma row pertama. */
-      #stok-list {
-        grid-column: 2;
-        grid-row: 1 / 4;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: var(--space-sm);
-        align-content: start;
-      }
-      #stok-list .card { margin-bottom: 0; }
+      /* v8.20 — PANEL STOK 2-KOLOM (260px filter + grid list) DIHAPUS
+         atas permintaan eksplisit: dikembalikan ke tampilan pre-v8.20
+         (stacked, full-width, 1 kartu per baris mengikuti main).
+         #panel-stok/#stok-search/#stok-filter-row/#stok-filter-select-row/
+         #stok-list sengaja TIDAK di-override lagi di sini -- otomatis
+         jatuh balik ke rule dasar (mobile-first) di atas, yang memang
+         sudah full-width & stacked. v8.21 (font desktop) di bawah TETAP
+         dipertahankan karena itu perbaikan terpisah, bukan bagian dari
+         redesign 2-kolom ini. */
 
       /* v8.21 — FONT SIZE DESKTOP (+-12%)
          Ukuran font desktop dinaikkan (bukan cuma layout diperlebar spt
@@ -3342,8 +3307,8 @@
       return runtimeApiUrl_;
     }
     const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-    const APP_VERSION = 'v8.18.0-api-error-surface'; // versi lengkap, dipakai di log developer
-    const APP_VERSION_SHORT = 'v8.18.0';    // versi ringkas, ditampilkan di badge UI
+    const APP_VERSION = 'v8.22.0-panel-stok-revert-1col'; // versi lengkap, dipakai di log developer
+    const APP_VERSION_SHORT = 'v8.22.0';    // versi ringkas, ditampilkan di badge UI
     // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
     // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
     // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
