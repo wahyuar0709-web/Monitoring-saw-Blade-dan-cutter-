@@ -4590,11 +4590,21 @@
     let stokActiveMesin_ = '';
     let stokActiveUkuran_ = '';
 
-    /** Cek apakah kode mesin yang dipilih ada di dalam field `mesin`/`kodeMesin` baris (bisa berisi >1 mesin). */
+    /* [BUGFIX] Sebelumnya fungsi ini mencocokkan via substring ke gabungan
+     * r.mesin (NAMA tipe mesin, mis. "CNC Cutting/Cut & Drill") + r.kodeMesin
+     * (yang faktanya tidak pernah dikirim backend versi lama). Karena nama
+     * tipe mesin itu sendiri mengandung "/", opsi dropdown yang dibentuk
+     * dari situ (lihat populateStokFilterOptions_) jadi fragmen ganjil dan
+     * tidak merepresentasikan kode mesin (RDS0xx) yang dipakai konsisten di
+     * bagian app lain. Sekarang backend mengirim r.kodeMesin (RDS0xx,
+     * dipisah "/") secara terpisah dari r.mesin (nama, tetap dipakai utk
+     * label di kartu) -- fungsi ini dipindah ke situ, dengan exact-match
+     * per token supaya "RDS1" tidak salah cocok dgn "RDS017" dst. */
     function rowMatchesMesin_(row, mesinFilter) {
       if (!mesinFilter) return true;
-      const gabung = (String(row.mesin || '') + ' ' + String(row.kodeMesin || '')).toLowerCase();
-      return gabung.indexOf(mesinFilter.toLowerCase()) !== -1;
+      const target = mesinFilter.trim().toLowerCase();
+      const tokens = String(row.kodeMesin || '').split(/[\/,]/).map(function (t) { return t.trim().toLowerCase(); });
+      return tokens.indexOf(target) !== -1;
     }
 
     function applyStokFilters_() {
@@ -4627,7 +4637,12 @@
       const mesinSet = {};
       const ukuranSet = {};
       (rows || []).forEach(function (r) {
-        String(r.mesin || r.kodeMesin || '').split(/[\/,]/).forEach(function (m) {
+        // [BUGFIX] sumber opsi dipindah dari r.mesin (nama tipe mesin,
+        // bisa mengandung "/" di dalam satu nama -- lihat rowMatchesMesin_)
+        // ke r.kodeMesin (RDS0xx, aman di-split "/" krn satu kode tidak
+        // pernah mengandung "/"). Konsisten dgn kode mesin yang dipakai di
+        // seluruh bagian app lain.
+        String(r.kodeMesin || '').split(/[\/,]/).forEach(function (m) {
           const v = m.trim();
           if (v) mesinSet[v] = true;
         });
