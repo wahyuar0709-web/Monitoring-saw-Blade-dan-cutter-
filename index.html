@@ -1652,8 +1652,16 @@
     .field select:focus,
     .field input:focus,
     .field textarea:focus {
+      /* [FIX] Root cause SEBENARNYA dari chevron berulang: bug ini bukan
+         cuma di state diam (sudah difix di .input-card/.field-smart),
+         tapi juga di state :focus -- persis saat select DIKLIK/DIBUKA,
+         yang mana skenario paling sering dilihat user. `:focus` bikin
+         specificity rule ini LEBIH TINGGI drpd `.field select` biasa,
+         jadi shorthand `background:` di sini menang dan reset repeat/
+         position/size ikon chevron balik ke default (tile berulang).
+         Ganti ke background-color spy tidak menyentuh properti lain. */
       border-color: var(--color-primary);
-      background: var(--color-surface);
+      background-color: var(--color-surface);
       outline: none;
     }
     .field select:disabled,
@@ -3321,8 +3329,8 @@
       return runtimeApiUrl_;
     }
     const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-    const APP_VERSION = 'v8.23.1-tampilkan-pic-pengajuan'; // versi lengkap, dipakai di log developer
-    const APP_VERSION_SHORT = 'v8.23.1';    // versi ringkas, ditampilkan di badge UI
+    const APP_VERSION = 'v8.23.2-fix-chevron-focus'; // versi lengkap, dipakai di log developer
+    const APP_VERSION_SHORT = 'v8.23.2';    // versi ringkas, ditampilkan di badge UI
     // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
     // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
     // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
