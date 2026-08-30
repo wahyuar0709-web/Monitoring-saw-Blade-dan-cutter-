@@ -3578,12 +3578,17 @@
       applyRoleUI_(); // [WO-ROLE] terapkan tampilan sesuai role dari session tersimpan
       wireAjukanTumpulForm_();
       registerServiceWorker_();
-      loadDashboard();
-      loadFormReferenceData();
-      loadTransactions();
-      loadStockStatus();
-      loadMachineAnalytics();
-      loadKontrolAsah();
+
+      // P1-01 — only load runtime data if API is configured;
+      // otherwise skeletons persist indefinitely (no backend = no data).
+      if (runtimeApiUrl_) {
+        loadDashboard();
+        loadFormReferenceData();
+        loadTransactions();
+        loadStockStatus();
+        loadMachineAnalytics();
+        loadKontrolAsah();
+      }
       appHasLoadedOnce_ = true;
     });
 
