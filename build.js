@@ -82,18 +82,18 @@ const newIndexHtml = `<!DOCTYPE html>
   <meta name="apple-mobile-web-app-title" content="Saw Blade Monitor">
   <link rel="stylesheet" href="src/css/main.css">
   <script>
-    (function () {
+    (() => {
       try {
         const THEME_KEY = 'sawBladeMonitor_theme';
         const saved = localStorage.getItem(THEME_KEY);
-        const theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const theme = saved || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-      } catch (e) { }
+      } catch (_e) { }
     })();
   </script>
 </head>
 <body>
-  <div id="app-root"></div>
+${bodyContent}
   <script type="module" src="src/js/app.js"></script>
 </body>
 </html>`;
@@ -103,6 +103,6 @@ console.log('Created new index.html');
 
 console.log('\nBuild complete!');
 console.log('Next steps:');
-console.log('1. Review src/css/main.css and src/js/app.js');
-console.log('2. Run npm run format to format code');
-console.log('3. Run npm run lint to check for issues');
+console.log('1. Run npm run format to format code');
+console.log('2. Run npm run lint to check for issues');
+console.log('3. Run npm run dev to test locally');
