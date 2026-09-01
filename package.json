@@ -1,19 +1,29 @@
 {
-  "name": "monitoring-saw-blade-dan-cutter-",
-  "version": "1.0.0",
-  "description": "",
-  "main": "sw.js",
+  "name": "monitoring-saw-blade-cutter",
+  "version": "8.23.2",
+  "description": "Monitoring stok & sirkulasi saw blade dan cutter — gudang, mesin, vendor asah",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npx serve .",
+    "build": "node build.js",
+    "format": "npx biome format --write src/ index.html",
+    "lint": "npx biome lint src/ index.html",
+    "check": "npx biome check --write src/ index.html",
+    "test": "echo \"No tests yet\" && exit 0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wahyuar0709-web/Monitoring-saw-Blade-dan-cutter-.git"
   },
-  "keywords": [],
+  "keywords": [
+    "pwa",
+    "monitoring",
+    "saw-blade",
+    "cutter",
+    "inventory"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/wahyuar0709-web/Monitoring-saw-Blade-dan-cutter-/issues"
   },

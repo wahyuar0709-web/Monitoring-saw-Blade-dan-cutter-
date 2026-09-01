@@ -1,4 +1,70 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = __dirname;
+const SRC = path.join(ROOT, 'src');
+
+// Ensure directories exist
+['css', 'js', 'components', 'partials'].forEach(dir => {
+  const p = path.join(SRC, dir);
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+});
+
+// Read the original index.html
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+
+// Extract CSS from <style> tags
+const cssMatches = html.match(/<style>([\s\S]*?)<\/style>/g);
+let cssContent = '';
+if (cssMatches) {
+  cssContent = cssMatches.map(m => m.replace(/<\/?style>/g, '')).join('\n\n');
+}
+
+// Write main.css
+fs.writeFileSync(path.join(SRC, 'css', 'main.css'), cssContent);
+console.log('Created src/css/main.css (' + cssContent.length + ' chars)');
+
+// Extract JS from <script> tags (skip the first inline theme script)
+const scriptMatches = html.match(/<script>([\s\S]*?)<\/script>/g);
+let jsContent = '';
+if (scriptMatches) {
+  // Skip the first script (theme initialization) - it should stay in head
+  jsContent = scriptMatches.slice(1).map(m => m.replace(/<\/?script>/g, '')).join('\n\n');
+}
+
+// Write main.js
+fs.writeFileSync(path.join(SRC, 'js', 'app.js'), jsContent);
+console.log('Created src/js/app.js (' + jsContent.length + ' chars)');
+
+// Extract body content (between <body> and </body>)
+const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/);
+let bodyContent = '';
+if (bodyMatch) {
+  bodyContent = bodyMatch[1].trim();
+}
+
+// Write body partial
+fs.writeFileSync(path.join(SRC, 'partials', 'body.html'), bodyContent);
+console.log('Created src/partials/body.html (' + bodyContent.length + ' chars)');
+
+// Extract head content (between <head> and </head>)
+const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
+let headContent = '';
+if (headMatch) {
+  headContent = headMatch[1].trim();
+}
+
+// Write head partial (without inline styles/scripts)
+let cleanHead = headContent
+  .replace(/<style>[\s\S]*?<\/style>/g, '')
+  .replace(/<script>[\s\S]*?<\/script>/g, '')
+  .trim();
+
+fs.writeFileSync(path.join(SRC, 'partials', 'head.html'), cleanHead);
+console.log('Created src/partials/head.html (' + cleanHead.length + ' chars)');
+
+// Create new index.html that uses the modular structure
+const newIndexHtml = `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
@@ -16,13 +82,13 @@
   <meta name="apple-mobile-web-app-title" content="Saw Blade Monitor">
   <link rel="stylesheet" href="src/css/main.css">
   <script>
-    (() => {
+    (function () {
       try {
         const THEME_KEY = 'sawBladeMonitor_theme';
         const saved = localStorage.getItem(THEME_KEY);
-        const theme = saved || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-      } catch (_e) { }
+      } catch (e) { }
     })();
   </script>
 </head>
@@ -30,4 +96,13 @@
   <div id="app-root"></div>
   <script type="module" src="src/js/app.js"></script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(path.join(ROOT, 'index.html'), newIndexHtml);
+console.log('Created new index.html');
+
+console.log('\nBuild complete!');
+console.log('Next steps:');
+console.log('1. Review src/css/main.css and src/js/app.js');
+console.log('2. Run npm run format to format code');
+console.log('3. Run npm run lint to check for issues');
