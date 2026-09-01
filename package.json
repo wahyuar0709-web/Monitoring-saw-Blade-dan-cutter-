@@ -1,0 +1,24 @@
+{
+  "name": "monitoring-saw-blade-dan-cutter-",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sw.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wahyuar0709-web/Monitoring-saw-Blade-dan-cutter-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/wahyuar0709-web/Monitoring-saw-Blade-dan-cutter-/issues"
+  },
+  "homepage": "https://github.com/wahyuar0709-web/Monitoring-saw-Blade-dan-cutter-#readme",
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.11"
+  }
+}
