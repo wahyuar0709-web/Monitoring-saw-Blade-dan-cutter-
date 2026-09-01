@@ -10,8 +10,8 @@ const SRC = path.join(ROOT, 'src');
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
 
-// Read the original index.html
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+// Read the original index.html (from git history) - it's UTF-16 LE encoded
+const html = fs.readFileSync(path.join(ROOT, 'original_index.html'), 'utf16le');
 
 // Extract CSS from <style> tags
 const cssMatches = html.match(/<style>([\s\S]*?)<\/style>/g);
