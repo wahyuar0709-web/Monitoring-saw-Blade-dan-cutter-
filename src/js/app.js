@@ -1987,17 +1987,8 @@ function loadRiwayatPengajuanSaya_() {
       // Filter client-side ("mine") DIHAPUS -- sebelumnya ada fallback
       // "kalau mine kosong, tampilkan rows apa adanya" yang berarti
       // operator baru (belum pernah mengajukan) melihat riwayat SEMUA
-      // orang lain di panel "Pengajuan Saya". Sekarang cukup deteksi
-      // error sesi (mis. UNAUTHORIZED_SESSION) dan render langsung.
-      if (rows && typeof rows === 'object' && !Array.isArray(rows) && rows.error) {
-        if (String(rows.error).indexOf('UNAUTHORIZED_SESSION') === 0) {
-          setSession_('', '', '');
-          renderAccountState_();
-          showLoginGate_();
-        }
-        el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
-        return;
-      }
+      // orang lain di panel "Pengajuan Saya". Data rows sudah valid,
+      // render langsung tanpa pengecekan sesi (sesi dicek di catch).
       const list = rows || [];
       if (list.length === 0) {
         el.innerHTML = emptyStateHtml_('Belum ada pengajuan', 'Riwayat pengajuanmu akan muncul di sini.');
@@ -2030,7 +2021,19 @@ function loadRiwayatPengajuanSaya_() {
           .join('') +
         '</div>';
     })
-    .catch(function () {
+    .catch(function (err) {
+      // FIX Temuan 1 (audit FE-BE): apiGet melempar ApiError saat body berupa
+      // {error: "..."} tanpa field success (baris 271-273). Karena itu,
+      // pengecekan UNAUTHORIZED_SESSION harus dilakukan di sini (catch),
+      // bukan di rows.error di dalam .then (dead code sebelumnya).
+      const msg = (err && err.message) ? String(err.message) : '';
+      if (msg.indexOf('UNAUTHORIZED_SESSION') === 0 || (err && err.code === 'UNAUTHORIZED_SESSION')) {
+        setSession_('', '', '');
+        renderAccountState_();
+        showLoginGate_();
+        return;
+      }
+      // fallback: tampilkan pesan error generik seperti sebelumnya
       el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
     });
 }
@@ -2105,15 +2108,8 @@ function loadKonfirmasiTumpulPanel_() {
   el.innerHTML = '<div class="skeleton-block sk-row"></div><div class="skeleton-block sk-row"></div>';
   apiGet('getPengajuanTumpulList', { status: 'Menunggu Konfirmasi WH', sessionToken: runtimeSessionToken_ })
     .then(function (rows) {
-      if (rows && typeof rows === 'object' && !Array.isArray(rows) && rows.error) {
-        if (String(rows.error).indexOf('UNAUTHORIZED_SESSION') === 0) {
-          setSession_('', '', '');
-          renderAccountState_();
-          showLoginGate_();
-        }
-        el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
-        return;
-      }
+      // Data rows sudah valid dari apiGet (session berhasil divalidasi di server),
+      // render langsung tanpa pengecekan sesi di sini.
       if (!rows || rows.length === 0) {
         el.innerHTML = emptyStateHtml_('Tidak ada antrian', 'Semua pengajuan sudah dikonfirmasi.');
         return;
@@ -2172,7 +2168,19 @@ function loadKonfirmasiTumpulPanel_() {
         });
       });
     })
-    .catch(function () {
+    .catch(function (err) {
+      // FIX Temuan 1 (audit FE-BE): apiGet melempar ApiError saat body berupa
+      // {error: "..."} tanpa field success (baris 271-273). Karena itu,
+      // pengecekan UNAUTHORIZED_SESSION harus dilakukan di sini (catch),
+      // bukan di rows.error di dalam .then (dead code sebelumnya).
+      const msg = (err && err.message) ? String(err.message) : '';
+      if (msg.indexOf('UNAUTHORIZED_SESSION') === 0 || (err && err.code === 'UNAUTHORIZED_SESSION')) {
+        setSession_('', '', '');
+        renderAccountState_();
+        showLoginGate_();
+        return;
+      }
+      // fallback: tampilkan pesan error generik seperti sebelumnya
       el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
     });
 }
