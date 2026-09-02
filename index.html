@@ -28,7 +28,7 @@
 </head>
 <body>
 <!-- ============================================================
-       [WO-2.2.2] LOGIN GATE ΓÇö layar penuh, muncul SEBELUM app bisa
+       [WO-2.2.2] LOGIN GATE — layar penuh, muncul SEBELUM app bisa
        dipakai, sampai login berhasil. Gaya mengikuti referensi visual
        yang diminta (glass card + latar blur pastel + avatar bulat).
        ============================================================ -->
@@ -45,7 +45,7 @@
       </div>
 
       <!-- [FIX] View login & view konfigurasi koneksi ada DALAM gate yang
-           SAMA ΓÇö gear icon TIDAK LAGI membuka Pengaturan app (yang
+           SAMA — gear icon TIDAK LAGI membuka Pengaturan app (yang
            membuka header/tabbar/dashboard di baliknya, bertentangan dgn
            tujuan gate). Toggle cuma ganti tampilan di dalam kartu ini. -->
       <div id="login-gate-view-login">
@@ -79,7 +79,7 @@
 
       <div id="login-gate-view-config" style="display:none;">
         <h2 class="login-gate-title" style="font-size:20px;">Pengaturan Koneksi</h2>
-        <p class="login-gate-subtitle">Khusus admin ΓÇö sekali per perangkat</p>
+        <p class="login-gate-subtitle">Khusus admin — sekali per perangkat</p>
 
         <div class="login-gate-msg" id="login-gate-config-msg"></div>
 
@@ -94,20 +94,20 @@
         </div>
 
         <button type="button" class="login-gate-submit" id="login-gate-config-save">Simpan</button>
-        <button type="button" class="login-gate-back-link" id="login-gate-config-back">ΓÇ╣ Kembali ke Login</button>
+        <button type="button" class="login-gate-back-link" id="login-gate-config-back">← Kembali ke Login</button>
       </div>
     </div>
   </div>
 
-  <!-- v8.18.4 ΓÇö FIX: .header-controls DIPINDAH ke SETELAH .header-top di
+  <!-- v8.18.4 — FIX: .header-controls DIPINDAH ke SETELAH .header-top di
        markup. Sebelumnya (v8.18.3) urutannya .header-controls dulu baru
-       .header-top ΓÇö di flex-row itu artinya .header-controls (status+
+       .header-top — di flex-row itu artinya .header-controls (status+
        toggle) jadi anak pertama = KIRI, .header-top (brand+judul) jadi
        KANAN, TERBALIK dari yang dimaksud (brand+judul kiri, status+
        toggle kanan). Urutan DOM ditukar; targetnya appendChild di JS
        tetap sama (querySelector('.header-controls')), tidak terpengaruh
        posisi elemen dlm DOM. -->
-  <!-- v8.19 ΓÇö SIDEBAR NAVIGASI DESKTOP (icon-only + tooltip hover),
+  <!-- v8.19 — SIDEBAR NAVIGASI DESKTOP (icon-only + tooltip hover),
        breakpoint >=1080px (lihat blok "DESKTOP LAYOUT" di CSS). Duplikat
        5 tab dari nav.tabbar (data-panel & urutan SAMA) supaya goToPanel()/
        wireTabBar() yang sudah ada otomatis jalan tanpa logika baru --
@@ -144,7 +144,7 @@
       <div class="header-title-block">
         <p id="header-app-name">Saw Blade Monitor</p>
         <h1 id="header-title">Dashboard</h1>
-        <p id="header-sub">Memuat dataΓÇª</p>
+        <p id="header-sub">Memuat data…</p>
       </div>
     </div>
     <div class="header-controls">
@@ -161,14 +161,14 @@
     </div>
   </header>
 
-  <!-- v8.17 ΓÇö APP MINIBAR: pengganti header di semua tab SELAIN Dashboard.
+  <!-- v8.17 — APP MINIBAR: pengganti header di semua tab SELAIN Dashboard.
        Ditoggle lewat class .is-active oleh syncHeaderVisibility_() (JS),
        header lengkap & minibar ini SALING EKSKLUSIF (cuma satu yg tampil).
-       v8.18 ΓÇö #control-stack (berisi #conn-status + #theme-toggle, elemen
+       v8.18 — #control-stack (berisi #conn-status + #theme-toggle, elemen
        yang SAMA dgn di dalam <header>, bukan duplikat) dipindah
        (appendChild) utuh antara .header-controls dan .minibar-status-slot
        tergantung tab aktif, supaya toggle mode ikut pindah bareng status
-       (bukan lagi tombol mengambang terpisah) ΓÇö dan seluruh logic
+       (bukan lagi tombol mengambang terpisah) — dan seluruh logic
        updateConnIndicator_/wireConnectivityIndicator_ (berbasis
        getElementById) tetap jalan tanpa disentuh. -->
   <div class="app-minibar" id="app-minibar">
@@ -181,12 +181,12 @@
     <div class="minibar-status-slot" id="minibar-status-slot"></div>
   </div>
 
-  <!-- P2-07 ΓÇö indikator offline eksplisit, muncul cuma saat offline. -->
+  <!-- P2-07 — indikator offline eksplisit, muncul cuma saat offline. -->
   <div class="status-banner" id="offline-banner">
-    <span class="banner-icon-row"><span class="banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0119 12.55"></path><path d="M5 12.55a10.94 10.94 0 015.17-2.39"></path><path d="M10.71 5.05A16 16 0 0122.58 9"></path><path d="M1.42 9a15.91 15.91 0 014.7-2.88"></path><path d="M8.53 16.11a6 6 0 016.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg></span>Offline ΓÇö transaksi membutuhkan koneksi internet.</span>
+    <span class="banner-icon-row"><span class="banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0119 12.55"></path><path d="M5 12.55a10.94 10.94 0 015.17-2.39"></path><path d="M10.71 5.05A16 16 0 0122.58 9"></path><path d="M1.42 9a15.91 15.91 0 014.7-2.88"></path><path d="M8.53 16.11a6 6 0 016.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg></span>Offline — transaksi membutuhkan koneksi internet.</span>
   </div>
 
-  <!-- P2-05 ΓÇö muncul saat ada versi app-shell baru, user yang pilih reload. -->
+  <!-- P2-05 — muncul saat ada versi app-shell baru, user yang pilih reload. -->
   <div class="status-banner" id="update-banner">
     <span class="banner-icon-row"><span class="banner-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"></path></svg></span>Versi baru tersedia.</span>
     <button type="button" id="update-banner-btn">Reload</button>

@@ -3,9 +3,10 @@
   "version": "8.23.2",
   "description": "Monitoring stok & sirkulasi saw blade dan cutter — gudang, mesin, vendor asah",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "npx serve .",
-    "build": "node build.js",
+    "build": "node build.cjs",
     "format": "npx biome format --write src/ index.html",
     "lint": "npx biome lint src/ index.html",
     "check": "npx biome check --write src/ index.html",

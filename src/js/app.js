@@ -1673,7 +1673,7 @@ function populateStokFilterOptions_(rows) {
     Object.keys(mesinSet)
       .sort()
       .map(function (m) {
-        return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>';
+        return '<option value="' + escapeAttr(m) + '">' + escapeHtml(m) + '</option>';
       })
       .join('');
   ukuranSel.innerHTML =
@@ -1681,7 +1681,7 @@ function populateStokFilterOptions_(rows) {
     Object.keys(ukuranSet)
       .sort()
       .map(function (u) {
-        return '<option value="' + escapeHtml(u) + '">' + escapeHtml(u) + '</option>';
+        return '<option value="' + escapeAttr(u) + '">' + escapeHtml(u) + '</option>';
       })
       .join('');
 
