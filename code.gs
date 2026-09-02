@@ -865,7 +865,38 @@ const API_TOKEN_PROPERTY_KEY = 'API_ACCESS_TOKEN';
 function isAuthorized_(providedToken) {
   const expected = PropertiesService.getScriptProperties().getProperty(API_TOKEN_PROPERTY_KEY);
   if (!expected) return false; // fail-closed: belum dikonfigurasi = tolak semua
-  return String(providedToken || '') === expected;
+
+  // [Audit fix — rate-limit token API] Cek lockout SEBELUM verifikasi token
+  // (murah, sebelum constantTimeEquals_ dijalankan) -- kalau sudah terkunci,
+  // tidak perlu hitung konstanta waktu sama sekali.
+  const failRecord = getApiTokenFailRecord_();
+  if (failRecord && failRecord.lockedUntil && Date.now() < failRecord.lockedUntil) {
+    logAuditEvent_({
+      event: 'API_TOKEN_LOCKED', stage: 'AUTH_API_TOKEN', errorCode: 'API_TOKEN_LOCKED',
+      actorReported: 'UNKNOWN'
+    });
+    return false;
+  }
+
+  const ok = constantTimeEquals_(String(providedToken || ''), expected);
+  if (!ok) {
+    const prev = getApiTokenFailRecord_();
+    const count = (prev && typeof prev.count === 'number' ? prev.count : 0) + 1;
+    const record = {
+      count: count,
+      timestamp: (prev && prev.timestamp) || new Date().toISOString(),
+      lockedUntil: count >= API_TOKEN_FAIL_MAX_ATTEMPTS ? (Date.now() + API_TOKEN_FAIL_LOCKOUT_MS) : null
+    };
+    saveApiTokenFailRecord_(record);
+    logAuditEvent_({
+      event: 'API_TOKEN_FAILED', stage: 'AUTH_API_TOKEN', errorCode: 'INVALID_API_TOKEN',
+      actorReported: 'UNKNOWN'
+    });
+  } else {
+    // token benar -> reset counter
+    clearApiTokenFailRecord_();
+  }
+  return ok;
 }
 
 /* ------------------------------------------------------------
@@ -1522,6 +1553,37 @@ const LOGIN_FAIL_KEY_PREFIX = 'loginfail_';
 const LOGIN_FAIL_MAX_ATTEMPTS = 5;
 const LOGIN_FAIL_LOCKOUT_MS = 15 * 60 * 1000; // 15 menit
 const LOGIN_FAIL_RECORD_TTL_MS = 24 * 60 * 60 * 1000; // batas atas cleanup harian, lihat cleanupExpiredIdempotencyRecords_
+
+/**
+ * [Audit fix — tidak ada rate-limit token API] Lockout sementara
+ * setelah beberapa kali gagal berturut-turut memasukkan token API
+ * yang salah. Berbeda dengan login (per-username), ini GLOBAL
+ * (per-deployment) karena token app bersifat shared untuk semua
+ * device/frontend. Cukup ketat utk mencegah brute-force token
+ * tanpa memblokir user yang benar terlalu lama.
+ */
+const API_TOKEN_FAIL_KEY = 'apitokenfail_'; // global key (bukan per-IP/user)
+const API_TOKEN_FAIL_MAX_ATTEMPTS = 10; // lebih longgar dari login (5x) karena token shared
+const API_TOKEN_FAIL_LOCKOUT_MS = 15 * 60 * 1000; // 15 menit
+const API_TOKEN_FAIL_RECORD_TTL_MS = 24 * 60 * 60 * 1000; // batas atas cleanup harian
+
+function getApiTokenFailRecord_() {
+  const raw = PropertiesService.getScriptProperties().getProperty(API_TOKEN_FAIL_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveApiTokenFailRecord_(record) {
+  PropertiesService.getScriptProperties().setProperty(API_TOKEN_FAIL_KEY, JSON.stringify(record));
+}
+
+function clearApiTokenFailRecord_() {
+  PropertiesService.getScriptProperties().deleteProperty(API_TOKEN_FAIL_KEY);
+}
 
 function getLoginFailRecord_(uname) {
   const raw = PropertiesService.getScriptProperties().getProperty(LOGIN_FAIL_KEY_PREFIX + uname);
@@ -2488,6 +2550,7 @@ function cleanupExpiredIdempotencyRecords_() {
     if (key.indexOf(IDEMPOTENCY_KEY_PREFIX) === 0) ttl = IDEMPOTENCY_TTL_MS;
     else if (key.indexOf(SESSION_KEY_PREFIX) === 0) ttl = SESSION_TTL_MS;
     else if (key.indexOf(LOGIN_FAIL_KEY_PREFIX) === 0) ttl = LOGIN_FAIL_RECORD_TTL_MS; // [Audit fix — rate-limit login]
+    else if (key.indexOf(API_TOKEN_FAIL_KEY) === 0) ttl = API_TOKEN_FAIL_RECORD_TTL_MS; // [Audit fix — rate-limit token API]
     else return; // bukan idempotency record, session, maupun login-fail record
 
     try {
@@ -2499,7 +2562,7 @@ function cleanupExpiredIdempotencyRecords_() {
     }
   });
   keysToDelete.forEach(function (key) { props.deleteProperty(key); });
-  Logger.log('cleanupExpiredIdempotencyRecords_: dihapus ' + keysToDelete.length + ' record (idempotency + session + login-fail).');
+  Logger.log('cleanupExpiredIdempotencyRecords_: dihapus ' + keysToDelete.length + ' record (idempotency + session + login-fail + api-token-fail).');
   return keysToDelete.length;
 }
 
