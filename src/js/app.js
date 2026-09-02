@@ -662,7 +662,7 @@ let isLoggingIn_ = false;
 
 /* ============================================================
        [WO-2.2.2] LOGIN GATE — layar penuh sebelum app bisa dipakai.
-       Terpisah dari form login di Pengaturan Γû╕ Akun (yang tetap ada,
+       Terpisah dari form login di Pengaturan ▸ Akun (yang tetap ada,
        untuk logout/relogin tanpa perlu reload), tapi keduanya menulis
        ke state session yang SAMA (setSession_/isLoggedIn_) sehingga
        selalu sinkron.
@@ -720,7 +720,7 @@ function wireLoginGate_() {
         }
         setSession_(res.sessionToken, res.actorName, res.role, !!rememberInput.checked);
         passInput.value = '';
-        renderAccountState_(); // sinkronkan tampilan card di Pengaturan Γû╕ Akun juga
+        renderAccountState_(); // sinkronkan tampilan card di Pengaturan ▸ Akun juga
         hideLoginGate_();
       })
       .catch(function (err) {
@@ -780,7 +780,7 @@ function wireLoginGate_() {
     runtimeApiUrl_ = raw;
     runtimeApiToken_ = rawToken;
 
-    // Sinkronkan juga ke field di panel Pengaturan Γû╕ Koneksi (kalau
+    // Sinkronkan juga ke field di panel Pengaturan ▸ Koneksi (kalau
     // sudah pernah dirender) supaya tidak tampak "kosong" nanti
     // setelah login berhasil dan admin membuka Pengaturan.
     const settingsUrlField = document.getElementById('f-api-url');
@@ -2925,7 +2925,7 @@ function onSubmitForm(e) {
   // memvalidasi ulang sessionToken di addMovementRow (client-side check
   // ini cuma UX, bukan security boundary).
   if (!isLoggedIn_()) {
-    showFormMsg('error', 'Anda belum login. Buka menu Pengaturan Γû╕ Akun untuk login terlebih dahulu.');
+    showFormMsg('error', 'Anda belum login. Buka menu Pengaturan ▸ Akun untuk login terlebih dahulu.');
     return;
   }
 

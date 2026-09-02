@@ -866,18 +866,10 @@ function isAuthorized_(providedToken) {
   const expected = PropertiesService.getScriptProperties().getProperty(API_TOKEN_PROPERTY_KEY);
   if (!expected) return false; // fail-closed: belum dikonfigurasi = tolak semua
 
-  // [Audit fix — rate-limit token API] Cek lockout SEBELUM verifikasi token
-  // (murah, sebelum constantTimeEquals_ dijalankan) -- kalau sudah terkunci,
-  // tidak perlu hitung konstanta waktu sama sekali.
-  const failRecord = getApiTokenFailRecord_();
-  if (failRecord && failRecord.lockedUntil && Date.now() < failRecord.lockedUntil) {
-    logAuditEvent_({
-      event: 'API_TOKEN_LOCKED', stage: 'AUTH_API_TOKEN', errorCode: 'API_TOKEN_LOCKED',
-      actorReported: 'UNKNOWN'
-    });
-    return false;
-  }
-
+  // [Audit fix — rate-limit removed: global lockout would DoS all users
+  // since API_ACCESS_TOKEN is shared across all devices/operators. Instead,
+  // constantTimeEquals_ provides timing-safe comparison directly. The per-
+  // user login rate-limit (LOGIN_FAIL) remains for credential stuffing protection.]
   const ok = constantTimeEquals_(String(providedToken || ''), expected);
   if (!ok) {
     const prev = getApiTokenFailRecord_();
