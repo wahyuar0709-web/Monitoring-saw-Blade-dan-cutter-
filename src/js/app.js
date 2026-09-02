@@ -1,21 +1,21 @@
-/* ============================================================
-       API ΓÇö backend GAS di-deploy sbg Web App terpisah dari hosting
+﻿/* ============================================================
+       API — backend GAS di-deploy sbg Web App terpisah dari hosting
        frontend (GitHub Pages), jadi manggilnya lewat fetch() ke URL
        /exec, bukan google.script.run (itu cuma jalan kalau HTML-nya
        dirender langsung oleh Apps Script).
        ============================================================ */
 /* ============================================================
-       PHASE 3A ΓÇö KONFIGURASI GOOGLE APPS SCRIPT URL (runtime, localStorage)
+       PHASE 3A — KONFIGURASI GOOGLE APPS SCRIPT URL (runtime, localStorage)
        ============================================================ */
 const API_URL_STORAGE_KEY = 'sawBladeMonitor_apiUrl';
 // Pola Web App Apps Script yang valid: https://script.google.com/macros/s/<id>/exec
 const API_URL_PATTERN = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec\/?$/i;
 
-// P2-06/12 ΓÇö satu-satunya sumber URL API saat runtime, jangan hard-code.
+// P2-06/12 — satu-satunya sumber URL API saat runtime, jangan hard-code.
 let runtimeApiUrl_ = localStorage.getItem(API_URL_STORAGE_KEY) || '';
 
 /* ============================================================
-       [FIX ΓÇö TOKEN API] Backend v5.15+ (WO-2.0.1) mewajibkan token
+       [FIX — TOKEN API] Backend v5.15+ (WO-2.0.1) mewajibkan token
        app-level di SETIAP request (doGet & doPost), fail-closed kalau
        tidak dikirim/salah. Sebelum fix ini apiGet/apiPost TIDAK
        PERNAH mengirim token sama sekali -> seluruh aplikasi UNAUTHORIZED
@@ -27,7 +27,7 @@ const API_TOKEN_STORAGE_KEY = 'sawBladeMonitor_apiToken';
 let runtimeApiToken_ = localStorage.getItem(API_TOKEN_STORAGE_KEY) || '';
 
 /* ============================================================
-       [WO-2.2 ΓÇö LOGIN & SESSION] Lapisan KEDUA di atas token app-level
+       [WO-2.2 — LOGIN & SESSION] Lapisan KEDUA di atas token app-level
        di atas -- token app-level cuma menjawab "aplikasi mana yang
        boleh akses", sessionToken di bawah ini menjawab "operator mana
        yang benar-benar melakukan transaksi ini" (actor identity
@@ -87,7 +87,7 @@ const RAISED_TAB_HTML_OPERATOR_ =
 
 function applyRoleUI_() {
   const op = isOperatorRole_();
-  // v8.19 ΓÇö querySelectorAll: sinkron ke tombol Input/Ajukan Tumpul
+  // v8.19 — querySelectorAll: sinkron ke tombol Input/Ajukan Tumpul
   // di BOTH bottom-nav mobile & sidebar desktop (dua elemen DOM
   // terpisah, sama-sama class .raised), bukan cuma salah satu.
   const inputTabs = document.querySelectorAll('.tab-btn.raised');
@@ -133,7 +133,7 @@ function isValidApiUrl_(url) {
 }
 
 /**
- * 12 ΓÇö API GUARD terpusat. apiGet()/apiPost() SELALU lewat sini,
+ * 12 — API GUARD terpusat. apiGet()/apiPost() SELALU lewat sini,
  * tidak ada pengecekan URL sendiri-sendiri di masing-masing fungsi.
  * Kalau URL belum diatur -> throw ApiError CONFIGURATION_ERROR (11).
  */
@@ -149,7 +149,7 @@ function getConfiguredApiUrl() {
 const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
 const APP_VERSION = 'v8.23.2-fix-chevron-focus'; // versi lengkap, dipakai di log developer
 const APP_VERSION_SHORT = 'v8.23.2'; // versi ringkas, ditampilkan di badge UI
-// [v8.18.0] CHANGELOG ΓÇö dropdown "Mesin" di form Transaksi kosong tanpa
+// [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
 // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
 // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
 // sesuai kontrak jsonOutput_() backend) -- jadi kalau backend menolak
@@ -194,7 +194,7 @@ function logApiError_(action, requestId, err, note) {
 }
 
 /**
- * P1-01 / K ΓÇö wrapper request terpusat dipakai oleh apiGet & apiPost,
+ * P1-01 / K — wrapper request terpusat dipakai oleh apiGet & apiPost,
  * satu implementasi timeout (AbortController) untuk keduanya.
  * Melempar ApiError dengan code: TIMEOUT | NETWORK | HTTP | PARSE.
  */
@@ -234,9 +234,9 @@ function apiRequest_(url, options, timeoutMs) {
 }
 
 /**
- * GET ?action=...&k=v ΓÇö untuk semua operasi baca.
+ * GET ?action=...&k=v — untuk semua operasi baca.
  * Boleh retry terbatas (maks 1x ulang) khusus untuk error TIMEOUT/NETWORK,
- * sesuai kebijakan retry (L) ΓÇö GET aman diulang, POST tidak.
+ * sesuai kebijakan retry (L) — GET aman diulang, POST tidak.
  */
 function apiGet(action, params, opts) {
   opts = opts || {};
@@ -244,7 +244,7 @@ function apiGet(action, params, opts) {
 
   let baseUrl;
   try {
-    baseUrl = getConfiguredApiUrl(); // 12 ΓÇö guard terpusat
+    baseUrl = getConfiguredApiUrl(); // 12 — guard terpusat
   } catch (err) {
     logApiError_(action, null, err);
     return Promise.reject(err);
@@ -252,7 +252,7 @@ function apiGet(action, params, opts) {
 
   const url = new URL(baseUrl);
   url.searchParams.set('action', action);
-  url.searchParams.set('token', runtimeApiToken_); // [FIX ΓÇö TOKEN API]
+  url.searchParams.set('token', runtimeApiToken_); // [FIX — TOKEN API]
   Object.keys(params || {}).forEach(function (k) {
     url.searchParams.set(k, params[k]);
   });
@@ -287,7 +287,7 @@ function apiGet(action, params, opts) {
 }
 
 /**
- * POST {action, payload} ΓÇö Content-Type text/plain supaya tidak kena CORS preflight.
+ * POST {action, payload} — Content-Type text/plain supaya tidak kena CORS preflight.
  * TIDAK PERNAH auto-retry (L): mengulang POST transaksi otomatis berisiko
  * membuat request baru. Kalau perlu retry, harus manual dengan requestId yang sama.
  */
@@ -296,7 +296,7 @@ function apiPost(action, payload) {
 
   let baseUrl;
   try {
-    baseUrl = getConfiguredApiUrl(); // 12 ΓÇö guard terpusat
+    baseUrl = getConfiguredApiUrl(); // 12 — guard terpusat
   } catch (err) {
     logApiError_(action, requestId, err);
     return Promise.reject(err);
@@ -305,7 +305,7 @@ function apiPost(action, payload) {
   return apiRequest_(baseUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    // [FIX ΓÇö TOKEN API] token WAJIB di top-level body (sibling dari
+    // [FIX — TOKEN API] token WAJIB di top-level body (sibling dari
     // action/payload), sesuai kontrak doPost() backend -- BUKAN
     // nested di dalam payload.
     body: JSON.stringify({ action: action, payload: payload, token: runtimeApiToken_ }),
@@ -321,10 +321,10 @@ function apiPost(action, payload) {
 let masterTools = []; // {kodeAlat, namaAlat, brand, cuttingTool, bahan, spesifikasi}
 let activityOptions = []; // string[]
 let allStockRows = []; // cache untuk search client-side
-let machineList = []; // {kodeMesin, mesin} ΓÇö untuk dropdown "Mesin" di form input
+let machineList = []; // {kodeMesin, mesin} — untuk dropdown "Mesin" di form input
 // [REVISI-02] Cache unit yang tercatat ada di Mesin terpilih (mode
 // KEMBALI KE GUDANG (TUMPUL)), diisi sekali saat Mesin dipilih lalu
-// difilter di client per Kode Alat ΓÇö supaya tidak perlu request ulang.
+// difilter di client per Kode Alat — supaya tidak perlu request ulang.
 let mesinDrivenUnitsCache = [];
 
 // [REVISI-02] Activity di mana Mesin dipilih LEBIH DULU dan dipakai
@@ -341,7 +341,7 @@ const STATUS_FILTER_BY_ACTIVITY = {
   // PEMBELIAN BARU, "SCRAP / RUSAK", "KARAT" -> tanpa filter (semua unit / unit baru).
   // CATATAN v3: dropdown Activity sekarang menampilkan "SCRAP / RUSAK"
   // dan "KARAT" sebagai 2 opsi TERPISAH (bukan gabungan "SCRAP/KARAT"),
-  // menyesuaikan isi asli sheet "Referensi Activity" ΓÇö lihat
+  // menyesuaikan isi asli sheet "Referensi Activity" — lihat
   // ValidateAndCleanup.gs v2 utk detail bugfix pembacaan sheet tsb.
 };
 
@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (versionVal) versionVal.textContent = APP_VERSION;
   wireThemeToggle_();
   wireHeaderCollapse_();
-  syncHeaderVisibility_('panel-summary'); // v8.17 ΓÇö state awal: Dashboard aktif saat load
+  syncHeaderVisibility_('panel-summary'); // v8.17 — state awal: Dashboard aktif saat load
   wireTabBar();
   wireForm();
   wireStokSearch();
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /* ============================================================
-       v8.16 ΓÇö HEADER COLLAPSE ON SCROLL
+       v8.16 — HEADER COLLAPSE ON SCROLL
        Header sticky menyusut (class .is-collapsed di elemen <header>)
        begitu halaman discroll melewati threshold, dan mengembang lagi
        saat scroll kembali ke atas. Semua transisi ukuran/opacity ada
@@ -433,11 +433,11 @@ function wireHeaderCollapse_() {
 
   function applyState_() {
     headerCollapseTicking_ = false;
-    // v8.17 ΓÇö kalau header sedang disembunyikan (bukan di tab
+    // v8.17 — kalau header sedang disembunyikan (bukan di tab
     // Dashboard, lihat syncHeaderVisibility_), tidak ada gunanya
     // toggle .is-collapsed di elemen yang display:none.
     if (headerEl.style.display === 'none') return;
-    // v8.19 ΓÇö FIX: di desktop (sidebar aktif, breakpoint >=1080px)
+    // v8.19 — FIX: di desktop (sidebar aktif, breakpoint >=1080px)
     // collapse-on-scroll TIDAK relevan lagi -- sidebar sudah
     // membebaskan ruang vertikal yg tadinya jadi alasan header perlu
     // menyusut demi ruang konten (itu murni kebutuhan mobile/layar
@@ -469,7 +469,7 @@ function wireHeaderCollapse_() {
 }
 
 /* ============================================================
-       v8.11 ΓÇö MODE MALAM (dark mode toggle)
+       v8.11 — MODE MALAM (dark mode toggle)
        ============================================================ */
 const THEME_STORAGE_KEY = 'sawBladeMonitor_theme';
 
@@ -510,13 +510,13 @@ function wireThemeToggle_() {
 }
 
 /* ============================================================
-       P2-07/S/L ΓÇö CONNECTIVITY INDICATOR
+       P2-07/S/L — CONNECTIVITY INDICATOR
        ============================================================ */
 function wireConnectivityIndicator_() {
   updateConnIndicator_();
   window.addEventListener('online', function () {
     updateConnIndicator_();
-    // L ΓÇö reconnect: refresh data read-only, TIDAK mengulang POST transaksi
+    // L — reconnect: refresh data read-only, TIDAK mengulang POST transaksi
     // yang sebelumnya gagal (Phase 1 idempotency tetap satu-satunya authority).
     if (appHasLoadedOnce_) {
       loadDashboard();
@@ -550,35 +550,35 @@ function updateConnIndicator_() {
 }
 
 /* ============================================================
-       PHASE 3A ΓÇö PANEL PENGATURAN (Google Apps Script URL)
+       PHASE 3A — PANEL PENGATURAN (Google Apps Script URL)
        ============================================================ */
 let isTestingConnection_ = false;
 
 function wireSettingsPanel_() {
   const input = document.getElementById('f-api-url');
-  const tokenInput = document.getElementById('f-api-token'); // [FIX ΓÇö TOKEN API]
+  const tokenInput = document.getElementById('f-api-token'); // [FIX — TOKEN API]
   const btnSave = document.getElementById('btn-settings-save');
   const btnTest = document.getElementById('btn-settings-test');
   const btnReset = document.getElementById('btn-settings-reset');
 
-  // 8/11 ΓÇö populate field dari localStorage saat panel dimuat.
+  // 8/11 — populate field dari localStorage saat panel dimuat.
   input.value = runtimeApiUrl_;
   tokenInput.value = runtimeApiToken_;
-  // 18 ΓÇö status tidak dianggap kebenaran permanen: kalau URL ada tapi
+  // 18 — status tidak dianggap kebenaran permanen: kalau URL ada tapi
   // belum diuji ulang di sesi ini, tampilkan "Belum diuji", bukan "Terhubung".
   setSettingsStatus_(runtimeApiUrl_ ? 'untested' : 'disconnected');
 
   btnSave.addEventListener('click', function () {
-    // 13 ΓÇö flow: input -> trim -> validate -> save localStorage -> update runtime -> update status UI
+    // 13 — flow: input -> trim -> validate -> save localStorage -> update runtime -> update status UI
     const raw = input.value.trim();
-    const rawToken = tokenInput.value.trim(); // [FIX ΓÇö TOKEN API]
+    const rawToken = tokenInput.value.trim(); // [FIX — TOKEN API]
 
     // 26 Case 1
     if (!raw) {
       showSettingsMsg_('error', 'URL wajib diisi.');
       return;
     }
-    // 26 Case 2/3 ΓÇö 7: validasi dasar https + pola Web App Apps Script.
+    // 26 Case 2/3 — 7: validasi dasar https + pola Web App Apps Script.
     if (!isValidApiUrl_(raw)) {
       showSettingsMsg_('error', 'URL tidak valid. Masukkan URL Web App Google Apps Script.');
       return;
@@ -589,7 +589,7 @@ function wireSettingsPanel_() {
     }
 
     localStorage.setItem(API_URL_STORAGE_KEY, raw);
-    localStorage.setItem(API_TOKEN_STORAGE_KEY, rawToken); // [FIX ΓÇö TOKEN API]
+    localStorage.setItem(API_TOKEN_STORAGE_KEY, rawToken); // [FIX — TOKEN API]
     runtimeApiUrl_ = raw; // update runtime configuration, tanpa reload halaman
     runtimeApiToken_ = rawToken;
     input.value = raw;
@@ -603,7 +603,7 @@ function wireSettingsPanel_() {
     if (isTestingConnection_) return;
 
     // Uji Koneksi memakai URL yang sedang aktif di runtime (bukan isi input
-    // yang belum disimpan) ΓÇö kalau belum ada, tolak sebelum request (11/12).
+    // yang belum disimpan) — kalau belum ada, tolak sebelum request (11/12).
     if (!runtimeApiUrl_) {
       showSettingsMsg_('error', 'Simpan URL terlebih dahulu sebelum menguji koneksi.');
       return;
@@ -614,7 +614,7 @@ function wireSettingsPanel_() {
     setSettingsStatus_('testing');
     hideSettingsMsg_();
 
-    // 14 ΓÇö GET read-only existing (getDashboardSummary), TIDAK POST transaksi,
+    // 14 — GET read-only existing (getDashboardSummary), TIDAK POST transaksi,
     // TIDAK mengarang endpoint backend baru. Response tetap divalidasi
     // seperti kontrak Phase 1 (26 Case 6: HTTP 200 tidak selalu berarti sehat).
     apiGet('getDashboardSummary', {}, { retry: false })
@@ -626,7 +626,7 @@ function wireSettingsPanel_() {
         showSettingsMsg_('success', 'Terhubung. Google Apps Script dapat diakses.');
       })
       .catch(function (err) {
-        console.error('[Uji Koneksi]', err); // 15 ΓÇö detail error ke console, bukan ke user
+        console.error('[Uji Koneksi]', err); // 15 — detail error ke console, bukan ke user
         setSettingsStatus_('disconnected');
         showSettingsMsg_('error', mapConnectionTestError_(err));
       })
@@ -637,14 +637,14 @@ function wireSettingsPanel_() {
   });
 
   btnReset.addEventListener('click', function () {
-    // 16 ΓÇö konfirmasi wajib sebelum menghapus.
+    // 16 — konfirmasi wajib sebelum menghapus.
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus konfigurasi Google Apps Script URL?');
     if (!confirmed) return; // batal -> tidak ada perubahan
 
-    // 17 ΓÇö reset HANYA menghapus URL & token, tidak menyentuh transaction/stock/master data
+    // 17 — reset HANYA menghapus URL & token, tidak menyentuh transaction/stock/master data
     // (data-data itu semuanya live di Google Sheet lewat API, bukan di localStorage).
     localStorage.removeItem(API_URL_STORAGE_KEY);
-    localStorage.removeItem(API_TOKEN_STORAGE_KEY); // [FIX ΓÇö TOKEN API]
+    localStorage.removeItem(API_TOKEN_STORAGE_KEY); // [FIX — TOKEN API]
     runtimeApiUrl_ = '';
     runtimeApiToken_ = '';
     input.value = '';
@@ -656,12 +656,12 @@ function wireSettingsPanel_() {
 }
 
 /* ============================================================
-       [WO-2.2] PANEL PENGATURAN ΓÇö Akun (login/logout operator)
+       [WO-2.2] PANEL PENGATURAN — Akun (login/logout operator)
        ============================================================ */
 let isLoggingIn_ = false;
 
 /* ============================================================
-       [WO-2.2.2] LOGIN GATE ΓÇö layar penuh sebelum app bisa dipakai.
+       [WO-2.2.2] LOGIN GATE — layar penuh sebelum app bisa dipakai.
        Terpisah dari form login di Pengaturan Γû╕ Akun (yang tetap ada,
        untuk logout/relogin tanpa perlu reload), tapi keduanya menulis
        ke state session yang SAMA (setSession_/isLoggedIn_) sehingga
@@ -739,7 +739,7 @@ function wireLoginGate_() {
   });
 
   /* [FIX] Escape hatch admin TIDAK LAGI menavigasi ke Pengaturan app
-         (yang membuka header/tabbar/dashboard di baliknya ΓÇö bertentangan
+         (yang membuka header/tabbar/dashboard di baliknya — bertentangan
          dengan tujuan gate menutup app sampai login). Sekarang cuma
          toggle 2 view DI DALAM kartu gate yang sama; app di belakang
          TIDAK PERNAH tersingkap. */
@@ -870,10 +870,10 @@ function wireAccountPanel_() {
   btnLogout.addEventListener('click', function () {
     const confirmed = window.confirm('Logout dari akun ini di perangkat ini?');
     if (!confirmed) return;
-    // [Audit fix ΓÇö logout tidak invalidasi session] Sebelumnya logout
+    // [Audit fix — logout tidak invalidasi session] Sebelumnya logout
     // hanya hapus token di localStorage; token itu sendiri TETAP HIDUP
     // di server sampai TTL 7 hari habis. Sekarang minta server
-    // mencabut token dulu (fire-and-forget ΓÇö UI tetap logout instan
+    // mencabut token dulu (fire-and-forget — UI tetap logout instan
     // walau request ini gagal/lambat, supaya UX tidak berubah; kalau
     // gagal, token cuma tidak ke-revoke di server tapi tetap hilang
     // dari client seperti sebelumnya).
@@ -924,7 +924,7 @@ function hideAccountMsg_() {
   el.textContent = '';
 }
 
-/** 15/26 Case 4-6 ΓÇö pesan aman utk Uji Koneksi, tanpa stack trace ke user. */
+/** 15/26 Case 4-6 — pesan aman utk Uji Koneksi, tanpa stack trace ke user. */
 function mapConnectionTestError_(err) {
   if (err instanceof ApiError) {
     switch (err.code) {
@@ -950,7 +950,7 @@ function mapConnectionTestError_(err) {
   return 'Periksa URL dan koneksi internet.';
 }
 
-/** 5/18 ΓÇö badge status koneksi di panel Pengaturan. */
+/** 5/18 — badge status koneksi di panel Pengaturan. */
 function setSettingsStatus_(state) {
   const el = document.getElementById('settings-status');
   const text = document.getElementById('settings-status-text');
@@ -1000,22 +1000,22 @@ function hideSettingsMsg_() {
 }
 
 /* ============================================================
-       P2-05/Q/R ΓÇö SERVICE WORKER REGISTRATION & UPDATE LIFECYCLE
+       P2-05/Q/R — SERVICE WORKER REGISTRATION & UPDATE LIFECYCLE
        ============================================================ */
 function registerServiceWorker_() {
-  // Q ΓÇö kalau browser tidak dukung Service Worker, aplikasi tetap
+  // Q — kalau browser tidak dukung Service Worker, aplikasi tetap
   // jalan normal secara online, tidak ada error yang menghentikan app.
   if (!('serviceWorker' in navigator)) return;
 
   let hadController_ = !!navigator.serviceWorker.controller;
 
   navigator.serviceWorker.register('./service-worker.js').catch(function (err) {
-    // R ΓÇö registrasi gagal TIDAK boleh menjadi fatal error untuk app.
+    // R — registrasi gagal TIDAK boleh menjadi fatal error untuk app.
     console.warn('[SW] registration failed, app tetap jalan online:', err);
   });
 
-  // P2-05 ΓÇö controllerchange menandakan app-shell versi baru sudah aktif
-  // (SW baru sudah skipWaiting). Cuma tampilkan banner "Reload" ΓÇö
+  // P2-05 — controllerchange menandakan app-shell versi baru sudah aktif
+  // (SW baru sudah skipWaiting). Cuma tampilkan banner "Reload" —
   // jangan auto-reload halaman supaya tidak mengganggu transaksi berjalan.
   // hadController_ dipakai supaya banner TIDAK muncul di kontrol pertama
   // (first install), hanya muncul untuk update yang genuine.
@@ -1038,11 +1038,11 @@ function registerServiceWorker_() {
 /* ============================================================
        TAB NAVIGATION
        v8.2: panel-mesin & panel-settings tidak lagi punya tombol tab
-       sendiri ΓÇö diakses lewat panel "Lainnya". goToPanel() dipakai
+       sendiri — diakses lewat panel "Lainnya". goToPanel() dipakai
        untuk pindah panel dari mana saja (tabbar, menu Lainnya, tombol
        back, atau state-card action) secara konsisten.
        ============================================================ */
-// v8.15 ΓÇö judul header (H1) sekarang kontekstual per-tab/panel, bukan
+// v8.15 — judul header (H1) sekarang kontekstual per-tab/panel, bukan
 // nama app statis. Nama app penuh dipindah ke brand-mark (ikon
 // lingkaran bergerigi di kiri judul, dgn title="Monitoring Saw Blade
 // & Cutter"), jadi identitasnya tidak hilang, cuma dipindah perannya.
@@ -1060,15 +1060,15 @@ const TAB_TITLES = {
 };
 
 /* ============================================================
-       v8.17 ΓÇö SINKRONISASI HEADER LENGKAP vs APP MINIBAR
+       v8.17 — SINKRONISASI HEADER LENGKAP vs APP MINIBAR
        Header lengkap (<header>, brand-mark besar + judul kontekstual +
        collapse-on-scroll) HANYA untuk tab Dashboard (panel-summary).
        Semua tab/panel lain (termasuk panel-mesin/settings/dst yang
-       diakses lewat "Lainnya") pakai .app-minibar ΓÇö strip tipis berisi
+       diakses lewat "Lainnya") pakai .app-minibar — strip tipis berisi
        logo+nama app & status koneksi. Keduanya saling eksklusif.
-       v8.18 ΓÇö yang dipindah (appendChild) sekarang #control-stack (berisi
-       #conn-status + #theme-toggle) ΓÇö BUKAN cuma #conn-status lagi, &
-       BUKAN diduplikasi ΓÇö supaya toggle mode ikut nempel di header/
+       v8.18 — yang dipindah (appendChild) sekarang #control-stack (berisi
+       #conn-status + #theme-toggle) — BUKAN cuma #conn-status lagi, &
+       BUKAN diduplikasi — supaya toggle mode ikut nempel di header/
        minibar pojok kanan (status di atas, toggle di bawah) di semua tab,
        bukan jadi tombol mengambang terpisah spt v8.17. Karena ID elemen
        di dalamnya tidak berubah, updateConnIndicator_()/
@@ -1106,7 +1106,7 @@ function goToPanel(panelId) {
     b.classList.remove('active');
   });
   // Mesin, Pengaturan, Kontrol Asah, Konfirmasi Pengajuan tidak pernah
-  // punya tab sendiri ΓÇö sorot tab "Lainnya". [REVISI] panel-ajukan-tumpul
+  // punya tab sendiri — sorot tab "Lainnya". [REVISI] panel-ajukan-tumpul
   // DIKELUARKAN dari daftar ini: sekarang punya tab sendiri (tab tengah)
   // khusus utk role operator (lihat applyRoleUI_) -- kalau tab tengah
   // sedang menunjuk ke panel ini, querySelector di bawah otomatis
@@ -1119,7 +1119,7 @@ function goToPanel(panelId) {
   } else if (panelId === 'panel-ajukan-tumpul' && !isOperatorRole_()) {
     tabPanelId = 'panel-lainnya';
   }
-  // v8.19 ΓÇö querySelectorAll (bukan querySelector) supaya tombol yang
+  // v8.19 — querySelectorAll (bukan querySelector) supaya tombol yang
   // sama di sidebar desktop DAN bottom-nav mobile dua-duanya kesorot
   // "active", bukan cuma yang pertama ketemu di DOM.
   document.querySelectorAll('.tab-btn[data-panel="' + tabPanelId + '"]').forEach(function (b) {
@@ -1131,7 +1131,7 @@ function goToPanel(panelId) {
 
   syncHeaderVisibility_(panelId);
 
-  // v8.16 ΓÇö pindah tab = mulai dari atas lagi, jadi scroll direset ke
+  // v8.16 — pindah tab = mulai dari atas lagi, jadi scroll direset ke
   // 0 supaya header collapse-on-scroll ikut mengembang (full, dgn
   // judul kontekstual baru langsung kebaca), bukan tetap ciut kalau
   // sebelumnya user lagi scroll jauh di tab lain.
@@ -1167,11 +1167,11 @@ function wireTabBar() {
        DASHBOARD KPI
        ============================================================ */
 function loadDashboard() {
-  // v8.5: dashboard sekarang butuh 2 sumber ΓÇö ringkasan angka unit
+  // v8.5: dashboard sekarang butuh 2 sumber — ringkasan angka unit
   // (getDashboardSummary) DAN daftar per-jenis-alat (getStockStatusList,
   // sama seperti yang dipakai tab Stok) supaya bisa hitung breakdown
   // AMAN/KRITIS/HABIS per jenis alat untuk section "Kondisi Alat".
-  // Tidak ada endpoint baru di backend ΓÇö dua-duanya sudah ada.
+  // Tidak ada endpoint baru di backend — dua-duanya sudah ada.
   Promise.all([apiGet('getDashboardSummary'), apiGet('getStockStatusList')])
     .then(function (results) {
       renderDashboard(results[0], results[1] || []);
@@ -1203,12 +1203,12 @@ function loadDashboard() {
     });
 }
 
-/* v8.5 ΓÇö Dashboard direstruktur jadi 3 blok: (1) Hero ΓÇö total unit +
+/* v8.5 — Dashboard direstruktur jadi 3 blok: (1) Hero — total unit +
        ring "Perlu Perhatian" (item aman/kritis/habis, dari daftar per
        jenis alat, bukan lagi dibagi total unit yang basisnya beda);
-       (2) Distribusi Status Unit ΓÇö segmented bar + legend, basis PER
+       (2) Distribusi Status Unit — segmented bar + legend, basis PER
        UNIT FISIK (siap/dipakai/tunggu/diasah, sesuai getDashboardSummary);
-       (3) Kondisi Alat ΓÇö 3 kartu status, basis PER JENIS ALAT (kode),
+       (3) Kondisi Alat — 3 kartu status, basis PER JENIS ALAT (kode),
        dihitung dari rows getStockStatusList. Footnote menjelaskan beda
        basis hitung supaya angkanya tidak disalahartikan. */
 function renderDashboard(d, rows) {
@@ -1380,7 +1380,7 @@ function renderTransactions(rows) {
           '<div class="meta"><span class="tag">' +
           escapeHtml(r.unitId || r.kodeAlat) +
           '</span> ┬╖ ' +
-          escapeHtml(r.pic || 'ΓÇö') +
+          escapeHtml(r.pic || '—') +
           '</div>' +
           '</div>' +
           '<div class="tanggal">' +
@@ -1427,20 +1427,20 @@ function loadStockStatus() {
 }
 
 /**
- * v8.3 ΓÇö "Nama Alat" di data sumber umumnya berformat "<Jenis>-<Brand>"
+ * v8.3 — "Nama Alat" di data sumber umumnya berformat "<Jenis>-<Brand>"
  * (mis. "Saw Blade-Ake"). Dipisah di sisi client biar kartu bisa
  * menampilkan Jenis & Brand sebagai field terpisah tanpa mengubah
  * struktur sheet/backend. Kalau tidak ada tanda "-", seluruh teks
- * dianggap Jenis dan Brand ditandai "ΓÇö".
+ * dianggap Jenis dan Brand ditandai "—".
  */
 function splitJenisBrand_(namaAlat) {
   const s = String(namaAlat || '').trim();
   const idx = s.lastIndexOf('-');
-  if (idx <= 0 || idx >= s.length - 1) return { jenis: s || 'ΓÇö', brand: 'ΓÇö' };
+  if (idx <= 0 || idx >= s.length - 1) return { jenis: s || '—', brand: '—' };
   return { jenis: s.slice(0, idx).trim(), brand: s.slice(idx + 1).trim() };
 }
 
-/* v8.4 ΓÇö kartu dipadatkan: Kode + Siap Pakai + Status sebaris di
+/* v8.4 — kartu dipadatkan: Kode + Siap Pakai + Status sebaris di
        atas, grid 3 kolom (Jenis/Brand/Material) di bawahnya, Ukuran
        full-width paling bawah. Mesin cuma dirender kalau datanya ada. */
 function renderStockList(rows) {
@@ -1453,8 +1453,8 @@ function renderStockList(rows) {
     .map(function (r) {
       const cls = statusClass_(r.status);
       const jb = splitJenisBrand_(r.namaAlat);
-      const material = r.bahan ? escapeHtml(r.bahan) : '<span class="sc-value muted">ΓÇö</span>';
-      const ukuran = r.spesifikasi ? escapeHtml(r.spesifikasi) : '<span class="sc-value muted">ΓÇö</span>';
+      const material = r.bahan ? escapeHtml(r.bahan) : '<span class="sc-value muted">—</span>';
+      const ukuran = r.spesifikasi ? escapeHtml(r.spesifikasi) : '<span class="sc-value muted">—</span>';
       return (
         '<div class="card stock-row status-' +
         cls +
@@ -1473,7 +1473,7 @@ function renderStockList(rows) {
         escapeHtml(jb.jenis) +
         '</div></div>' +
         '<div class="sc-field"><div class="sc-label">Brand</div><div class="sc-value' +
-        (jb.brand === 'ΓÇö' ? ' muted' : '') +
+        (jb.brand === '—' ? ' muted' : '') +
         '">' +
         escapeHtml(jb.brand) +
         '</div></div>' +
@@ -1495,7 +1495,7 @@ function renderStockList(rows) {
     .join('');
 }
 
-/** P3B ΓÇö markup empty-state konsisten (icon + judul + keterangan). */
+/** P3B — markup empty-state konsisten (icon + judul + keterangan). */
 function emptyStateHtml_(title, sub) {
   return (
     '<div class="empty-state">' +
@@ -1511,7 +1511,7 @@ function emptyStateHtml_(title, sub) {
 }
 
 /**
- * P3B ΓÇö kartu state profesional untuk error jaringan vs configuration
+ * P3B — kartu state profesional untuk error jaringan vs configuration
  * error (API belum diatur). Dua state ini TIDAK dicampur (spec ┬º12).
  * onRetryFnName: nama fungsi global (string) yang dipanggil tombol retry.
  */
@@ -1549,8 +1549,8 @@ function stateCardHtml_(kind, title, sub, actionLabel, onRetryFnName) {
 }
 
 /**
- * P3B ΓÇö statistik ringkas panel Stok, dihitung dari data yang SUDAH
- * diambil dari API (allStockRows). Tidak ada angka baru/dummy ΓÇö
+ * P3B — statistik ringkas panel Stok, dihitung dari data yang SUDAH
+ * diambil dari API (allStockRows). Tidak ada angka baru/dummy —
  * murni agregasi client-side dari response getStockStatusList.
  */
 function renderStokStats_(rows) {
@@ -1583,11 +1583,11 @@ function statusBadge(status) {
   return '<span class="badge ' + cls + '">' + escapeHtml(status || '-') + '</span>';
 }
 
-// P3B ΓÇö filter status pakai field `status` yang sudah ada di data
+// P3B — filter status pakai field `status` yang sudah ada di data
 // existing (AMAN/KRITIS/HABIS), bukan data baru. Digabung dengan search.
 let stokActiveStatus_ = '';
 // [FITUR-MESIN/UKURAN] filter tambahan, sumber datanya field `mesin`
-// dan `spesifikasi` yang sudah ada di tiap baris Stock Status ΓÇö
+// dan `spesifikasi` yang sudah ada di tiap baris Stock Status —
 // tidak butuh request API baru, cukup diagregasi di client.
 let stokActiveMesin_ = '';
 let stokActiveUkuran_ = '';
@@ -1713,7 +1713,7 @@ function wireStokSearch() {
 }
 
 /* ============================================================
-       [FITUR-MESIN] ANALITIK PER MESIN ΓÇö boros/cepat ganti & lead time
+       [FITUR-MESIN] ANALITIK PER MESIN — boros/cepat ganti & lead time
        ============================================================ */
 function loadMachineAnalytics() {
   apiGet('getMachineWearStats')
@@ -1771,7 +1771,7 @@ function renderMachineWear_(rows) {
     '<div class="card">' +
     top
       .map(function (r, i) {
-        const usia = r.avgUsiaHari === null || r.avgUsiaHari === undefined ? 'ΓÇö' : r.avgUsiaHari + ' hari';
+        const usia = r.avgUsiaHari === null || r.avgUsiaHari === undefined ? '—' : r.avgUsiaHari + ' hari';
         return (
           '<div class="rank-row">' +
           '<div class="rank-pos">' +
@@ -1844,7 +1844,7 @@ function renderLeadTimeByMachine_(rows) {
 }
 
 /* ============================================================
-       [WO-ROLE] AJUKAN PENGEMBALIAN TUMPUL ΓÇö panel Operator
+       [WO-ROLE] AJUKAN PENGEMBALIAN TUMPUL — panel Operator
        ============================================================ */
 let ajukanTumpulMesinLoaded_ = false;
 // [REVISI] Cache unit yang tercatat DIPAKAI di Mesin terpilih, diisi
@@ -1866,7 +1866,7 @@ function populateAjukanMesinOptions_() {
     const opt = document.createElement('option');
     opt.value = m.kodeMesin;
     opt.dataset.mesinName = m.mesin || '';
-    opt.textContent = (m.mesin ? m.mesin + ' ΓÇö ' : '') + m.kodeMesin;
+    opt.textContent = (m.mesin ? m.mesin + ' — ' : '') + m.kodeMesin;
     sel.appendChild(opt);
   });
   ajukanTumpulMesinLoaded_ = true;
@@ -1880,18 +1880,18 @@ function onAjukanMesinChange_() {
   const unitHint = document.getElementById('at-unit-hint');
 
   ajukanTumpulUnitsCache_ = [];
-  unitSel.innerHTML = '<option value="">Pilih Kode Alat duluΓÇª</option>';
+  unitSel.innerHTML = '<option value="">Pilih Kode Alat dulu…</option>';
   unitSel.disabled = true;
   unitHint.style.display = 'none';
 
   if (!kodeMesin) {
-    kodeAlatSel.innerHTML = '<option value="">Pilih mesin duluΓÇª</option>';
+    kodeAlatSel.innerHTML = '<option value="">Pilih mesin dulu…</option>';
     kodeAlatSel.disabled = true;
     return;
   }
 
   kodeAlatSel.disabled = true;
-  kodeAlatSel.innerHTML = '<option value="">Memuat kode alatΓÇª</option>';
+  kodeAlatSel.innerHTML = '<option value="">Memuat kode alat…</option>';
 
   apiGet('getUnitsByMesin', { kodeMesin: kodeMesin, statusFilter: 'DIPAKAI' })
     .then(function (units) {
@@ -1909,15 +1909,15 @@ function onAjukanMesinChange_() {
         return;
       }
       kodeAlatSel.innerHTML =
-        '<option value="">Pilih kode alatΓÇª</option>' +
+        '<option value="">Pilih kode alat…</option>' +
         kodeAlatList
           .map(function (kodeAlat) {
             const t = (masterTools || []).find(function (mt) {
               return mt.kodeAlat === kodeAlat;
             });
-            // [REVISI] Label dipersamakan dengan form Input admin ΓÇö pakai
+            // [REVISI] Label dipersamakan dengan form Input admin — pakai
             // kodeAlatOptionLabel_ supaya Brand/Bahan/Spesifikasi (ukuran)
-            // ikut tampil, bukan cuma "kode ΓÇö nama". Operator jarang hafal
+            // ikut tampil, bukan cuma "kode — nama". Operator jarang hafal
             // kode alat, jadi info ukuran ini membantu cari alat yang tepat.
             const label = t ? kodeAlatOptionLabel_(t) : kodeAlat;
             return '<option value="' + escapeAttr(kodeAlat) + '">' + escapeHtml(label) + '</option>';
@@ -1938,7 +1938,7 @@ function onAjukanKodeAlatChange_() {
   const unitHint = document.getElementById('at-unit-hint');
   unitHint.style.display = 'none';
   if (!kodeAlat) {
-    unitSel.innerHTML = '<option value="">Pilih Kode Alat duluΓÇª</option>';
+    unitSel.innerHTML = '<option value="">Pilih Kode Alat dulu…</option>';
     unitSel.disabled = true;
     return;
   }
@@ -1960,7 +1960,7 @@ function onAjukanKodeAlatChange_() {
   });
   const ukuranSuffix = toolForUkuran && toolForUkuran.spesifikasi ? ' (' + toolForUkuran.spesifikasi + ')' : '';
   unitSel.innerHTML =
-    '<option value="">Pilih unitΓÇª</option>' +
+    '<option value="">Pilih unit…</option>' +
     units
       .map(function (u) {
         return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId + ukuranSuffix) + '</option>';
@@ -2074,9 +2074,9 @@ function wireAjukanTumpulForm_() {
         }
         showAjukanTumpulMsg_('success', 'Pengajuan terkirim (' + res.id + '). Menunggu konfirmasi WH.');
         form.reset();
-        document.getElementById('at-kode-alat').innerHTML = '<option value="">Pilih mesin duluΓÇª</option>';
+        document.getElementById('at-kode-alat').innerHTML = '<option value="">Pilih mesin dulu…</option>';
         document.getElementById('at-kode-alat').disabled = true;
-        document.getElementById('at-unit-id').innerHTML = '<option value="">Pilih Kode Alat duluΓÇª</option>';
+        document.getElementById('at-unit-id').innerHTML = '<option value="">Pilih Kode Alat dulu…</option>';
         document.getElementById('at-unit-id').disabled = true;
         ajukanTumpulUnitsCache_ = [];
         loadRiwayatPengajuanSaya_();
@@ -2089,7 +2089,7 @@ function wireAjukanTumpulForm_() {
 }
 
 /* ============================================================
-       [WO-ROLE] KONFIRMASI PENGAJUAN TUMPUL ΓÇö panel Admin/WH
+       [WO-ROLE] KONFIRMASI PENGAJUAN TUMPUL — panel Admin/WH
        ============================================================ */
 function showKonfirmasiTumpulMsg_(type, text) {
   const el = document.getElementById('konfirmasi-tumpul-msg');
@@ -2143,7 +2143,7 @@ function loadKonfirmasiTumpulPanel_() {
                 ? ' <span style="opacity:.7">(akun: ' + escapeHtml(r.actorName) + ')</span>'
                 : '') +
               ' ┬╖ ' +
-              escapeHtml(r.mesin || r.kodeMesin || 'ΓÇö') +
+              escapeHtml(r.mesin || r.kodeMesin || '—') +
               ' ┬╖ ' +
               escapeHtml(r.timestamp) +
               '</div>' +
@@ -2197,7 +2197,7 @@ function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
       }
       showKonfirmasiTumpulMsg_(
         'success',
-        approve ? 'Dikonfirmasi ΓÇö transaksi resmi sudah tercatat.' : 'Pengajuan ditolak.'
+        approve ? 'Dikonfirmasi — transaksi resmi sudah tercatat.' : 'Pengajuan ditolak.'
       );
       row.remove();
       loadKonfirmasiTumpulPanel_();
@@ -2211,7 +2211,7 @@ function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
 }
 
 /* ============================================================
-       [FITUR-KONTROL-ASAH] KONTROL ASAH ΓÇö panel Lainnya
+       [FITUR-KONTROL-ASAH] KONTROL ASAH — panel Lainnya
        ============================================================ */
 let vendorPerfMap_ = {}; // vendor -> { avgLeadTime, maxLeadTime, selisihTelat }
 
@@ -2315,7 +2315,7 @@ function renderVendorPerformance_(rows) {
 /**
  * List unit dalam proses asah (dipakai untuk 2 seksi: menunggu kirim
  * & sedang diasah). Untuk baris PROSES ASAH, dibandingkan ke rata-rata
- * lead time vendornya (dari getVendorPerformance) ΓÇö kalau sudah
+ * lead time vendornya (dari getVendorPerformance) — kalau sudah
  * melewati rata-rata, dikasih badge "Terlambat".
  */
 function renderKontrolAsahList_(elId, rows, emptyText) {
@@ -2348,7 +2348,7 @@ function renderKontrolAsahList_(elId, rows, emptyText) {
           badge +
           '</div>' +
           '<div class="rk-sub">' +
-          escapeHtml(r.vendor || 'ΓÇö') +
+          escapeHtml(r.vendor || '—') +
           (r.mesin ? ' ┬╖ ' + escapeHtml(r.mesin) : '') +
           '</div>' +
           '</div>' +
@@ -2366,7 +2366,7 @@ function renderKontrolAsahList_(elId, rows, emptyText) {
 }
 
 /* ============================================================
-       FORM INPUT ΓÇö data referensi (dropdown)
+       FORM INPUT — data referensi (dropdown)
        ============================================================ */
 function loadFormReferenceData() {
   apiGet('getActivityOptions')
@@ -2397,7 +2397,7 @@ function loadFormReferenceData() {
       machineList.forEach(function (m) {
         const opt = document.createElement('option');
         opt.value = m.kodeMesin;
-        opt.textContent = m.kodeMesin + (m.mesin ? ' ΓÇö ' + m.mesin : '');
+        opt.textContent = m.kodeMesin + (m.mesin ? ' — ' + m.mesin : '');
         opt.dataset.mesinName = m.mesin || '';
         sel.appendChild(opt);
       });
@@ -2435,7 +2435,7 @@ function loadFormReferenceData() {
 
 /**
  * [REVISI-01] Label dropdown Kode Alat diperkaya dengan Brand, Bahan,
- * dan Spesifikasi (ukuran) ΓÇö sebelumnya cuma "kodeAlat ΓÇö namaAlat",
+ * dan Spesifikasi (ukuran) — sebelumnya cuma "kodeAlat — namaAlat",
  * yang menyulitkan operator yang tidak hafal kode. Operator sekarang
  * bisa cari berdasarkan merek/bahan/ukuran langsung dari label.
  */
@@ -2445,13 +2445,13 @@ function kodeAlatOptionLabel_(t) {
   if (t.bahan) bits.push(t.bahan);
   if (t.spesifikasi) bits.push(t.spesifikasi);
   const extra = bits.length ? ' (' + bits.join(' ┬╖ ') + ')' : '';
-  return t.kodeAlat + ' ΓÇö ' + t.namaAlat + extra;
+  return t.kodeAlat + ' — ' + t.namaAlat + extra;
 }
 
 function populateKodeAlatSelect_(list) {
   const sel = document.getElementById('f-kode-alat');
   sel.innerHTML =
-    '<option value="">Pilih kode alatΓÇª</option>' +
+    '<option value="">Pilih kode alat…</option>' +
     (list || [])
       .map(function (t) {
         return '<option value="' + escapeAttr(t.kodeAlat) + '">' + escapeHtml(kodeAlatOptionLabel_(t)) + '</option>';
@@ -2465,7 +2465,7 @@ function wireForm() {
   document.getElementById('f-mesin-driver').addEventListener('change', onMesinDriverChange);
   document.getElementById('movement-form').addEventListener('submit', onSubmitForm);
 
-  // [v9.0] Progress wizard ΓÇö hitung ulang tiap kali field apapun di
+  // [v9.0] Progress wizard — hitung ulang tiap kali field apapun di
   // form berubah/diketik, supaya progress bar & badge langkah selalu
   // sinkron tanpa perlu dipanggil manual di tiap handler perubahan.
   const formEl = document.getElementById('movement-form');
@@ -2475,7 +2475,7 @@ function wireForm() {
 }
 
 /**
- * [v9.0] PREMIUM WIZARD ΓÇö hitung progres pengisian form input
+ * [v9.0] PREMIUM WIZARD — hitung progres pengisian form input
  * berdasarkan field WAJIB tiap kartu (langkah 5/Catatan opsional,
  * tidak dihitung sebagai wajib). Field yang sedang disabled/hidden
  * (mis. Kode Mesin lama saat mode mesin-dulu aktif) diabaikan dari
@@ -2575,7 +2575,7 @@ function onActivityChange() {
     mesinDriverWrap.style.display = 'block';
     kodeMesinWrap.style.display = 'none';
     kodeAlatSel.disabled = true;
-    kodeAlatSel.innerHTML = '<option value="">Pilih mesin duluΓÇª</option>';
+    kodeAlatSel.innerHTML = '<option value="">Pilih mesin dulu…</option>';
   } else {
     mesinDriverWrap.style.display = 'none';
     kodeMesinWrap.style.display = 'block';
@@ -2606,13 +2606,13 @@ function onMesinDriverChange() {
 
   if (!mesin) {
     kodeAlatSel.disabled = true;
-    kodeAlatSel.innerHTML = '<option value="">Pilih mesin duluΓÇª</option>';
+    kodeAlatSel.innerHTML = '<option value="">Pilih mesin dulu…</option>';
     onKodeAlatChange();
     return;
   }
 
   kodeAlatSel.disabled = true;
-  kodeAlatSel.innerHTML = '<option value="">Memuat kode alatΓÇª</option>';
+  kodeAlatSel.innerHTML = '<option value="">Memuat kode alat…</option>';
 
   function renderKodeAlatOptions(kodeAlatList, emptyMessage) {
     if (!kodeAlatList.length) {
@@ -2623,7 +2623,7 @@ function onMesinDriverChange() {
       return;
     }
     kodeAlatSel.innerHTML =
-      '<option value="">Pilih kode alatΓÇª</option>' +
+      '<option value="">Pilih kode alat…</option>' +
       kodeAlatList
         .map(function (kodeAlat) {
           const t = masterTools.find(function (mt) {
@@ -2657,7 +2657,7 @@ function onMesinDriverChange() {
         console.error(err);
       });
   } else {
-    // DIPASANG KE MESIN ΓÇö alat yang valid untuk dipasang di mesin ini
+    // DIPASANG KE MESIN — alat yang valid untuk dipasang di mesin ini
     // (dari Mapping Alat Mesin), unit-nya sendiri masih ditarik dari
     // GUDANG lewat getUnitsByKodeAlat seperti biasa di onKodeAlatChange.
     apiGet('getKodeAlatOptionsForMesin', { kodeMesin: mesin })
@@ -2706,11 +2706,11 @@ function onKodeAlatChange() {
   if (!kodeAlat) {
     setUnitMode_('select');
     unitSel.innerHTML =
-      '<option value="">' + (driven ? 'Pilih mesin & kode alat duluΓÇª' : 'Pilih kode alat duluΓÇª') + '</option>';
+      '<option value="">' + (driven ? 'Pilih mesin & kode alat dulu…' : 'Pilih kode alat dulu…') + '</option>';
     unitSel.disabled = true;
     unitManual.value = '';
     unitHint.style.display = 'none';
-    // Mode mesin-dulu: JANGAN reset mesinSel di sini ΓÇö nilainya sumber
+    // Mode mesin-dulu: JANGAN reset mesinSel di sini — nilainya sumber
     // kebenarannya f-mesin-driver dan sudah disinkron lewat syncHiddenKodeMesin_.
     if (!driven) {
       mesinSel.innerHTML = '<option value="">Belum di-set</option>';
@@ -2724,7 +2724,7 @@ function onKodeAlatChange() {
   // User ketik manual Unit_ID baru; kita bantu suggest nomor urut berikutnya.
   if (activity === ACTIVITY_NEW_UNIT) {
     setUnitMode_('manual');
-    unitHint.textContent = 'Menghitung saran nomor unitΓÇª';
+    unitHint.textContent = 'Menghitung saran nomor unit…';
     unitHint.style.display = 'block';
 
     apiGet('getUnitsByKodeAlat', { kodeAlat: kodeAlat, statusFilter: '' })
@@ -2741,7 +2741,7 @@ function onKodeAlatChange() {
             kodeAlat +
             '.' +
             (suggestion ? ' Saran ID berikutnya: ' + suggestion + '.' : '')
-          : 'Belum ada unit terdaftar untuk ' + kodeAlat + ' ΓÇö ini akan jadi unit pertama.';
+          : 'Belum ada unit terdaftar untuk ' + kodeAlat + ' — ini akan jadi unit pertama.';
       })
       .catch(function (err) {
         unitHint.textContent = 'Gagal cek unit existing (tetap bisa lanjut input manual).';
@@ -2750,7 +2750,7 @@ function onKodeAlatChange() {
   } else if (driven && activity === 'KEMBALI KE GUDANG (TUMPUL)') {
     // [REVISI-02] Unit sudah ditarik sekaligus saat Mesin dipilih
     // (getUnitsByMesin), di sini tinggal difilter per Kode Alat di
-    // client ΓÇö tanpa request baru ΓÇö supaya cuma unit yang memang
+    // client — tanpa request baru — supaya cuma unit yang memang
     // tercatat ADA di mesin ini yang bisa dipilih operator.
     setUnitMode_('select');
     unitHint.style.display = 'none';
@@ -2762,7 +2762,7 @@ function onKodeAlatChange() {
       unitSel.disabled = true;
     } else {
       unitSel.innerHTML =
-        '<option value="">Pilih unitΓÇª</option>' +
+        '<option value="">Pilih unit…</option>' +
         units
           .map(function (u) {
             return (
@@ -2783,7 +2783,7 @@ function onKodeAlatChange() {
     setUnitMode_('select');
     unitHint.style.display = 'none';
     unitSel.disabled = true;
-    unitSel.innerHTML = '<option value="">Memuat unitΓÇª</option>';
+    unitSel.innerHTML = '<option value="">Memuat unit…</option>';
     const statusFilter = STATUS_FILTER_BY_ACTIVITY[activity] || '';
 
     apiGet('getUnitsByKodeAlat', { kodeAlat: kodeAlat, statusFilter: statusFilter })
@@ -2795,7 +2795,7 @@ function onKodeAlatChange() {
           return;
         }
         unitSel.innerHTML =
-          '<option value="">Pilih unitΓÇª</option>' +
+          '<option value="">Pilih unit…</option>' +
           units
             .map(function (u) {
               return (
@@ -2827,7 +2827,7 @@ function onKodeAlatChange() {
   }
 
   mesinSel.disabled = true;
-  mesinSel.innerHTML = '<option value="">Memuat mesinΓÇª</option>';
+  mesinSel.innerHTML = '<option value="">Memuat mesin…</option>';
   apiGet('getMesinOptionsForKodeAlat', { kodeAlat: kodeAlat })
     .then(function (mesinList) {
       if (!mesinList || mesinList.length === 0) {
@@ -2840,7 +2840,7 @@ function onKodeAlatChange() {
         return;
       }
       mesinSel.innerHTML =
-        '<option value="">ΓÇö</option>' +
+        '<option value="">—</option>' +
         mesinList
           .map(function (m) {
             return (
@@ -2903,7 +2903,7 @@ function suggestNextUnitId_(kodeAlat, existingIds) {
   return kodeAlat + '-' + String(maxNum + 1).padStart(padLen, '0');
 }
 
-// P1-06 / TEST 04 ΓÇö guard di level module supaya double-click / double-submit
+// P1-06 / TEST 04 — guard di level module supaya double-click / double-submit
 // tidak bisa memicu dua request sebelum tombol sempat ter-disable di DOM.
 let isSubmittingTx = false;
 
@@ -2911,7 +2911,7 @@ function onSubmitForm(e) {
   e.preventDefault();
   if (isSubmittingTx) return; // submission masih berjalan, abaikan trigger kedua
 
-  // P2-K ΓÇö tolak transaksi SEBELUM POST kalau diketahui offline.
+  // P2-K — tolak transaksi SEBELUM POST kalau diketahui offline.
   // navigator.onLine === false berarti pasti tidak ada koneksi, jadi aman
   // ditolak langsung di sini (S). Kalau navigator.onLine === true tapi
   // sebenarnya tidak ada internet, itu tetap ditangani oleh error handling
@@ -2921,7 +2921,7 @@ function onSubmitForm(e) {
     return;
   }
 
-  // [WO-2.2] Guard murah di client SEBELUM request ΓÇö backend TETAP
+  // [WO-2.2] Guard murah di client SEBELUM request — backend TETAP
   // memvalidasi ulang sessionToken di addMovementRow (client-side check
   // ini cuma UX, bukan security boundary).
   if (!isLoggedIn_()) {
@@ -2958,10 +2958,10 @@ function onSubmitForm(e) {
     return;
   }
 
-  // P1-05 ΓÇö qty invalid harus DITOLAK, tidak boleh diam-diam jadi 1.
+  // P1-05 — qty invalid harus DITOLAK, tidak boleh diam-diam jadi 1.
   const qty = parseQtyStrict_(qtyRaw);
   if (qty === null) {
-    showFormMsg('error', 'Qty harus bilangan bulat positif (1, 2, 3, ΓÇª) ΓÇö tanpa desimal atau negatif.');
+    showFormMsg('error', 'Qty harus bilangan bulat positif (1, 2, 3, …) — tanpa desimal atau negatif.');
     return;
   }
 
@@ -2969,7 +2969,7 @@ function onSubmitForm(e) {
     return t.kodeAlat === kodeAlat;
   });
   const today = formatToday_();
-  // P1-02 ΓÇö requestId dibuat sekali di sini dan dipakai apa adanya
+  // P1-02 — requestId dibuat sekali di sini dan dipakai apa adanya
   // untuk seluruh lifecycle request ini (tidak dibuat ulang saat retry manual).
   const requestId = generateRequestId_();
 
@@ -2977,11 +2977,11 @@ function onSubmitForm(e) {
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
   btn.innerHTML =
-    '<span class="btn-icon btn-icon-spin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.64L21 8"></path><path d="M21 3v5h-5"></path></svg></span>MenyimpanΓÇª';
+    '<span class="btn-icon btn-icon-spin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.64L21 8"></path><path d="M21 3v5h-5"></path></svg></span>Menyimpan…';
 
   apiPost('addMovementRow', {
     requestId: requestId,
-    sessionToken: runtimeSessionToken_, // [WO-2.2] wajib ΓÇö validated server-side di addMovementRow
+    sessionToken: runtimeSessionToken_, // [WO-2.2] wajib — validated server-side di addMovementRow
     tanggal: today, // P1-07: dipertahankan utk compat; sumber audit waktu = serverTimestamp di backend (NOT VERIFIED, lihat catatan backend)
     kodeAlat: kodeAlat,
     unitId: unitId,
@@ -2995,9 +2995,9 @@ function onSubmitForm(e) {
   })
     .then(function (res) {
       const validated = validateTransactionResponse_(res);
-      showFormMsg('success', 'Tersimpan ΓÇö ID Transaksi #' + validated.idTransaksi + ', Cycle ' + validated.cycleId);
+      showFormMsg('success', 'Tersimpan — ID Transaksi #' + validated.idTransaksi + ', Cycle ' + validated.cycleId);
       document.getElementById('movement-form').reset();
-      document.getElementById('f-unit-id').innerHTML = '<option value="">Pilih kode alat duluΓÇª</option>';
+      document.getElementById('f-unit-id').innerHTML = '<option value="">Pilih kode alat dulu…</option>';
       document.getElementById('f-unit-id').disabled = true;
       document.getElementById('f-unit-id-manual').value = '';
       document.getElementById('f-unit-id-hint').style.display = 'none';
@@ -3022,14 +3022,14 @@ function onSubmitForm(e) {
     })
     .catch(function (err) {
       showFormMsg('error', mapErrorToMessage_(err, isNewUnit));
-      // P1-06 ΓÇö kalau Unit_ID baru bentrok, refresh saran nomor unit berikutnya.
+      // P1-06 — kalau Unit_ID baru bentrok, refresh saran nomor unit berikutnya.
       if (err && err.code === 'DUPLICATE_UNIT_ID' && isNewUnit) {
         onKodeAlatChange();
       }
     })
     .finally(function () {
-      // P1-08 ΓÇö jalur ini SELALU dieksekusi (success / error / timeout / network /
-      // invalid response), jadi tombol tidak pernah macet di "MenyimpanΓÇª".
+      // P1-08 — jalur ini SELALU dieksekusi (success / error / timeout / network /
+      // invalid response), jadi tombol tidak pernah macet di "Menyimpan…".
       isSubmittingTx = false;
       btn.disabled = false;
       btn.innerHTML =
@@ -3049,7 +3049,7 @@ function showFormMsg(type, text) {
        ============================================================ */
 
 /**
- * P1-02 ΓÇö requestId unik per submission: timestamp (YYYYMMDD) + random.
+ * P1-02 — requestId unik per submission: timestamp (YYYYMMDD) + random.
  * Dibuat SEKALI saat user menekan submit dan dipakai apa adanya untuk
  * seluruh lifecycle request itu (tidak digenerate ulang saat retry).
  */
@@ -3070,7 +3070,7 @@ function generateRequestId_() {
 }
 
 /**
- * P1-05 ΓÇö qty harus bilangan bulat positif. TIDAK boleh fallback ke 1
+ * P1-05 — qty harus bilangan bulat positif. TIDAK boleh fallback ke 1
  * kalau invalid (beda dari `Number(value) || 1` yang lama), harus REJECT.
  * Return integer valid, atau null kalau invalid (caller wajib tolak submit).
  */
@@ -3083,7 +3083,7 @@ function parseQtyStrict_(raw) {
 }
 
 /**
- * P1-04 / M ΓÇö validasi response addMovementRow sesuai kontrak
+ * P1-04 / M — validasi response addMovementRow sesuai kontrak
  * {success, requestId, idTransaksi, cycleId, data, error}.
  * Response yang tidak sesuai schema TIDAK dianggap sukses.
  */
@@ -3111,7 +3111,7 @@ function mapErrorToMessage_(err, isNewUnit) {
     case 'CONFIGURATION_ERROR':
       return 'API belum dikonfigurasi. Buka menu Pengaturan dan masukkan Google Apps Script URL.';
     case 'UNAUTHORIZED_SESSION':
-      // [WO-2.2/2.2.2] Sesi login kedaluwarsa/tidak valid ΓÇö bersihkan
+      // [WO-2.2/2.2.2] Sesi login kedaluwarsa/tidak valid — bersihkan
       // sesi lokal, sinkronkan card Akun, dan tampilkan lagi gate
       // layar penuh (app tidak boleh tetap terbuka dgn sesi mati).
       setSession_('', '', '');
@@ -3154,3 +3154,4 @@ function escapeHtml(str) {
 function escapeAttr(str) {
   return escapeHtml(str).replace(/"/g, '&quot;');
 }
+
