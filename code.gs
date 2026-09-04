@@ -4,6 +4,22 @@
  *  Sistem Monitoring Saw Blade & Cutter
  *
  *  ============================================================
+ *  CHANGELOG v5.19.0 -> v5.19.1 (AUDIT FIX — kebocoran pesan error internal)
+ *  ============================================================
+ *  [Temuan 4, Low, audit integrasi FE-BE] handleApiRequest_() sebelumnya
+ *  mengembalikan err.message MENTAH ke client di blok catch generik --
+ *  berpotensi membocorkan detail internal (nama sheet, struktur data) kalau
+ *  terjadi exception tak terduga. Sekarang: detail asli dicatat via
+ *  Logger.log() di server, client hanya menerima pesan generik.
+ *  Dikonfirmasi TIDAK mengganggu alur UNAUTHORIZED_SESSION: error sesi
+ *  (dari validateSession_ di getPengajuanTumpulList_ dkk) di-RETURN sbg
+ *  objek {error:'UNAUTHORIZED_SESSION: ...'}, bukan di-throw, jadi tidak
+ *  pernah lewat blok catch ini.
+ *  >>> WAJIB: Deploy > Manage deployments > Edit deployment aktif >
+ *      New version, setelah upload file ini. <<<
+ *  ============================================================
+ *
+ *  ============================================================
  *  CHANGELOG v5.18.3 -> v5.19.0 (FITUR — PIC di Pengajuan Tumpul)
  *  ============================================================
  *  Sinkron dengan revisi frontend (index v8.23): form "Ajukan Pengembalian
@@ -734,7 +750,7 @@
 // [v5.19.0] Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.19.0';
+const BACKEND_VERSION = 'v5.19.1';
 
 const SHEET_MASTER_TOOLS = 'Master Tools';
 const SHEET_TOOL_UNIT = 'Tool Unit';
@@ -1740,7 +1756,20 @@ function handleApiRequest_(params) {
     }
     return jsonOutput_(result);
   } catch (err) {
-    return jsonOutput_({ error: 'Gagal memproses "' + params.action + '": ' + err.message });
+    // FIX Temuan 4 (audit FE-BE, Low): sebelumnya err.message mentah (bisa berisi
+    // detail internal spt nama sheet/struktur data) dikirim langsung ke client.
+    // Catatan: blok catch ini HANYA menangkap exception TAK TERDUGA dari handler
+    // action di atas -- error terkontrol seperti UNAUTHORIZED_SESSION (dari
+    // getPengajuanTumpulList_ dkk via validateSession_) di-RETURN sbg objek biasa
+    // {error:'UNAUTHORIZED_SESSION: ...'}, BUKAN di-throw, jadi tidak pernah lewat
+    // sini -- alur auto-logout di frontend (lihat handleSessionError_ di app.js)
+    // tidak terdampak oleh perubahan ini. Detail asli tetap dicatat di log server.
+    Logger.log(
+      'handleApiRequest_ error for action="' + params.action + '": ' + err.message + (err.stack ? '\n' + err.stack : '')
+    );
+    return jsonOutput_({
+      error: 'Gagal memproses permintaan "' + params.action + '". Silakan coba lagi atau hubungi admin jika berlanjut.',
+    });
   }
 }
 

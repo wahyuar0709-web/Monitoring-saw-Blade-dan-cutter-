@@ -826,8 +826,15 @@
       return runtimeApiUrl_;
     }
     const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-    const APP_VERSION = 'v8.23.2-fix-chevron-focus'; // versi lengkap, dipakai di log developer
-    const APP_VERSION_SHORT = 'v8.23.2';    // versi ringkas, ditampilkan di badge UI
+    const APP_VERSION = 'v8.23.3-fix-audit-fe-be'; // versi lengkap, dipakai di log developer
+    const APP_VERSION_SHORT = 'v8.23.3';    // versi ringkas, ditampilkan di badge UI
+    // [v8.23.3] CHANGELOG — perbaikan dari audit "Integrasi Frontend-Backend".
+    // Sinkron 1:1 dengan changelog di src/js/app.js -- lihat komentar lengkap di sana.
+    // [1] (Temuan 1, High) loadRiwayatPengajuanSaya_() & loadKonfirmasiTumpulPanel_():
+    //     dead code auto-logout diperbaiki (dipindah ke .catch() lewat handleSessionError_()).
+    // [2] (Temuan 2, Medium) submitPengajuanTumpul & confirmPengajuanTumpul sekarang
+    //     ikut mengecek UNAUTHORIZED_SESSION lewat handleSessionError_() yang sama.
+    // [3] (Bonus) 15 kemunculan mojibake "┬╖"/"┬▓" dibersihkan.
     // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
     // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
     // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
@@ -857,6 +864,28 @@
         this.code = code;
         this.meta = meta || {};
       }
+    }
+
+    /**
+     * FIX Temuan 1 & 2 (audit integrasi FE-BE): helper terpusat untuk mendeteksi
+     * sesi kedaluwarsa (UNAUTHORIZED_SESSION) dan memaksa balik ke login gate.
+     * Sinkron 1:1 dengan handleSessionError_() di src/js/app.js -- lihat komentar
+     * lengkap di sana. Salinan di sini WAJIB ada karena index.html masih memuat
+     * blok <script> inline duplikat dari src/js/app.js (lihat catatan di dekat
+     * <script type="module" src="src/js/app.js"> di akhir file).
+     * @param {Error|{code?:string,message?:string}|null|undefined} errorLike
+     * @return {boolean}
+     */
+    function handleSessionError_(errorLike) {
+      if (!errorLike) return false;
+      const code = errorLike.code;
+      const msg = errorLike.message ? String(errorLike.message) : '';
+      const isSessionError = code === 'UNAUTHORIZED_SESSION' || msg.indexOf('UNAUTHORIZED_SESSION') === 0;
+      if (!isSessionError) return false;
+      setSession_('', '', '');
+      renderAccountState_();
+      showLoginGate_();
+      return true;
     }
 
     /** Logging developer tanpa data sensitif (N). */
@@ -925,6 +954,9 @@
         return Promise.reject(err);
       }
 
+      // CATATAN (Temuan 3, Low/Info, audit FE-BE): token & sessionToken ikut di
+      // query string GET karena keterbatasan struktural GAS Web App. Didokumentasikan,
+      // bukan diperbaiki -- lihat komentar lengkap di src/js/app.js (apiGet()).
       const url = new URL(baseUrl);
       url.searchParams.set('action', action);
       url.searchParams.set('token', runtimeApiToken_); // [FIX — TOKEN API]
@@ -1916,7 +1948,7 @@
         '</div>';
 
       const footnoteHtml =
-        '<p class="dash-footnote">Distribusi Status dihitung per unit fisik ┬╖ Kondisi Alat dihitung per jenis alat (kode).</p>';
+        '<p class="dash-footnote">Distribusi Status dihitung per unit fisik · Kondisi Alat dihitung per jenis alat (kode).</p>';
 
       document.getElementById('kpi-strip').innerHTML = heroHtml + distHtml + condHtml + footnoteHtml;
     }
@@ -1948,7 +1980,7 @@
           '<div class="txn-icon' + (meta.color ? ' ' + meta.color : '') + '">' + ICONS[meta.icon] + '</div>' +
           '<div class="left">' +
             '<div class="activity">' + escapeHtml(r.activity) + '</div>' +
-            '<div class="meta"><span class="tag">' + escapeHtml(r.unitId || r.kodeAlat) + '</span> ┬╖ ' + escapeHtml(r.pic || '—') + '</div>' +
+            '<div class="meta"><span class="tag">' + escapeHtml(r.unitId || r.kodeAlat) + '</span> · ' + escapeHtml(r.pic || '—') + '</div>' +
           '</div>' +
           '<div class="tanggal">' + escapeHtml(r.tanggal) + '</div>' +
         '</div>';
@@ -2226,7 +2258,7 @@
           '<div class="rank-pos">' + (i + 1) + '</div>' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(r.kodeMesin) + '</div>' +
-            '<div class="rk-sub">Rata-rata usia pakai: ' + escapeHtml(usia) + ' ┬╖ ' + r.totalPasang + 'x dipasang</div>' +
+            '<div class="rk-sub">Rata-rata usia pakai: ' + escapeHtml(usia) + ' · ' + r.totalPasang + 'x dipasang</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + r.totalGanti + '</div>' +
@@ -2249,11 +2281,11 @@
           '<div class="rank-pos">' + (i + 1) + '</div>' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(r.kodeMesin) + '</div>' +
-            '<div class="rk-sub">' + r.jumlahSiklus + ' siklus selesai ┬╖ maks ' + r.maxLeadTime + ' hari</div>' +
+            '<div class="rk-sub">' + r.jumlahSiklus + ' siklus selesai · maks ' + r.maxLeadTime + ' hari</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + r.avgLeadTime + '</div>' +
-            '<div class="rk-unit">hari rata┬▓</div>' +
+            '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -2391,15 +2423,8 @@
           // operator baru (belum pernah mengajukan) melihat riwayat SEMUA
           // orang lain di panel "Pengajuan Saya". Sekarang cukup deteksi
           // error sesi (mis. UNAUTHORIZED_SESSION) dan render langsung.
-          if (rows && typeof rows === 'object' && !Array.isArray(rows) && rows.error) {
-            if (String(rows.error).indexOf('UNAUTHORIZED_SESSION') === 0) {
-              setSession_('', '', '');
-              renderAccountState_();
-              showLoginGate_();
-            }
-            el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
-            return;
-          }
+          // FIX Temuan 1 (audit FE-BE): blok pengecekan rows.error DIHAPUS -- dead
+          // code, apiGet() sudah throw ApiError duluan. Deteksi dipindah ke .catch().
           const list = rows || [];
           if (list.length === 0) {
             el.innerHTML = emptyStateHtml_('Belum ada pengajuan', 'Riwayat pengajuanmu akan muncul di sini.');
@@ -2408,12 +2433,14 @@
           el.innerHTML = '<div class="card">' + list.slice(0, 15).map(function (r) {
             const statusClass = r.status === 'Selesai' ? 'st-connected' : (r.status === 'Ditolak' ? 'st-disconnected' : 'st-warn');
             return '<div class="rank-row"><div class="rank-info">' +
-              '<div class="rk-title">' + escapeHtml(r.unitId) + ' ┬╖ ' + escapeHtml(r.kodeAlat) + '</div>' +
+              '<div class="rk-title">' + escapeHtml(r.unitId) + ' · ' + escapeHtml(r.kodeAlat) + '</div>' +
               '<div class="rk-sub">' + escapeHtml(r.timestamp) + '</div>' +
               '</div><div class="rank-metric"><span class="' + statusClass + '">' + escapeHtml(r.status) + '</span></div></div>';
           }).join('') + '</div>';
         })
-        .catch(function () {
+        .catch(function (err) {
+          // FIX Temuan 1 (audit FE-BE): auto-logout benar-benar terpanggil sekarang.
+          handleSessionError_(err);
           el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
         });
     }
@@ -2447,6 +2474,9 @@
         }).then(function (res) {
           btn.disabled = false;
           if (!res || res.success !== true) {
+            // FIX Temuan 2 (audit FE-BE): UNAUTHORIZED_SESSION datang lewat res.error.code
+            // pada respons sukses (HTTP 200), harus dicek di sini, sebelumnya tidak pernah.
+            handleSessionError_(res && res.error);
             showAjukanTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal mengajukan. Coba lagi.');
             return;
           }
@@ -2460,6 +2490,7 @@
           loadRiwayatPengajuanSaya_();
         }).catch(function (err) {
           btn.disabled = false;
+          handleSessionError_(err);
           showAjukanTumpulMsg_('error', (err && err.message) || 'Gagal mengajukan. Coba lagi.');
         });
       });
@@ -2482,15 +2513,8 @@
       el.innerHTML = '<div class="skeleton-block sk-row"></div><div class="skeleton-block sk-row"></div>';
       apiGet('getPengajuanTumpulList', { status: 'Menunggu Konfirmasi WH', sessionToken: runtimeSessionToken_ })
         .then(function (rows) {
-          if (rows && typeof rows === 'object' && !Array.isArray(rows) && rows.error) {
-            if (String(rows.error).indexOf('UNAUTHORIZED_SESSION') === 0) {
-              setSession_('', '', '');
-              renderAccountState_();
-              showLoginGate_();
-            }
-            el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
-            return;
-          }
+          // FIX Temuan 1 (audit FE-BE): blok pengecekan rows.error DIHAPUS -- dead
+          // code, apiGet() sudah throw ApiError duluan. Deteksi dipindah ke .catch().
           if (!rows || rows.length === 0) {
             el.innerHTML = emptyStateHtml_('Tidak ada antrian', 'Semua pengajuan sudah dikonfirmasi.');
             return;
@@ -2498,7 +2522,7 @@
           el.innerHTML = '<div class="card">' + rows.map(function (r) {
             return '<div class="rank-row" data-pengajuan-id="' + escapeAttr(r.id) + '">' +
               '<div class="rank-info">' +
-                '<div class="rk-title">' + escapeHtml(r.unitId) + ' ┬╖ ' + escapeHtml(r.kodeAlat) + '</div>' +
+                '<div class="rk-title">' + escapeHtml(r.unitId) + ' · ' + escapeHtml(r.kodeAlat) + '</div>' +
                 // [REVISI] Tampilkan PIC (nama yang mengajukan, diisi manual)
                 // sebagai info utama -- WH perlu mencocokkan ke orang yang
                 // bawa fisik alatnya. Nama akun login (actorName) tetap
@@ -2506,7 +2530,7 @@
                 // (mis. device dipakai bergantian).
                 '<div class="rk-sub">' + escapeHtml(r.pic || r.actorName) +
                   (r.pic && r.pic !== r.actorName ? ' <span style="opacity:.7">(akun: ' + escapeHtml(r.actorName) + ')</span>' : '') +
-                  ' ┬╖ ' + escapeHtml(r.mesin || r.kodeMesin || '—') + ' ┬╖ ' + escapeHtml(r.timestamp) + '</div>' +
+                  ' · ' + escapeHtml(r.mesin || r.kodeMesin || '—') + ' · ' + escapeHtml(r.timestamp) + '</div>' +
               '</div>' +
               '<div class="rank-metric" style="display:flex; gap:6px;">' +
                 '<button type="button" class="btn-secondary kt-reject-btn" data-id="' + escapeAttr(r.id) + '">Tolak</button>' +
@@ -2521,7 +2545,9 @@
             btn.addEventListener('click', function () { handleKonfirmasiTumpul_(btn.dataset.id, false, btn); });
           });
         })
-        .catch(function () {
+        .catch(function (err) {
+          // FIX Temuan 1 (audit FE-BE): auto-logout benar-benar terpanggil sekarang.
+          handleSessionError_(err);
           el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
         });
     }
@@ -2533,6 +2559,8 @@
         sessionToken: runtimeSessionToken_, id: id, approve: approve
       }).then(function (res) {
         if (!res || res.success !== true) {
+          // FIX Temuan 2 (audit FE-BE): UNAUTHORIZED_SESSION dicek di sini (.then).
+          handleSessionError_(res && res.error);
           showKonfirmasiTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal memproses pengajuan.');
           row.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
           return;
@@ -2541,6 +2569,7 @@
         row.remove();
         loadKonfirmasiTumpulPanel_();
       }).catch(function (err) {
+        handleSessionError_(err);
         showKonfirmasiTumpulMsg_('error', (err && err.message) || 'Gagal memproses pengajuan.');
         row.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
       });
@@ -2594,11 +2623,11 @@
         return '<div class="rank-row">' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(v.vendor) + '</div>' +
-            '<div class="rk-sub">Maksimum ' + v.maxLeadTime + ' hari ┬╖ selisih telat rata┬▓ ' + v.selisihTelat + ' hari</div>' +
+            '<div class="rk-sub">Maksimum ' + v.maxLeadTime + ' hari · selisih telat rata² ' + v.selisihTelat + ' hari</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + v.avgLeadTime + '</div>' +
-            '<div class="rk-unit">hari rata┬▓</div>' +
+            '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -2623,8 +2652,8 @@
         const badge = '<span class="badge ' + (isTelat ? 'kritis' : 'aman') + '">' + (isTelat ? 'Terlambat' : (isProses ? 'Normal' : 'Menunggu')) + '</span>';
         return '<div class="rank-row">' +
           '<div class="rank-info">' +
-            '<div class="rk-title">' + escapeHtml(r.kodeAlat) + ' ┬╖ ' + escapeHtml(r.unitId) + ' ' + badge + '</div>' +
-            '<div class="rk-sub">' + escapeHtml(r.vendor || '—') + (r.mesin ? ' ┬╖ ' + escapeHtml(r.mesin) : '') + '</div>' +
+            '<div class="rk-title">' + escapeHtml(r.kodeAlat) + ' · ' + escapeHtml(r.unitId) + ' ' + badge + '</div>' +
+            '<div class="rk-sub">' + escapeHtml(r.vendor || '—') + (r.mesin ? ' · ' + escapeHtml(r.mesin) : '') + '</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + r.hariBerjalan + '</div>' +
@@ -2706,7 +2735,7 @@
       if (t.brand) bits.push(t.brand);
       if (t.bahan) bits.push(t.bahan);
       if (t.spesifikasi) bits.push(t.spesifikasi);
-      const extra = bits.length ? (' (' + bits.join(' ┬╖ ') + ')') : '';
+      const extra = bits.length ? (' (' + bits.join(' · ') + ')') : '';
       return t.kodeAlat + ' — ' + t.namaAlat + extra;
     }
 
@@ -3296,9 +3325,8 @@
           // [WO-2.2/2.2.2] Sesi login kedaluwarsa/tidak valid — bersihkan
           // sesi lokal, sinkronkan card Akun, dan tampilkan lagi gate
           // layar penuh (app tidak boleh tetap terbuka dgn sesi mati).
-          setSession_('', '', '');
-          renderAccountState_();
-          showLoginGate_();
+          // FIX Temuan 2 (audit FE-BE): sekarang lewat handleSessionError_().
+          handleSessionError_(err);
           return 'Sesi login sudah kedaluwarsa. Silakan login kembali.';
         case 'UNAUTHORIZED':
         case 'INVALID_CREDENTIALS':
