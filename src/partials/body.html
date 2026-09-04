@@ -1887,7 +1887,7 @@
         '</div>';
 
       const footnoteHtml =
-        '<p class="dash-footnote">Distribusi Status dihitung per unit fisik ┬╖ Kondisi Alat dihitung per jenis alat (kode).</p>';
+        '<p class="dash-footnote">Distribusi Status dihitung per unit fisik · Kondisi Alat dihitung per jenis alat (kode).</p>';
 
       document.getElementById('kpi-strip').innerHTML = heroHtml + distHtml + condHtml + footnoteHtml;
     }
@@ -1919,7 +1919,7 @@
           '<div class="txn-icon' + (meta.color ? ' ' + meta.color : '') + '">' + ICONS[meta.icon] + '</div>' +
           '<div class="left">' +
             '<div class="activity">' + escapeHtml(r.activity) + '</div>' +
-            '<div class="meta"><span class="tag">' + escapeHtml(r.unitId || r.kodeAlat) + '</span> ┬╖ ' + escapeHtml(r.pic || '—') + '</div>' +
+            '<div class="meta"><span class="tag">' + escapeHtml(r.unitId || r.kodeAlat) + '</span> · ' + escapeHtml(r.pic || '—') + '</div>' +
           '</div>' +
           '<div class="tanggal">' + escapeHtml(r.tanggal) + '</div>' +
         '</div>';
@@ -2197,7 +2197,7 @@
           '<div class="rank-pos">' + (i + 1) + '</div>' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(r.kodeMesin) + '</div>' +
-            '<div class="rk-sub">Rata-rata usia pakai: ' + escapeHtml(usia) + ' ┬╖ ' + r.totalPasang + 'x dipasang</div>' +
+            '<div class="rk-sub">Rata-rata usia pakai: ' + escapeHtml(usia) + ' · ' + r.totalPasang + 'x dipasang</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + r.totalGanti + '</div>' +
@@ -2220,11 +2220,11 @@
           '<div class="rank-pos">' + (i + 1) + '</div>' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(r.kodeMesin) + '</div>' +
-            '<div class="rk-sub">' + r.jumlahSiklus + ' siklus selesai ┬╖ maks ' + r.maxLeadTime + ' hari</div>' +
+            '<div class="rk-sub">' + r.jumlahSiklus + ' siklus selesai · maks ' + r.maxLeadTime + ' hari</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + r.avgLeadTime + '</div>' +
-            '<div class="rk-unit">hari rata┬▓</div>' +
+            '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -2379,7 +2379,7 @@
           el.innerHTML = '<div class="card">' + list.slice(0, 15).map(function (r) {
             const statusClass = r.status === 'Selesai' ? 'st-connected' : (r.status === 'Ditolak' ? 'st-disconnected' : 'st-warn');
             return '<div class="rank-row"><div class="rank-info">' +
-              '<div class="rk-title">' + escapeHtml(r.unitId) + ' ┬╖ ' + escapeHtml(r.kodeAlat) + '</div>' +
+              '<div class="rk-title">' + escapeHtml(r.unitId) + ' · ' + escapeHtml(r.kodeAlat) + '</div>' +
               '<div class="rk-sub">' + escapeHtml(r.timestamp) + '</div>' +
               '</div><div class="rank-metric"><span class="' + statusClass + '">' + escapeHtml(r.status) + '</span></div></div>';
           }).join('') + '</div>';
@@ -2469,7 +2469,7 @@
           el.innerHTML = '<div class="card">' + rows.map(function (r) {
             return '<div class="rank-row" data-pengajuan-id="' + escapeAttr(r.id) + '">' +
               '<div class="rank-info">' +
-                '<div class="rk-title">' + escapeHtml(r.unitId) + ' ┬╖ ' + escapeHtml(r.kodeAlat) + '</div>' +
+                '<div class="rk-title">' + escapeHtml(r.unitId) + ' · ' + escapeHtml(r.kodeAlat) + '</div>' +
                 // [REVISI] Tampilkan PIC (nama yang mengajukan, diisi manual)
                 // sebagai info utama -- WH perlu mencocokkan ke orang yang
                 // bawa fisik alatnya. Nama akun login (actorName) tetap
@@ -2477,7 +2477,7 @@
                 // (mis. device dipakai bergantian).
                 '<div class="rk-sub">' + escapeHtml(r.pic || r.actorName) +
                   (r.pic && r.pic !== r.actorName ? ' <span style="opacity:.7">(akun: ' + escapeHtml(r.actorName) + ')</span>' : '') +
-                  ' ┬╖ ' + escapeHtml(r.mesin || r.kodeMesin || '—') + ' ┬╖ ' + escapeHtml(r.timestamp) + '</div>' +
+                  ' · ' + escapeHtml(r.mesin || r.kodeMesin || '—') + ' · ' + escapeHtml(r.timestamp) + '</div>' +
               '</div>' +
               '<div class="rank-metric" style="display:flex; gap:6px;">' +
                 '<button type="button" class="btn-secondary kt-reject-btn" data-id="' + escapeAttr(r.id) + '">Tolak</button>' +
@@ -2565,11 +2565,11 @@
         return '<div class="rank-row">' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(v.vendor) + '</div>' +
-            '<div class="rk-sub">Maksimum ' + v.maxLeadTime + ' hari ┬╖ selisih telat rata┬▓ ' + v.selisihTelat + ' hari</div>' +
+            '<div class="rk-sub">Maksimum ' + v.maxLeadTime + ' hari · selisih telat rata² ' + v.selisihTelat + ' hari</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + v.avgLeadTime + '</div>' +
-            '<div class="rk-unit">hari rata┬▓</div>' +
+            '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -2594,8 +2594,8 @@
         const badge = '<span class="badge ' + (isTelat ? 'kritis' : 'aman') + '">' + (isTelat ? 'Terlambat' : (isProses ? 'Normal' : 'Menunggu')) + '</span>';
         return '<div class="rank-row">' +
           '<div class="rank-info">' +
-            '<div class="rk-title">' + escapeHtml(r.kodeAlat) + ' ┬╖ ' + escapeHtml(r.unitId) + ' ' + badge + '</div>' +
-            '<div class="rk-sub">' + escapeHtml(r.vendor || '—') + (r.mesin ? ' ┬╖ ' + escapeHtml(r.mesin) : '') + '</div>' +
+            '<div class="rk-title">' + escapeHtml(r.kodeAlat) + ' · ' + escapeHtml(r.unitId) + ' ' + badge + '</div>' +
+            '<div class="rk-sub">' + escapeHtml(r.vendor || '—') + (r.mesin ? ' · ' + escapeHtml(r.mesin) : '') + '</div>' +
           '</div>' +
           '<div class="rank-metric">' +
             '<div class="rk-num">' + r.hariBerjalan + '</div>' +
@@ -2677,7 +2677,7 @@
       if (t.brand) bits.push(t.brand);
       if (t.bahan) bits.push(t.bahan);
       if (t.spesifikasi) bits.push(t.spesifikasi);
-      const extra = bits.length ? (' (' + bits.join(' ┬╖ ') + ')') : '';
+      const extra = bits.length ? (' (' + bits.join(' · ') + ')') : '';
       return t.kodeAlat + ' — ' + t.namaAlat + extra;
     }
 
