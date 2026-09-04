@@ -4,6 +4,25 @@
  *  Sistem Monitoring Saw Blade & Cutter
  *
  *  ============================================================
+ *  CHANGELOG v5.19.1 -> v5.19.2 (BUGFIX — Filter Mesin di menu Stok kosong)
+ *  ============================================================
+ *  [Bug] Dropdown "Filter Mesin" di panel Stok selalu kosong (cuma "Semua
+ *  mesin") sehingga tidak bisa dipakai. Akar masalah: resolveStockStatusColumns_()
+ *  tidak pernah me-resolve kolom "Mesin"/"Kode Mesin" dari sheet Stock Status,
+ *  jadi getStockStatusList() tidak pernah mengirim field mesin/kodeMesin ke
+ *  frontend -- padahal populateStokFilterOptions_()/rowMatchesMesin_() di
+ *  app.js butuh field itu untuk mengisi & mencocokkan dropdown.
+ *  Fix: tambah resolusi kolom MESIN & KODE_MESIN (dengan exclude keyword
+ *  supaya tidak saling tertukar, karena "Kode Mesin" secara substring juga
+ *  mengandung "mesin"), lalu getStockStatusList() ikut mengirim kedua field
+ *  tsb. Diverifikasi lewat simulasi Node terhadap header asli sheet: MESIN
+ *  resolve ke kolom 6 ("Mesin / 机器"), KODE_MESIN ke kolom 7 ("Kode Mesin /
+ *  机器编号") -- tidak tertukar.
+ *  >>> WAJIB: Deploy > Manage deployments > Edit deployment aktif >
+ *      New version, setelah upload file ini. <<<
+ *  ============================================================
+ *
+ *  ============================================================
  *  CHANGELOG v5.19.0 -> v5.19.1 (AUDIT FIX — kebocoran pesan error internal)
  *  ============================================================
  *  [Temuan 4, Low, audit integrasi FE-BE] handleApiRequest_() sebelumnya
@@ -750,7 +769,7 @@
 // [v5.19.0] Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.19.1';
+const BACKEND_VERSION = 'v5.19.2';
 
 const SHEET_MASTER_TOOLS = 'Master Tools';
 const SHEET_TOOL_UNIT = 'Tool Unit';
@@ -791,11 +810,28 @@ function resolveStockStatusColumns_(sheet) {
   const lastCol = sheet.getLastColumn();
   const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
 
-  const find = function (keywords) {
+  // FIX BUG — "Filter Mesin di menu Stok tidak bisa dipakai": `find` sekarang
+  // menerima `excludeKeywords` supaya keyword generik 'mesin' TIDAK ikut
+  // salah menangkap kolom "Kode Mesin" (yang juga mengandung substring
+  // "mesin" setelah dinormalisasi) atau sebaliknya. Sebelumnya MESIN &
+  // KODE_MESIN malah tidak di-resolve sama sekali di sini, jadi
+  // getStockStatusList() tidak pernah bisa mengirim field kodeMesin ke
+  // frontend -> dropdown "Filter Mesin" selalu kosong (cuma "Semua mesin").
+  const find = function (keywords, excludeKeywords) {
     for (let k = 0; k < keywords.length; k++) {
       const kw = normalizeHeader_(keywords[k]);
       for (let i = 0; i < header.length; i++) {
-        if (normalizeHeader_(header[i]).indexOf(kw) !== -1) return i + 1; // 1-indexed
+        const norm = normalizeHeader_(header[i]);
+        if (norm.indexOf(kw) === -1) continue;
+        if (
+          excludeKeywords &&
+          excludeKeywords.some(function (ex) {
+            return norm.indexOf(normalizeHeader_(ex)) !== -1;
+          })
+        ) {
+          continue;
+        }
+        return i + 1; // 1-indexed
       }
     }
     return -1;
@@ -805,6 +841,8 @@ function resolveStockStatusColumns_(sheet) {
     KODE_ALAT: find(['kode alat']),
     NAMA_ALAT: find(['nama alat']),
     SPESIFIKASI: find(['spesifikasi']),
+    MESIN: find(['mesin'], ['kode mesin']),
+    KODE_MESIN: find(['kode mesin']),
     TOTAL: find(['total']),
     SAFETY: find(['safety']),
     DIPAKAI: find(['sedang dipakai', 'dipakai']),
@@ -1836,6 +1874,14 @@ function getStockStatusList() {
         kodeAlat: String(row[col.KODE_ALAT - 1]).trim(),
         namaAlat: String(row[col.NAMA_ALAT - 1]).trim(),
         spesifikasi: String(row[col.SPESIFIKASI - 1]).trim(),
+        // FIX BUG — "Filter Mesin di menu Stok tidak bisa dipakai": field
+        // mesin/kodeMesin sebelumnya tidak pernah dikirim ke frontend sama
+        // sekali (resolveStockStatusColumns_ dulu tidak resolve kolom ini),
+        // padahal populateStokFilterOptions_()/rowMatchesMesin_() di app.js
+        // butuh r.kodeMesin untuk mengisi & mencocokkan dropdown "Filter
+        // Mesin". Tanpa field ini dropdown selalu kosong (cuma "Semua mesin").
+        mesin: String(row[col.MESIN - 1]).trim(),
+        kodeMesin: String(row[col.KODE_MESIN - 1]).trim(),
         total: num_(row[col.TOTAL - 1]),
         siapPakai: num_(row[col.SIAP_PAKAI - 1]),
         tungguAsah: num_(row[col.TUNGGU_ASAH - 1]),
