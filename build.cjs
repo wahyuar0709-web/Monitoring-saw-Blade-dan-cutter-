@@ -43,6 +43,20 @@ if (bodyMatch) {
   bodyContent = bodyMatch[1].trim();
 }
 
+// BUGFIX (ditemukan saat investigasi bug "dropdown Jenis Transaksi dobel" --
+// lihat CHANGELOG v8.23.5 di src/js/app.js): ekstraksi headContent di bawah
+// SUDAH benar men-strip <style>/<script> supaya head.html bersih, tapi
+// ekstraksi bodyContent di atas TIDAK melakukan hal yang sama -- akibatnya
+// original_index.html yang isi <body>-nya sudah punya <script> app lama
+// (versi pre-migrasi monolitik) ikut terbawa APA ADANYA ke src/partials/body.html
+// DAN ke index.html baru yang di-generate di bawah (baris ~96), yang JUGA
+// menambahkan <script type="module" src="src/js/app.js"> sendiri -- hasilnya
+// index.html generated punya app.js dimuat DUA KALI (classic + module).
+// Ini pola bug yang sama persis dgn yang bikin dropdown "Jenis Transaksi"
+// tampil dobel di production. Strip <script> di sini juga supaya kalau
+// script ini pernah dijalankan ulang, bug ini tidak muncul lagi.
+bodyContent = bodyContent.replace(/<script>[\s\S]*?<\/script>/g, '').trim();
+
 // Write body partial
 fs.writeFileSync(path.join(SRC, 'partials', 'body.html'), bodyContent);
 console.log('Created src/partials/body.html (' + bodyContent.length + ' chars)');
