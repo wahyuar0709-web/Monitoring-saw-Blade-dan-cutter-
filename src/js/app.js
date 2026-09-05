@@ -147,8 +147,49 @@ function getConfiguredApiUrl() {
   return runtimeApiUrl_;
 }
 const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-const APP_VERSION = 'v8.23.2-fix-chevron-focus'; // versi lengkap, dipakai di log developer
-const APP_VERSION_SHORT = 'v8.23.2'; // versi ringkas, ditampilkan di badge UI
+const APP_VERSION = 'v8.23.5-remove-duplicate-script'; // versi lengkap, dipakai di log developer
+const APP_VERSION_SHORT = 'v8.23.5'; // versi ringkas, ditampilkan di badge UI
+// [v8.23.5] CHANGELOG — FIX STRUKTURAL (akar masalah dropdown dobel di v8.23.4):
+// index.html dulu memuat app.js DUA KALI (inline <script> classic + <script
+// type="module" src="src/js/app.js">) -- salinan inline classic itu DIHAPUS,
+// index.html sekarang cuma satu sumber JS (file ini). Ini adalah PENYEBAB ASLI
+// dari bug dropdown dobel v8.23.4 (fix v8.23.4 tetap dipertahankan sbg pengaman
+// tambahan/idempotency, tapi akar masalahnya baru benar-benar hilang di sini)
+// DAN penyebab risiko double-submit form Input yang sempat dilaporkan (event
+// listener wireForm() dulu ikut terpasang 2x dari 2 realm skrip berbeda).
+// Efek samping yang WAJIB diperbaiki manual: top-level function di script
+// classic otomatis jadi global (window.xxx), tapi di dalam <script
+// type="module"> TIDAK -- jadi goToPanel & 5 fungsi loadXxx yang dipanggil
+// lewat onclick="...()" inline di stateCardHtml_() sekarang di-expose manual
+// ke window (lihat window.goToPanel = ... dkk di dekat akhir file ini).
+// Diverifikasi sebelum dihapus: kedua salinan diperbandingkan (skrip Python,
+// whitespace+komentar+trailing-comma dinormalisasi) -- 99 fungsi identik
+// persis, kontrak apiGet/apiPost sama persis, tidak ada logic yang hanya ada
+// di satu sisi.
+// [v8.23.4] CHANGELOG — BUGFIX: dropdown "Jenis Transaksi" (& "Mesin") dobel.
+// Akar masalah: loadFormReferenceData()/populateAjukanMesinOptions_() pakai
+// appendChild() di loop TANPA membersihkan opsi lama dulu -- kalau fungsi ini
+// kepanggil >1x (index.html memuat app.js DUA KALI, lihat fix v8.23.5 di
+// atas untuk akar masalahnya), opsi lama menumpuk, bukan
+// digantikan. Fix: reset select ke placeholder sebelum diisi ulang (idempotent).
+// Diperbaiki di 3 titik: f-activity (Jenis Transaksi), f-mesin-driver (Mesin,
+// form Input admin), at-mesin (Mesin, form Ajukan Tumpul).
+// [v8.23.3] CHANGELOG — perbaikan dari audit "Integrasi Frontend-Backend":
+// [1] (Temuan 1, High) loadRiwayatPengajuanSaya_() & loadKonfirmasiTumpulPanel_()
+//     sebelumnya punya blok deteksi UNAUTHORIZED_SESSION yang DEAD CODE (mengecek
+//     rows.error padahal apiGet() sudah throw ApiError duluan untuk bentuk itu) --
+//     auto-logout saat sesi kedaluwarsa tidak pernah jalan di 2 panel ini. Sekarang
+//     dipindah ke .catch() lewat handleSessionError_() baru.
+// [2] (Temuan 2, Medium) submitPengajuanTumpul (wireAjukanTumpulForm_) & confirmPengajuanTumpul
+//     (handleKonfirmasiTumpul_) sebelumnya tidak pernah mengecek UNAUTHORIZED_SESSION
+//     sama sekali (backend mengembalikannya sbg {success:false,error:{code,...}} lewat
+//     respons POST normal, bukan exception) -- sekarang dicek di .then() lewat
+//     handleSessionError_() yang sama, dan mapErrorToMessage_() (addMovementRow)
+//     direfactor memakai helper yang sama juga. Total 5 lokasi sekarang konsisten
+//     satu sumber logic.
+// [3] (Bonus, residu fix mojibake "Γû╕"->"▸" sebelumnya) 15 kemunculan encoding rusak
+//     "┬╖" (harusnya "·") dan "┬▓" (harusnya "²", dipakai sbg penanda reduplikasi kata
+//     spt "rata²") dibersihkan.
 // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
 // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
 // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
@@ -178,6 +219,45 @@ class ApiError extends Error {
     this.code = code;
     this.meta = meta || {};
   }
+}
+
+/**
+ * FIX Temuan 1 & 2 (audit integrasi FE-BE): satu sumber logic terpusat untuk
+ * mendeteksi sesi kedaluwarsa (UNAUTHORIZED_SESSION) dan memaksa balik ke
+ * login gate. Sebelumnya logic ini ditulis manual & tidak konsisten di
+ * beberapa tempat -- lebih parah lagi, di loadRiwayatPengajuanSaya_() dan
+ * loadKonfirmasiTumpulPanel_() logic-nya bahkan DEAD CODE (mengecek
+ * `rows.error` padahal apiGet() sudah melempar exception duluan untuk
+ * bentuk itu, lihat komentar di apiGet), jadi auto-logout tidak pernah
+ * benar-benar jalan di kedua panel tsb.
+ *
+ * Dipakai untuk DUA bentuk error yang berbeda di codebase ini:
+ *  - ApiError yang di-throw (jalur GET lewat apiGet, atau POST
+ *    addMovementRow lewat validateTransactionResponse_) -- errorLike.code
+ *    bisa 'API_ERROR' (GET) dgn pesan asli backend di errorLike.message
+ *    (mis. "UNAUTHORIZED_SESSION: ..."), atau langsung 'UNAUTHORIZED_SESSION'
+ *    (addMovementRow).
+ *  - Objek {code,message} polos dari res.error pada respons POST yang
+ *    resolve NORMAL (HTTP 200, {success:false,...}) -- ini bentuk yang
+ *    dipakai submitPengajuanTumpul_/confirmPengajuanTumpul_ di backend,
+ *    jadi HARUS dicek di .then() (bukan .catch()) oleh pemanggilnya.
+ *
+ * @param {Error|{code?:string,message?:string}|null|undefined} errorLike
+ * @return {boolean} true kalau ini memang error sesi & sudah ditangani
+ *   (session lokal dibersihkan + login gate ditampilkan); false kalau
+ *   bukan error sesi, sehingga pemanggil tetap menjalankan fallback
+ *   error handling-nya sendiri.
+ */
+function handleSessionError_(errorLike) {
+  if (!errorLike) return false;
+  const code = errorLike.code;
+  const msg = errorLike.message ? String(errorLike.message) : '';
+  const isSessionError = code === 'UNAUTHORIZED_SESSION' || msg.indexOf('UNAUTHORIZED_SESSION') === 0;
+  if (!isSessionError) return false;
+  setSession_('', '', '');
+  renderAccountState_();
+  showLoginGate_();
+  return true;
 }
 
 /** Logging developer tanpa data sensitif (N). */
@@ -250,6 +330,15 @@ function apiGet(action, params, opts) {
     return Promise.reject(err);
   }
 
+  // CATATAN (Temuan 3, Low/Info, audit FE-BE): token & sessionToken ikut di
+  // query string GET karena keterbatasan struktural GAS Web App (custom
+  // header memicu CORS preflight yang tidak didukung baik oleh GAS).
+  // Konsekuensi: kedua token berpotensi tersimpan di riwayat browser & log
+  // eksekusi Apps Script. Sudah dianggap acceptable risk untuk skala
+  // internal tool ini -- didokumentasikan di sini, bukan diperbaiki, supaya
+  // tidak terulang jadi "temuan baru" di audit berikutnya. Perbaikan penuh
+  // (migrasi semua GET jadi POST) di luar cakupan perbaikan ini karena
+  // perubahan arsitektur yang jauh lebih besar.
   const url = new URL(baseUrl);
   url.searchParams.set('action', action);
   url.searchParams.set('token', runtimeApiToken_); // [FIX — TOKEN API]
@@ -1324,7 +1413,7 @@ function renderDashboard(d, rows) {
     '</div>';
 
   const footnoteHtml =
-    '<p class="dash-footnote">Distribusi Status dihitung per unit fisik ┬╖ Kondisi Alat dihitung per jenis alat (kode).</p>';
+    '<p class="dash-footnote">Distribusi Status dihitung per unit fisik · Kondisi Alat dihitung per jenis alat (kode).</p>';
 
   document.getElementById('kpi-strip').innerHTML = heroHtml + distHtml + condHtml + footnoteHtml;
 }
@@ -1379,7 +1468,7 @@ function renderTransactions(rows) {
           '</div>' +
           '<div class="meta"><span class="tag">' +
           escapeHtml(r.unitId || r.kodeAlat) +
-          '</span> ┬╖ ' +
+          '</span> · ' +
           escapeHtml(r.pic || '—') +
           '</div>' +
           '</div>' +
@@ -1783,7 +1872,7 @@ function renderMachineWear_(rows) {
           '</div>' +
           '<div class="rk-sub">Rata-rata usia pakai: ' +
           escapeHtml(usia) +
-          ' ┬╖ ' +
+          ' · ' +
           r.totalPasang +
           'x dipasang</div>' +
           '</div>' +
@@ -1826,7 +1915,7 @@ function renderLeadTimeByMachine_(rows) {
           '</div>' +
           '<div class="rk-sub">' +
           r.jumlahSiklus +
-          ' siklus selesai ┬╖ maks ' +
+          ' siklus selesai · maks ' +
           r.maxLeadTime +
           ' hari</div>' +
           '</div>' +
@@ -1834,7 +1923,7 @@ function renderLeadTimeByMachine_(rows) {
           '<div class="rk-num">' +
           r.avgLeadTime +
           '</div>' +
-          '<div class="rk-unit">hari rata┬▓</div>' +
+          '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
           '</div>'
         );
@@ -1862,6 +1951,14 @@ function loadAjukanTumpulPanel_() {
 function populateAjukanMesinOptions_() {
   const sel = document.getElementById('at-mesin');
   if (!sel || ajukanTumpulMesinLoaded_ || !machineList || machineList.length === 0) return;
+  // BUGFIX — dropdown mesin dobel: pola sama dgn f-activity/f-mesin-driver
+  // (appendChild loop tanpa clear dulu). Flag ajukanTumpulMesinLoaded_ di
+  // atas dulu TIDAK cukup untuk mencegah dobel selama index.html masih
+  // memuat app.js dua kali (tiap salinan skrip punya flag-nya sendiri2,
+  // tapi <select> DOM-nya sama/shared) -- akar masalah itu sudah diperbaiki
+  // di v8.23.5. Reset ke placeholder di sini tetap dipertahankan sbg
+  // pengaman DOM-level, bukan cuma flag-level.
+  sel.innerHTML = '<option value="">Pilih mesin…</option>';
   machineList.forEach(function (m) {
     const opt = document.createElement('option');
     opt.value = m.kodeMesin;
@@ -1987,8 +2084,14 @@ function loadRiwayatPengajuanSaya_() {
       // Filter client-side ("mine") DIHAPUS -- sebelumnya ada fallback
       // "kalau mine kosong, tampilkan rows apa adanya" yang berarti
       // operator baru (belum pernah mengajukan) melihat riwayat SEMUA
-      // orang lain di panel "Pengajuan Saya". Data rows sudah valid,
-      // render langsung tanpa pengecekan sesi (sesi dicek di catch).
+      // orang lain di panel "Pengajuan Saya". Sekarang cukup deteksi
+      // error sesi (mis. UNAUTHORIZED_SESSION) dan render langsung.
+      // FIX Temuan 1 (audit FE-BE): pengecekan `rows.error` di sini DIHAPUS --
+      // itu dead code, karena apiGet() sekarang sudah melempar ApiError
+      // duluan untuk bentuk {error:string} tanpa field success (lihat
+      // komentar di apiGet), jadi `rows` di titik ini TIDAK PERNAH punya
+      // properti .error. Deteksi UNAUTHORIZED_SESSION dipindah ke .catch()
+      // di bawah lewat handleSessionError_().
       const list = rows || [];
       if (list.length === 0) {
         el.innerHTML = emptyStateHtml_('Belum ada pengajuan', 'Riwayat pengajuanmu akan muncul di sini.');
@@ -2005,7 +2108,7 @@ function loadRiwayatPengajuanSaya_() {
               '<div class="rank-row"><div class="rank-info">' +
               '<div class="rk-title">' +
               escapeHtml(r.unitId) +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.kodeAlat) +
               '</div>' +
               '<div class="rk-sub">' +
@@ -2022,18 +2125,10 @@ function loadRiwayatPengajuanSaya_() {
         '</div>';
     })
     .catch(function (err) {
-      // FIX Temuan 1 (audit FE-BE): apiGet melempar ApiError saat body berupa
-      // {error: "..."} tanpa field success (baris 271-273). Karena itu,
-      // pengecekan UNAUTHORIZED_SESSION harus dilakukan di sini (catch),
-      // bukan di rows.error di dalam .then (dead code sebelumnya).
-      const msg = (err && err.message) ? String(err.message) : '';
-      if (msg.indexOf('UNAUTHORIZED_SESSION') === 0 || (err && err.code === 'UNAUTHORIZED_SESSION')) {
-        setSession_('', '', '');
-        renderAccountState_();
-        showLoginGate_();
-        return;
-      }
-      // fallback: tampilkan pesan error generik seperti sebelumnya
+      // FIX Temuan 1 (audit FE-BE): auto-logout untuk UNAUTHORIZED_SESSION
+      // sekarang benar-benar terpanggil di sini (sebelumnya dead code, lihat
+      // catatan di blok .then() di atas).
+      handleSessionError_(err);
       el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
     });
 }
@@ -2072,6 +2167,12 @@ function wireAjukanTumpulForm_() {
       .then(function (res) {
         btn.disabled = false;
         if (!res || res.success !== true) {
+          // FIX Temuan 2 (audit FE-BE): backend mengembalikan UNAUTHORIZED_SESSION
+          // sbg respons NORMAL {success:false, error:{code,message}} (HTTP 200),
+          // bukan exception -- jadi harus dicek di sini (.then), sebelumnya tidak
+          // pernah dicek sama sekali di endpoint ini (beda dgn addMovementRow yang
+          // sudah benar lewat mapErrorToMessage_).
+          handleSessionError_(res && res.error);
           showAjukanTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal mengajukan. Coba lagi.');
           return;
         }
@@ -2086,6 +2187,9 @@ function wireAjukanTumpulForm_() {
       })
       .catch(function (err) {
         btn.disabled = false;
+        // FIX Temuan 2 (audit FE-BE): jaga-jaga kalau ApiError sesi datang lewat
+        // jalur transport (bukan body sukses) -- no-op kalau bukan error sesi.
+        handleSessionError_(err);
         showAjukanTumpulMsg_('error', (err && err.message) || 'Gagal mengajukan. Coba lagi.');
       });
   });
@@ -2108,8 +2212,10 @@ function loadKonfirmasiTumpulPanel_() {
   el.innerHTML = '<div class="skeleton-block sk-row"></div><div class="skeleton-block sk-row"></div>';
   apiGet('getPengajuanTumpulList', { status: 'Menunggu Konfirmasi WH', sessionToken: runtimeSessionToken_ })
     .then(function (rows) {
-      // Data rows sudah valid dari apiGet (session berhasil divalidasi di server),
-      // render langsung tanpa pengecekan sesi di sini.
+      // FIX Temuan 1 (audit FE-BE): pengecekan `rows.error` di sini DIHAPUS --
+      // dead code, sama seperti di loadRiwayatPengajuanSaya_() (lihat komentar
+      // lengkap di sana). apiGet() sudah melempar ApiError duluan; deteksi
+      // UNAUTHORIZED_SESSION dipindah ke .catch() di bawah.
       if (!rows || rows.length === 0) {
         el.innerHTML = emptyStateHtml_('Tidak ada antrian', 'Semua pengajuan sudah dikonfirmasi.');
         return;
@@ -2125,7 +2231,7 @@ function loadKonfirmasiTumpulPanel_() {
               '<div class="rank-info">' +
               '<div class="rk-title">' +
               escapeHtml(r.unitId) +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.kodeAlat) +
               '</div>' +
               // [REVISI] Tampilkan PIC (nama yang mengajukan, diisi manual)
@@ -2138,9 +2244,9 @@ function loadKonfirmasiTumpulPanel_() {
               (r.pic && r.pic !== r.actorName
                 ? ' <span style="opacity:.7">(akun: ' + escapeHtml(r.actorName) + ')</span>'
                 : '') +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.mesin || r.kodeMesin || '—') +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.timestamp) +
               '</div>' +
               '</div>' +
@@ -2169,18 +2275,9 @@ function loadKonfirmasiTumpulPanel_() {
       });
     })
     .catch(function (err) {
-      // FIX Temuan 1 (audit FE-BE): apiGet melempar ApiError saat body berupa
-      // {error: "..."} tanpa field success (baris 271-273). Karena itu,
-      // pengecekan UNAUTHORIZED_SESSION harus dilakukan di sini (catch),
-      // bukan di rows.error di dalam .then (dead code sebelumnya).
-      const msg = (err && err.message) ? String(err.message) : '';
-      if (msg.indexOf('UNAUTHORIZED_SESSION') === 0 || (err && err.code === 'UNAUTHORIZED_SESSION')) {
-        setSession_('', '', '');
-        renderAccountState_();
-        showLoginGate_();
-        return;
-      }
-      // fallback: tampilkan pesan error generik seperti sebelumnya
+      // FIX Temuan 1 (audit FE-BE): auto-logout untuk UNAUTHORIZED_SESSION
+      // sekarang benar-benar terpanggil di sini (sebelumnya dead code).
+      handleSessionError_(err);
       el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
     });
 }
@@ -2197,6 +2294,11 @@ function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
   })
     .then(function (res) {
       if (!res || res.success !== true) {
+        // FIX Temuan 2 (audit FE-BE): sama seperti submitPengajuanTumpul --
+        // UNAUTHORIZED_SESSION datang lewat res.error.code pada respons
+        // sukses (HTTP 200), harus dicek di .then(), sebelumnya tidak pernah
+        // dicek di endpoint ini.
+        handleSessionError_(res && res.error);
         showKonfirmasiTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal memproses pengajuan.');
         row.querySelectorAll('button').forEach(function (b) {
           b.disabled = false;
@@ -2211,6 +2313,9 @@ function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
       loadKonfirmasiTumpulPanel_();
     })
     .catch(function (err) {
+      // FIX Temuan 2 (audit FE-BE): jaga-jaga kalau ApiError sesi datang lewat
+      // jalur transport (bukan body sukses) -- no-op kalau bukan error sesi.
+      handleSessionError_(err);
       showKonfirmasiTumpulMsg_('error', (err && err.message) || 'Gagal memproses pengajuan.');
       row.querySelectorAll('button').forEach(function (b) {
         b.disabled = false;
@@ -2303,7 +2408,7 @@ function renderVendorPerformance_(rows) {
           '</div>' +
           '<div class="rk-sub">Maksimum ' +
           v.maxLeadTime +
-          ' hari ┬╖ selisih telat rata┬▓ ' +
+          ' hari · selisih telat rata² ' +
           v.selisihTelat +
           ' hari</div>' +
           '</div>' +
@@ -2311,7 +2416,7 @@ function renderVendorPerformance_(rows) {
           '<div class="rk-num">' +
           v.avgLeadTime +
           '</div>' +
-          '<div class="rk-unit">hari rata┬▓</div>' +
+          '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
           '</div>'
         );
@@ -2350,14 +2455,14 @@ function renderKontrolAsahList_(elId, rows, emptyText) {
           '<div class="rank-info">' +
           '<div class="rk-title">' +
           escapeHtml(r.kodeAlat) +
-          ' ┬╖ ' +
+          ' · ' +
           escapeHtml(r.unitId) +
           ' ' +
           badge +
           '</div>' +
           '<div class="rk-sub">' +
           escapeHtml(r.vendor || '—') +
-          (r.mesin ? ' ┬╖ ' + escapeHtml(r.mesin) : '') +
+          (r.mesin ? ' · ' + escapeHtml(r.mesin) : '') +
           '</div>' +
           '</div>' +
           '<div class="rank-metric">' +
@@ -2381,6 +2486,14 @@ function loadFormReferenceData() {
     .then(function (list) {
       activityOptions = list || [];
       const sel = document.getElementById('f-activity');
+      // BUGFIX — dropdown "Jenis Transaksi" dobel: sebelumnya pakai
+      // appendChild() di loop TANPA membersihkan opsi lama dulu. Kalau
+      // fungsi ini kepanggil lebih dari sekali, opsi lama ikut menumpuk,
+      // bukan digantikan. Akar masalah SEBENARNYA (index.html dulu memuat
+      // app.js dua kali) sudah diperbaiki di v8.23.5 (lihat changelog di
+      // atas) -- reset di sini dipertahankan sbg pengaman tambahan supaya
+      // tetap idempotent kalau fungsi ini suatu saat kepanggil >1x lagi.
+      sel.innerHTML = '<option value="">Pilih jenis transaksi…</option>';
       activityOptions.forEach(function (a) {
         const opt = document.createElement('option');
         opt.value = a;
@@ -2402,6 +2515,10 @@ function loadFormReferenceData() {
     .then(function (list) {
       machineList = list || [];
       const sel = document.getElementById('f-mesin-driver');
+      // BUGFIX — sama seperti dropdown "Jenis Transaksi" di atas: appendChild()
+      // di loop tanpa clear dulu bikin opsi menumpuk kalau fungsi ini kepanggil
+      // lebih dari sekali. Reset ke placeholder dulu supaya idempotent.
+      sel.innerHTML = '<option value="">Pilih mesin…</option>';
       machineList.forEach(function (m) {
         const opt = document.createElement('option');
         opt.value = m.kodeMesin;
@@ -2452,7 +2569,7 @@ function kodeAlatOptionLabel_(t) {
   if (t.brand) bits.push(t.brand);
   if (t.bahan) bits.push(t.bahan);
   if (t.spesifikasi) bits.push(t.spesifikasi);
-  const extra = bits.length ? ' (' + bits.join(' ┬╖ ') + ')' : '';
+  const extra = bits.length ? ' (' + bits.join(' · ') + ')' : '';
   return t.kodeAlat + ' — ' + t.namaAlat + extra;
 }
 
@@ -3122,9 +3239,10 @@ function mapErrorToMessage_(err, isNewUnit) {
       // [WO-2.2/2.2.2] Sesi login kedaluwarsa/tidak valid — bersihkan
       // sesi lokal, sinkronkan card Akun, dan tampilkan lagi gate
       // layar penuh (app tidak boleh tetap terbuka dgn sesi mati).
-      setSession_('', '', '');
-      renderAccountState_();
-      showLoginGate_();
+      // FIX Temuan 2 (audit FE-BE): sekarang lewat handleSessionError_()
+      // supaya satu-satunya sumber logic ini (dulu ditulis manual di sini,
+      // lalu ditulis ulang beda-beda di endpoint lain).
+      handleSessionError_(err);
       return 'Sesi login sudah kedaluwarsa. Silakan login kembali.';
     case 'UNAUTHORIZED':
     case 'INVALID_CREDENTIALS':
@@ -3162,4 +3280,30 @@ function escapeHtml(str) {
 function escapeAttr(str) {
   return escapeHtml(str).replace(/"/g, '&quot;');
 }
+
+/**
+ * FIX STRUKTURAL — index.html dulu memuat app.js DUA KALI (inline <script>
+ * classic + <script type="module" src="src/js/app.js">). Salinan inline
+ * classic itu sudah DIHAPUS (lihat perbaikan dropdown "Jenis Transaksi"/
+ * "Mesin" dobel) karena app.js ini sudah cukup jadi satu-satunya sumber.
+ *
+ * TAPI: script classic yang lama itu punya efek samping yang sekarang
+ * harus di-replikasi manual -- top-level `function` declaration di script
+ * classic OTOMATIS jadi properti `window` (global), sedangkan top-level
+ * declaration di dalam `<script type="module">` TIDAK PERNAH otomatis jadi
+ * global. Beberapa HTML di index.html memanggil fungsi lewat atribut
+ * `onclick="...()"` inline (bukan addEventListener), yang cuma bisa
+ * menemukan fungsi lewat scope GLOBAL -- jadi fungsi2 tsb WAJIB di-expose
+ * manual ke `window` di sini, atau tombol retry/"Buka Pengaturan" di
+ * state-card error (lihat stateCardHtml_) akan patah ("xxx is not
+ * defined") begitu diklik.
+ * Daftar ini HARUS disinkronkan kalau ada onclick="...()" baru ditambah
+ * di HTML/di string yang dibangun stateCardHtml_().
+ */
+window.goToPanel = goToPanel;
+window.loadDashboard = loadDashboard;
+window.loadTransactions = loadTransactions;
+window.loadStockStatus = loadStockStatus;
+window.loadMachineAnalytics = loadMachineAnalytics;
+window.loadKontrolAsah = loadKontrolAsah;
 
