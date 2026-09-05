@@ -147,8 +147,33 @@ function getConfiguredApiUrl() {
   return runtimeApiUrl_;
 }
 const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-const APP_VERSION = 'v8.23.3-fix-audit-fe-be'; // versi lengkap, dipakai di log developer
-const APP_VERSION_SHORT = 'v8.23.3'; // versi ringkas, ditampilkan di badge UI
+const APP_VERSION = 'v8.23.5-remove-duplicate-script'; // versi lengkap, dipakai di log developer
+const APP_VERSION_SHORT = 'v8.23.5'; // versi ringkas, ditampilkan di badge UI
+// [v8.23.5] CHANGELOG — FIX STRUKTURAL (akar masalah dropdown dobel di v8.23.4):
+// index.html dulu memuat app.js DUA KALI (inline <script> classic + <script
+// type="module" src="src/js/app.js">) -- salinan inline classic itu DIHAPUS,
+// index.html sekarang cuma satu sumber JS (file ini). Ini adalah PENYEBAB ASLI
+// dari bug dropdown dobel v8.23.4 (fix v8.23.4 tetap dipertahankan sbg pengaman
+// tambahan/idempotency, tapi akar masalahnya baru benar-benar hilang di sini)
+// DAN penyebab risiko double-submit form Input yang sempat dilaporkan (event
+// listener wireForm() dulu ikut terpasang 2x dari 2 realm skrip berbeda).
+// Efek samping yang WAJIB diperbaiki manual: top-level function di script
+// classic otomatis jadi global (window.xxx), tapi di dalam <script
+// type="module"> TIDAK -- jadi goToPanel & 5 fungsi loadXxx yang dipanggil
+// lewat onclick="...()" inline di stateCardHtml_() sekarang di-expose manual
+// ke window (lihat window.goToPanel = ... dkk di dekat akhir file ini).
+// Diverifikasi sebelum dihapus: kedua salinan diperbandingkan (skrip Python,
+// whitespace+komentar+trailing-comma dinormalisasi) -- 99 fungsi identik
+// persis, kontrak apiGet/apiPost sama persis, tidak ada logic yang hanya ada
+// di satu sisi.
+// [v8.23.4] CHANGELOG — BUGFIX: dropdown "Jenis Transaksi" (& "Mesin") dobel.
+// Akar masalah: loadFormReferenceData()/populateAjukanMesinOptions_() pakai
+// appendChild() di loop TANPA membersihkan opsi lama dulu -- kalau fungsi ini
+// kepanggil >1x (index.html memuat app.js DUA KALI, lihat fix v8.23.5 di
+// atas untuk akar masalahnya), opsi lama menumpuk, bukan
+// digantikan. Fix: reset select ke placeholder sebelum diisi ulang (idempotent).
+// Diperbaiki di 3 titik: f-activity (Jenis Transaksi), f-mesin-driver (Mesin,
+// form Input admin), at-mesin (Mesin, form Ajukan Tumpul).
 // [v8.23.3] CHANGELOG — perbaikan dari audit "Integrasi Frontend-Backend":
 // [1] (Temuan 1, High) loadRiwayatPengajuanSaya_() & loadKonfirmasiTumpulPanel_()
 //     sebelumnya punya blok deteksi UNAUTHORIZED_SESSION yang DEAD CODE (mengecek
@@ -1926,6 +1951,14 @@ function loadAjukanTumpulPanel_() {
 function populateAjukanMesinOptions_() {
   const sel = document.getElementById('at-mesin');
   if (!sel || ajukanTumpulMesinLoaded_ || !machineList || machineList.length === 0) return;
+  // BUGFIX — dropdown mesin dobel: pola sama dgn f-activity/f-mesin-driver
+  // (appendChild loop tanpa clear dulu). Flag ajukanTumpulMesinLoaded_ di
+  // atas dulu TIDAK cukup untuk mencegah dobel selama index.html masih
+  // memuat app.js dua kali (tiap salinan skrip punya flag-nya sendiri2,
+  // tapi <select> DOM-nya sama/shared) -- akar masalah itu sudah diperbaiki
+  // di v8.23.5. Reset ke placeholder di sini tetap dipertahankan sbg
+  // pengaman DOM-level, bukan cuma flag-level.
+  sel.innerHTML = '<option value="">Pilih mesin…</option>';
   machineList.forEach(function (m) {
     const opt = document.createElement('option');
     opt.value = m.kodeMesin;
@@ -2453,6 +2486,14 @@ function loadFormReferenceData() {
     .then(function (list) {
       activityOptions = list || [];
       const sel = document.getElementById('f-activity');
+      // BUGFIX — dropdown "Jenis Transaksi" dobel: sebelumnya pakai
+      // appendChild() di loop TANPA membersihkan opsi lama dulu. Kalau
+      // fungsi ini kepanggil lebih dari sekali, opsi lama ikut menumpuk,
+      // bukan digantikan. Akar masalah SEBENARNYA (index.html dulu memuat
+      // app.js dua kali) sudah diperbaiki di v8.23.5 (lihat changelog di
+      // atas) -- reset di sini dipertahankan sbg pengaman tambahan supaya
+      // tetap idempotent kalau fungsi ini suatu saat kepanggil >1x lagi.
+      sel.innerHTML = '<option value="">Pilih jenis transaksi…</option>';
       activityOptions.forEach(function (a) {
         const opt = document.createElement('option');
         opt.value = a;
@@ -2474,6 +2515,10 @@ function loadFormReferenceData() {
     .then(function (list) {
       machineList = list || [];
       const sel = document.getElementById('f-mesin-driver');
+      // BUGFIX — sama seperti dropdown "Jenis Transaksi" di atas: appendChild()
+      // di loop tanpa clear dulu bikin opsi menumpuk kalau fungsi ini kepanggil
+      // lebih dari sekali. Reset ke placeholder dulu supaya idempotent.
+      sel.innerHTML = '<option value="">Pilih mesin…</option>';
       machineList.forEach(function (m) {
         const opt = document.createElement('option');
         opt.value = m.kodeMesin;
@@ -3235,4 +3280,30 @@ function escapeHtml(str) {
 function escapeAttr(str) {
   return escapeHtml(str).replace(/"/g, '&quot;');
 }
+
+/**
+ * FIX STRUKTURAL — index.html dulu memuat app.js DUA KALI (inline <script>
+ * classic + <script type="module" src="src/js/app.js">). Salinan inline
+ * classic itu sudah DIHAPUS (lihat perbaikan dropdown "Jenis Transaksi"/
+ * "Mesin" dobel) karena app.js ini sudah cukup jadi satu-satunya sumber.
+ *
+ * TAPI: script classic yang lama itu punya efek samping yang sekarang
+ * harus di-replikasi manual -- top-level `function` declaration di script
+ * classic OTOMATIS jadi properti `window` (global), sedangkan top-level
+ * declaration di dalam `<script type="module">` TIDAK PERNAH otomatis jadi
+ * global. Beberapa HTML di index.html memanggil fungsi lewat atribut
+ * `onclick="...()"` inline (bukan addEventListener), yang cuma bisa
+ * menemukan fungsi lewat scope GLOBAL -- jadi fungsi2 tsb WAJIB di-expose
+ * manual ke `window` di sini, atau tombol retry/"Buka Pengaturan" di
+ * state-card error (lihat stateCardHtml_) akan patah ("xxx is not
+ * defined") begitu diklik.
+ * Daftar ini HARUS disinkronkan kalau ada onclick="...()" baru ditambah
+ * di HTML/di string yang dibangun stateCardHtml_().
+ */
+window.goToPanel = goToPanel;
+window.loadDashboard = loadDashboard;
+window.loadTransactions = loadTransactions;
+window.loadStockStatus = loadStockStatus;
+window.loadMachineAnalytics = loadMachineAnalytics;
+window.loadKontrolAsah = loadKontrolAsah;
 
