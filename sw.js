@@ -4,7 +4,7 @@
  * Panggilan API ke Apps Script (script.google.com) SENGAJA tidak
  * dicache — data stok/transaksi harus selalu real-time dari sheet.
  */
-const CACHE_NAME = 'saw-blade-monitor-v8.23.2';
+const CACHE_NAME = 'saw-blade-monitor-v8.23.5';
 const APP_SHELL = [
   './',
   './index.html',
