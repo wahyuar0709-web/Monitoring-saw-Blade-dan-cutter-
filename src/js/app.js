@@ -100,7 +100,7 @@ function applyRoleUI_() {
   // memang boleh dimulai operator), sementara utk admin tetap "Input"
   // seperti semula. Backend (addMovementRow) tetap independen menegakkan
   // role, jadi ini murni navigasi/kosmetik.
-  inputTabs.forEach(function (inputTab) {
+  inputTabs.forEach((inputTab) => {
     inputTab.dataset.panel = op ? 'panel-ajukan-tumpul' : 'panel-input';
     inputTab.innerHTML = op ? RAISED_TAB_HTML_OPERATOR_ : RAISED_TAB_HTML_ADMIN_;
     // Sidebar icon-only pakai tooltip (::after, attr(data-tooltip)),
@@ -201,19 +201,19 @@ function logApiError_(action, requestId, err, note) {
 function apiRequest_(url, options, timeoutMs) {
   timeoutMs = timeoutMs || API_TIMEOUT_MS;
   const controller = new AbortController();
-  const timer = setTimeout(function () {
+  const timer = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
   const opts = Object.assign({}, options, { signal: controller.signal });
 
   return fetch(url, opts)
-    .then(function (res) {
+    .then((res) => {
       if (!res.ok) {
         throw new ApiError('HTTP', 'Request gagal (HTTP ' + res.status + ').', { status: res.status });
       }
       return res.text();
     })
-    .then(function (text) {
+    .then((text) => {
       if (!text) return null;
       try {
         return JSON.parse(text);
@@ -221,14 +221,14 @@ function apiRequest_(url, options, timeoutMs) {
         throw new ApiError('PARSE', 'Respons server tidak valid.');
       }
     })
-    .catch(function (err) {
+    .catch((err) => {
       if (err instanceof ApiError) throw err;
       if (err && err.name === 'AbortError') {
         throw new ApiError('TIMEOUT', 'Request timeout. Periksa koneksi lalu coba lagi.');
       }
       throw new ApiError('NETWORK', 'Gagal terhubung ke server. Periksa koneksi lalu coba lagi.');
     })
-    .finally(function () {
+    .finally(() => {
       clearTimeout(timer);
     });
 }
@@ -253,13 +253,13 @@ function apiGet(action, params, opts) {
   const url = new URL(baseUrl);
   url.searchParams.set('action', action);
   url.searchParams.set('token', runtimeApiToken_); // [FIX — TOKEN API]
-  Object.keys(params || {}).forEach(function (k) {
+  Object.keys(params || {}).forEach((k) => {
     url.searchParams.set(k, params[k]);
   });
 
   function attempt(n) {
     return apiRequest_(url.toString(), { method: 'GET' })
-      .then(function (body) {
+      .then((body) => {
         // [v8.18.0] Kontrak GET backend (jsonOutput_ di handleApiRequest_):
         // sukses -> data apa adanya; gagal -> {error: "pesan"} dgn HTTP 200
         // tetap. Sebelumnya field `error` ini TIDAK pernah dicek di sini,
@@ -273,7 +273,7 @@ function apiGet(action, params, opts) {
         }
         return body;
       })
-      .catch(function (err) {
+      .catch((err) => {
         const retryable = err.code === 'TIMEOUT' || err.code === 'NETWORK';
         if (retryable && n < maxAttempts) {
           logApiError_(action, null, err, 'retrying (' + n + '/' + maxAttempts + ')');
@@ -309,7 +309,7 @@ function apiPost(action, payload) {
     // action/payload), sesuai kontrak doPost() backend -- BUKAN
     // nested di dalam payload.
     body: JSON.stringify({ action: action, payload: payload, token: runtimeApiToken_ }),
-  }).catch(function (err) {
+  }).catch((err) => {
     logApiError_(action, requestId, err);
     throw err;
   });
@@ -384,7 +384,7 @@ function activityMeta_(activity) {
        ============================================================ */
 let appHasLoadedOnce_ = false; // P2-J/L: cegah refresh data dobel saat 'online' fire sebelum init selesai
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   console.log('[APP] Monitoring Saw Blade & Cutter', APP_VERSION);
   const badge = document.getElementById('version-badge');
   if (badge) badge.textContent = APP_VERSION_SHORT;
@@ -457,7 +457,7 @@ function wireHeaderCollapse_() {
 
   window.addEventListener(
     'scroll',
-    function () {
+    () => {
       if (headerCollapseTicking_) return;
       headerCollapseTicking_ = true;
       window.requestAnimationFrame(applyState_);
@@ -493,17 +493,15 @@ function applyTheme_(theme) {
 function wireThemeToggle_() {
   const btn = document.getElementById('theme-toggle');
   const switchEl = document.getElementById('settings-theme-switch');
-  const currentTheme = function () {
-    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  };
+  const currentTheme = () => (document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
   if (switchEl) switchEl.checked = currentTheme() === 'dark';
   if (btn) {
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', () => {
       applyTheme_(currentTheme() === 'dark' ? 'light' : 'dark');
     });
   }
   if (switchEl) {
-    switchEl.addEventListener('change', function () {
+    switchEl.addEventListener('change', () => {
       applyTheme_(switchEl.checked ? 'dark' : 'light');
     });
   }
@@ -514,7 +512,7 @@ function wireThemeToggle_() {
        ============================================================ */
 function wireConnectivityIndicator_() {
   updateConnIndicator_();
-  window.addEventListener('online', function () {
+  window.addEventListener('online', () => {
     updateConnIndicator_();
     // L — reconnect: refresh data read-only, TIDAK mengulang POST transaksi
     // yang sebelumnya gagal (Phase 1 idempotency tetap satu-satunya authority).
@@ -568,7 +566,7 @@ function wireSettingsPanel_() {
   // belum diuji ulang di sesi ini, tampilkan "Belum diuji", bukan "Terhubung".
   setSettingsStatus_(runtimeApiUrl_ ? 'untested' : 'disconnected');
 
-  btnSave.addEventListener('click', function () {
+  btnSave.addEventListener('click', () => {
     // 13 — flow: input -> trim -> validate -> save localStorage -> update runtime -> update status UI
     const raw = input.value.trim();
     const rawToken = tokenInput.value.trim(); // [FIX — TOKEN API]
@@ -599,7 +597,7 @@ function wireSettingsPanel_() {
     updateConnIndicator_();
   });
 
-  btnTest.addEventListener('click', function () {
+  btnTest.addEventListener('click', () => {
     if (isTestingConnection_) return;
 
     // Uji Koneksi memakai URL yang sedang aktif di runtime (bukan isi input
@@ -618,25 +616,25 @@ function wireSettingsPanel_() {
     // TIDAK mengarang endpoint backend baru. Response tetap divalidasi
     // seperti kontrak Phase 1 (26 Case 6: HTTP 200 tidak selalu berarti sehat).
     apiGet('getDashboardSummary', {}, { retry: false })
-      .then(function (res) {
+      .then((res) => {
         if (!res || typeof res !== 'object') {
           throw new ApiError('API_RESPONSE_INVALID', 'Respons server tidak sesuai format yang diharapkan.');
         }
         setSettingsStatus_('connected');
         showSettingsMsg_('success', 'Terhubung. Google Apps Script dapat diakses.');
       })
-      .catch(function (err) {
+      .catch((err) => {
         console.error('[Uji Koneksi]', err); // 15 — detail error ke console, bukan ke user
         setSettingsStatus_('disconnected');
         showSettingsMsg_('error', mapConnectionTestError_(err));
       })
-      .finally(function () {
+      .finally(() => {
         isTestingConnection_ = false;
         btnTest.disabled = false;
       });
   });
 
-  btnReset.addEventListener('click', function () {
+  btnReset.addEventListener('click', () => {
     // 16 — konfirmasi wajib sebelum menghapus.
     const confirmed = window.confirm('Apakah Anda yakin ingin menghapus konfigurasi Google Apps Script URL?');
     if (!confirmed) return; // batal -> tidak ada perubahan
@@ -713,7 +711,7 @@ function wireLoginGate_() {
     hideGateMsg_();
 
     apiPost('login', { username: username, password: password })
-      .then(function (res) {
+      .then((res) => {
         if (!res || res.success !== true || !res.sessionToken) {
           const msg = (res && res.error && res.error.message) || 'Login gagal.';
           throw new Error(msg);
@@ -723,18 +721,18 @@ function wireLoginGate_() {
         renderAccountState_(); // sinkronkan tampilan card di Pengaturan ▸ Akun juga
         hideLoginGate_();
       })
-      .catch(function (err) {
+      .catch((err) => {
         console.error('[LoginGate]', err);
         showGateMsg_('error', err.message || 'Login gagal. Periksa username/password.');
       })
-      .finally(function () {
+      .finally(() => {
         isGateLoggingIn_ = false;
         btnSubmit.disabled = false;
       });
   }
 
   btnSubmit.addEventListener('click', doGateLogin);
-  passInput.addEventListener('keydown', function (e) {
+  passInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doGateLogin();
   });
 
@@ -758,7 +756,7 @@ function wireLoginGate_() {
   btnConfig.addEventListener('click', showConfigView_);
   btnConfigBack.addEventListener('click', showLoginView_);
 
-  btnConfigSave.addEventListener('click', function () {
+  btnConfigSave.addEventListener('click', () => {
     const raw = configUrlInput.value.trim();
     const rawToken = configTokenInput.value.trim();
 
@@ -828,7 +826,7 @@ function wireAccountPanel_() {
 
   renderAccountState_();
 
-  btnLogin.addEventListener('click', function () {
+  btnLogin.addEventListener('click', () => {
     if (isLoggingIn_) return;
     const username = userInput.value.trim();
     const password = passInput.value;
@@ -847,7 +845,7 @@ function wireAccountPanel_() {
     hideAccountMsg_();
 
     apiPost('login', { username: username, password: password })
-      .then(function (res) {
+      .then((res) => {
         if (!res || res.success !== true || !res.sessionToken) {
           const msg = (res && res.error && res.error.message) || 'Login gagal.';
           throw new Error(msg);
@@ -857,17 +855,17 @@ function wireAccountPanel_() {
         renderAccountState_();
         showAccountMsg_('success', 'Login berhasil sebagai ' + res.actorName + '.');
       })
-      .catch(function (err) {
+      .catch((err) => {
         console.error('[Login]', err);
         showAccountMsg_('error', err.message || 'Login gagal. Periksa username/password.');
       })
-      .finally(function () {
+      .finally(() => {
         isLoggingIn_ = false;
         btnLogin.disabled = false;
       });
   });
 
-  btnLogout.addEventListener('click', function () {
+  btnLogout.addEventListener('click', () => {
     const confirmed = window.confirm('Logout dari akun ini di perangkat ini?');
     if (!confirmed) return;
     // [Audit fix — logout tidak invalidasi session] Sebelumnya logout
@@ -883,7 +881,7 @@ function wireAccountPanel_() {
     hideAccountMsg_();
     showLoginGate_(); // [WO-2.2.2] logout -> app tertutup lagi di balik gate
     if (tokenToRevoke) {
-      apiPost('logout', { sessionToken: tokenToRevoke }).catch(function (err) {
+      apiPost('logout', { sessionToken: tokenToRevoke }).catch((err) => {
         console.error('[Logout] gagal mencabut sesi di server (token tetap dihapus dari perangkat ini):', err);
       });
     }
@@ -1009,7 +1007,7 @@ function registerServiceWorker_() {
 
   let hadController_ = !!navigator.serviceWorker.controller;
 
-  navigator.serviceWorker.register('./service-worker.js').catch(function (err) {
+  navigator.serviceWorker.register('./service-worker.js').catch((err) => {
     // R — registrasi gagal TIDAK boleh menjadi fatal error untuk app.
     console.warn('[SW] registration failed, app tetap jalan online:', err);
   });
@@ -1019,7 +1017,7 @@ function registerServiceWorker_() {
   // jangan auto-reload halaman supaya tidak mengganggu transaksi berjalan.
   // hadController_ dipakai supaya banner TIDAK muncul di kontrol pertama
   // (first install), hanya muncul untuk update yang genuine.
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (hadController_) {
       const banner = document.getElementById('update-banner');
       if (banner) banner.classList.add('show');
@@ -1029,7 +1027,7 @@ function registerServiceWorker_() {
 
   const updateBtn = document.getElementById('update-banner-btn');
   if (updateBtn) {
-    updateBtn.addEventListener('click', function () {
+    updateBtn.addEventListener('click', () => {
       window.location.reload();
     });
   }
@@ -1096,13 +1094,13 @@ function syncHeaderVisibility_(panelId) {
 }
 
 function goToPanel(panelId) {
-  document.querySelectorAll('.panel').forEach(function (p) {
+  document.querySelectorAll('.panel').forEach((p) => {
     p.classList.remove('active');
   });
   const target = document.getElementById(panelId);
   if (target) target.classList.add('active');
 
-  document.querySelectorAll('.tab-btn').forEach(function (b) {
+  document.querySelectorAll('.tab-btn').forEach((b) => {
     b.classList.remove('active');
   });
   // Mesin, Pengaturan, Kontrol Asah, Konfirmasi Pengajuan tidak pernah
@@ -1122,7 +1120,7 @@ function goToPanel(panelId) {
   // v8.19 — querySelectorAll (bukan querySelector) supaya tombol yang
   // sama di sidebar desktop DAN bottom-nav mobile dua-duanya kesorot
   // "active", bukan cuma yang pertama ketemu di DOM.
-  document.querySelectorAll('.tab-btn[data-panel="' + tabPanelId + '"]').forEach(function (b) {
+  document.querySelectorAll('.tab-btn[data-panel="' + tabPanelId + '"]').forEach((b) => {
     b.classList.add('active');
   });
 
@@ -1146,18 +1144,18 @@ function goToPanel(panelId) {
 }
 
 function wireTabBar() {
-  document.querySelectorAll('.tab-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
       goToPanel(btn.dataset.panel);
     });
   });
-  document.querySelectorAll('.lainnya-item').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+  document.querySelectorAll('.lainnya-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
       goToPanel(btn.dataset.panel);
     });
   });
-  document.querySelectorAll('.panel-back-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+  document.querySelectorAll('.panel-back-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
       goToPanel(btn.dataset.back);
     });
   });
@@ -1173,10 +1171,10 @@ function loadDashboard() {
   // AMAN/KRITIS/HABIS per jenis alat untuk section "Kondisi Alat".
   // Tidak ada endpoint baru di backend — dua-duanya sudah ada.
   Promise.all([apiGet('getDashboardSummary'), apiGet('getStockStatusList')])
-    .then(function (results) {
+    .then((results) => {
       renderDashboard(results[0], results[1] || []);
     })
-    .catch(function (err) {
+    .catch((err) => {
       document.getElementById('header-sub').textContent =
         err && err.code === 'CONFIGURATION_ERROR'
           ? 'API belum dikonfigurasi. Buka menu Pengaturan.'
@@ -1225,7 +1223,7 @@ function renderDashboard(d, rows) {
   let amanCount = 0,
     kritisCount = 0,
     habisCount = 0;
-  list.forEach(function (r) {
+  list.forEach((r) => {
     const s = String(r.status || '')
       .trim()
       .toUpperCase();
@@ -1272,7 +1270,7 @@ function renderDashboard(d, rows) {
     '<div class="dist-card">' +
     '<div class="dist-bar">' +
     distItems
-      .map(function (it) {
+      .map((it) => {
         const w = total > 0 ? (it.num / total) * 100 : 0;
         return '<div class="dist-bar-seg ' + it.seg + '" style="width:' + w.toFixed(2) + '%"></div>';
       })
@@ -1280,7 +1278,7 @@ function renderDashboard(d, rows) {
     '</div>' +
     '<div class="dist-legend">' +
     distItems
-      .map(function (it) {
+      .map((it) => {
         const pct = total > 0 ? Math.round((it.num / total) * 100) : 0;
         return (
           '<div class="dist-legend-item">' +
@@ -1335,7 +1333,7 @@ function renderDashboard(d, rows) {
 function loadTransactions() {
   apiGet('getRecentTransactions', { limit: 30 })
     .then(renderTransactions)
-    .catch(function (err) {
+    .catch((err) => {
       document.getElementById('txn-list').innerHTML =
         err && err.code === 'CONFIGURATION_ERROR'
           ? stateCardHtml_(
@@ -1364,7 +1362,7 @@ function renderTransactions(rows) {
   el.innerHTML =
     '<div class="card">' +
     rows
-      .map(function (r) {
+      .map((r) => {
         const meta = activityMeta_(r.activity);
         return (
           '<div class="txn-row">' +
@@ -1398,13 +1396,13 @@ function renderTransactions(rows) {
        ============================================================ */
 function loadStockStatus() {
   apiGet('getStockStatusList')
-    .then(function (rows) {
+    .then((rows) => {
       allStockRows = rows || [];
       renderStokStats_(allStockRows);
       populateStokFilterOptions_(allStockRows);
       applyStokFilters_();
     })
-    .catch(function (err) {
+    .catch((err) => {
       const statEl = document.getElementById('stok-stat-row');
       if (statEl) statEl.innerHTML = '';
       document.getElementById('stok-list').innerHTML =
@@ -1450,7 +1448,7 @@ function renderStockList(rows) {
     return;
   }
   el.innerHTML = rows
-    .map(function (r) {
+    .map((r) => {
       const cls = statusClass_(r.status);
       const jb = splitJenisBrand_(r.namaAlat);
       const material = r.bahan ? escapeHtml(r.bahan) : '<span class="sc-value muted">—</span>';
@@ -1561,9 +1559,7 @@ function renderStokStats_(rows) {
     return;
   }
   const totalAlat = rows.length;
-  const totalSiap = rows.reduce(function (sum, r) {
-    return sum + (Number(r.siapPakai) || 0);
-  }, 0);
+  const totalSiap = rows.reduce((sum, r) => sum + (Number(r.siapPakai) || 0), 0);
   el.innerHTML =
     '<div class="stok-stat-card"><div class="ssc-label">Total Alat</div><div class="ssc-num">' +
     totalAlat +
@@ -1606,10 +1602,8 @@ function rowMatchesMesin_(row, mesinFilter) {
   if (!mesinFilter) return true;
   const target = mesinFilter.trim().toLowerCase();
   const tokens = String(row.kodeMesin || '')
-    .split(/[\/,]/)
-    .map(function (t) {
-      return t.trim().toLowerCase();
-    });
+    .split(/[/,]/)
+    .map((t) => t.trim().toLowerCase());
   return tokens.indexOf(target) !== -1;
 }
 
@@ -1617,24 +1611,16 @@ function applyStokFilters_() {
   const q = document.getElementById('stok-search').value.trim().toLowerCase();
   let rows = allStockRows;
   if (stokActiveStatus_) {
-    rows = rows.filter(function (r) {
-      return statusClass_(r.status) === statusClass_(stokActiveStatus_);
-    });
+    rows = rows.filter((r) => statusClass_(r.status) === statusClass_(stokActiveStatus_));
   }
   if (stokActiveMesin_) {
-    rows = rows.filter(function (r) {
-      return rowMatchesMesin_(r, stokActiveMesin_);
-    });
+    rows = rows.filter((r) => rowMatchesMesin_(r, stokActiveMesin_));
   }
   if (stokActiveUkuran_) {
-    rows = rows.filter(function (r) {
-      return r.spesifikasi === stokActiveUkuran_;
-    });
+    rows = rows.filter((r) => r.spesifikasi === stokActiveUkuran_);
   }
   if (q) {
-    rows = rows.filter(function (r) {
-      return r.kodeAlat.toLowerCase().indexOf(q) !== -1 || r.namaAlat.toLowerCase().indexOf(q) !== -1;
-    });
+    rows = rows.filter((r) => r.kodeAlat.toLowerCase().indexOf(q) !== -1 || r.namaAlat.toLowerCase().indexOf(q) !== -1);
   }
   renderStockList(rows);
 }
@@ -1648,15 +1634,15 @@ function applyStokFilters_() {
 function populateStokFilterOptions_(rows) {
   const mesinSet = {};
   const ukuranSet = {};
-  (rows || []).forEach(function (r) {
+  (rows || []).forEach((r) => {
     // [BUGFIX] sumber opsi dipindah dari r.mesin (nama tipe mesin,
     // bisa mengandung "/" di dalam satu nama -- lihat rowMatchesMesin_)
     // ke r.kodeMesin (RDS0xx, aman di-split "/" krn satu kode tidak
     // pernah mengandung "/"). Konsisten dgn kode mesin yang dipakai di
     // seluruh bagian app lain.
     String(r.kodeMesin || '')
-      .split(/[\/,]/)
-      .forEach(function (m) {
+      .split(/[/,]/)
+      .forEach((m) => {
         const v = m.trim();
         if (v) mesinSet[v] = true;
       });
@@ -1672,17 +1658,13 @@ function populateStokFilterOptions_(rows) {
     '<option value="">Semua mesin</option>' +
     Object.keys(mesinSet)
       .sort()
-      .map(function (m) {
-        return '<option value="' + escapeAttr(m) + '">' + escapeHtml(m) + '</option>';
-      })
+      .map((m) => '<option value="' + escapeAttr(m) + '">' + escapeHtml(m) + '</option>')
       .join('');
   ukuranSel.innerHTML =
     '<option value="">Semua ukuran</option>' +
     Object.keys(ukuranSet)
       .sort()
-      .map(function (u) {
-        return '<option value="' + escapeAttr(u) + '">' + escapeHtml(u) + '</option>';
-      })
+      .map((u) => '<option value="' + escapeAttr(u) + '">' + escapeHtml(u) + '</option>')
       .join('');
 
   // Pertahankan pilihan sebelumnya kalau masih ada di opsi baru (refresh data).
@@ -1692,9 +1674,9 @@ function populateStokFilterOptions_(rows) {
 
 function wireStokSearch() {
   document.getElementById('stok-search').addEventListener('input', applyStokFilters_);
-  document.querySelectorAll('#stok-filter-row .filter-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      document.querySelectorAll('#stok-filter-row .filter-chip').forEach(function (c) {
+  document.querySelectorAll('#stok-filter-row .filter-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#stok-filter-row .filter-chip').forEach((c) => {
         c.classList.remove('active');
       });
       chip.classList.add('active');
@@ -1702,11 +1684,11 @@ function wireStokSearch() {
       applyStokFilters_();
     });
   });
-  document.getElementById('stok-filter-mesin').addEventListener('change', function (e) {
+  document.getElementById('stok-filter-mesin').addEventListener('change', (e) => {
     stokActiveMesin_ = e.target.value;
     applyStokFilters_();
   });
-  document.getElementById('stok-filter-ukuran').addEventListener('change', function (e) {
+  document.getElementById('stok-filter-ukuran').addEventListener('change', (e) => {
     stokActiveUkuran_ = e.target.value;
     applyStokFilters_();
   });
@@ -1718,7 +1700,7 @@ function wireStokSearch() {
 function loadMachineAnalytics() {
   apiGet('getMachineWearStats')
     .then(renderMachineWear_)
-    .catch(function (err) {
+    .catch((err) => {
       document.getElementById('mesin-wear-list').innerHTML =
         err && err.code === 'CONFIGURATION_ERROR'
           ? stateCardHtml_(
@@ -1739,7 +1721,7 @@ function loadMachineAnalytics() {
 
   apiGet('getLeadTimeByMachine')
     .then(renderLeadTimeByMachine_)
-    .catch(function (err) {
+    .catch((err) => {
       document.getElementById('mesin-leadtime-list').innerHTML =
         err && err.code === 'CONFIGURATION_ERROR'
           ? stateCardHtml_(
@@ -1770,7 +1752,7 @@ function renderMachineWear_(rows) {
   el.innerHTML =
     '<div class="card">' +
     top
-      .map(function (r, i) {
+      .map((r, i) => {
         const usia = r.avgUsiaHari === null || r.avgUsiaHari === undefined ? '—' : r.avgUsiaHari + ' hari';
         return (
           '<div class="rank-row">' +
@@ -1814,8 +1796,8 @@ function renderLeadTimeByMachine_(rows) {
   el.innerHTML =
     '<div class="card">' +
     top
-      .map(function (r, i) {
-        return (
+      .map(
+        (r, i) =>
           '<div class="rank-row">' +
           '<div class="rank-pos">' +
           (i + 1) +
@@ -1837,8 +1819,7 @@ function renderLeadTimeByMachine_(rows) {
           '<div class="rk-unit">hari rata┬▓</div>' +
           '</div>' +
           '</div>'
-        );
-      })
+      )
       .join('') +
     '</div>';
 }
@@ -1862,7 +1843,7 @@ function loadAjukanTumpulPanel_() {
 function populateAjukanMesinOptions_() {
   const sel = document.getElementById('at-mesin');
   if (!sel || ajukanTumpulMesinLoaded_ || !machineList || machineList.length === 0) return;
-  machineList.forEach(function (m) {
+  machineList.forEach((m) => {
     const opt = document.createElement('option');
     opt.value = m.kodeMesin;
     opt.dataset.mesinName = m.mesin || '';
@@ -1894,11 +1875,11 @@ function onAjukanMesinChange_() {
   kodeAlatSel.innerHTML = '<option value="">Memuat kode alat…</option>';
 
   apiGet('getUnitsByMesin', { kodeMesin: kodeMesin, statusFilter: 'DIPAKAI' })
-    .then(function (units) {
+    .then((units) => {
       ajukanTumpulUnitsCache_ = units || [];
       const seen = {};
       const kodeAlatList = [];
-      ajukanTumpulUnitsCache_.forEach(function (u) {
+      ajukanTumpulUnitsCache_.forEach((u) => {
         if (seen[u.kodeAlat]) return;
         seen[u.kodeAlat] = true;
         kodeAlatList.push(u.kodeAlat);
@@ -1911,10 +1892,8 @@ function onAjukanMesinChange_() {
       kodeAlatSel.innerHTML =
         '<option value="">Pilih kode alat…</option>' +
         kodeAlatList
-          .map(function (kodeAlat) {
-            const t = (masterTools || []).find(function (mt) {
-              return mt.kodeAlat === kodeAlat;
-            });
+          .map((kodeAlat) => {
+            const t = (masterTools || []).find((mt) => mt.kodeAlat === kodeAlat);
             // [REVISI] Label dipersamakan dengan form Input admin — pakai
             // kodeAlatOptionLabel_ supaya Brand/Bahan/Spesifikasi (ukuran)
             // ikut tampil, bukan cuma "kode — nama". Operator jarang hafal
@@ -1925,7 +1904,7 @@ function onAjukanMesinChange_() {
           .join('');
       kodeAlatSel.disabled = false;
     })
-    .catch(function (err) {
+    .catch((err) => {
       kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
       console.error(err);
     });
@@ -1942,9 +1921,7 @@ function onAjukanKodeAlatChange_() {
     unitSel.disabled = true;
     return;
   }
-  const units = ajukanTumpulUnitsCache_.filter(function (u) {
-    return u.kodeAlat === kodeAlat;
-  });
+  const units = ajukanTumpulUnitsCache_.filter((u) => u.kodeAlat === kodeAlat);
   if (!units.length) {
     unitSel.innerHTML = '<option value="">Tidak ada unit tersedia</option>';
     unitSel.disabled = true;
@@ -1955,16 +1932,12 @@ function onAjukanKodeAlatChange_() {
   // [REVISI] Ukuran/spesifikasi ikut ditampilkan di label Unit --
   // spesifikasi melekat ke Kode Alat (bukan per unit), jadi cukup
   // dilihat sekali dari masterTools, tidak perlu request tambahan.
-  const toolForUkuran = (masterTools || []).find(function (mt) {
-    return mt.kodeAlat === kodeAlat;
-  });
+  const toolForUkuran = (masterTools || []).find((mt) => mt.kodeAlat === kodeAlat);
   const ukuranSuffix = toolForUkuran && toolForUkuran.spesifikasi ? ' (' + toolForUkuran.spesifikasi + ')' : '';
   unitSel.innerHTML =
     '<option value="">Pilih unit…</option>' +
     units
-      .map(function (u) {
-        return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId + ukuranSuffix) + '</option>';
-      })
+      .map((u) => '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId + ukuranSuffix) + '</option>')
       .join('');
   unitSel.disabled = false;
 }
@@ -1981,7 +1954,7 @@ function loadRiwayatPengajuanSaya_() {
   const el = document.getElementById('at-riwayat-list');
   if (!el) return;
   apiGet('getPengajuanTumpulList', { status: 'ALL', sessionToken: runtimeSessionToken_ })
-    .then(function (rows) {
+    .then((rows) => {
       // [BUGFIX v8.14.1] Server sekarang SUDAH membatasi hasil ke
       // pengajuan milik akun yang login (lihat getPengajuanTumpulList_).
       // Filter client-side ("mine") DIHAPUS -- sebelumnya ada fallback
@@ -1998,7 +1971,7 @@ function loadRiwayatPengajuanSaya_() {
         '<div class="card">' +
         list
           .slice(0, 15)
-          .map(function (r) {
+          .map((r) => {
             const statusClass =
               r.status === 'Selesai' ? 'st-connected' : r.status === 'Ditolak' ? 'st-disconnected' : 'st-warn';
             return (
@@ -2021,12 +1994,12 @@ function loadRiwayatPengajuanSaya_() {
           .join('') +
         '</div>';
     })
-    .catch(function (err) {
+    .catch((err) => {
       // FIX Temuan 1 (audit FE-BE): apiGet melempar ApiError saat body berupa
       // {error: "..."} tanpa field success (baris 271-273). Karena itu,
       // pengecekan UNAUTHORIZED_SESSION harus dilakukan di sini (catch),
       // bukan di rows.error di dalam .then (dead code sebelumnya).
-      const msg = (err && err.message) ? String(err.message) : '';
+      const msg = err && err.message ? String(err.message) : '';
       if (msg.indexOf('UNAUTHORIZED_SESSION') === 0 || (err && err.code === 'UNAUTHORIZED_SESSION')) {
         setSession_('', '', '');
         renderAccountState_();
@@ -2043,7 +2016,7 @@ function wireAjukanTumpulForm_() {
   if (!form) return;
   document.getElementById('at-mesin').addEventListener('change', onAjukanMesinChange_);
   document.getElementById('at-kode-alat').addEventListener('change', onAjukanKodeAlatChange_);
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
     const mesinSel = document.getElementById('at-mesin');
     const kodeMesin = mesinSel.value;
@@ -2069,7 +2042,7 @@ function wireAjukanTumpulForm_() {
       kodeMesin: kodeMesin,
       pic: pic,
     })
-      .then(function (res) {
+      .then((res) => {
         btn.disabled = false;
         if (!res || res.success !== true) {
           showAjukanTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal mengajukan. Coba lagi.');
@@ -2084,7 +2057,7 @@ function wireAjukanTumpulForm_() {
         ajukanTumpulUnitsCache_ = [];
         loadRiwayatPengajuanSaya_();
       })
-      .catch(function (err) {
+      .catch((err) => {
         btn.disabled = false;
         showAjukanTumpulMsg_('error', (err && err.message) || 'Gagal mengajukan. Coba lagi.');
       });
@@ -2107,7 +2080,7 @@ function loadKonfirmasiTumpulPanel_() {
   if (!el) return;
   el.innerHTML = '<div class="skeleton-block sk-row"></div><div class="skeleton-block sk-row"></div>';
   apiGet('getPengajuanTumpulList', { status: 'Menunggu Konfirmasi WH', sessionToken: runtimeSessionToken_ })
-    .then(function (rows) {
+    .then((rows) => {
       // Data rows sudah valid dari apiGet (session berhasil divalidasi di server),
       // render langsung tanpa pengecekan sesi di sini.
       if (!rows || rows.length === 0) {
@@ -2117,8 +2090,8 @@ function loadKonfirmasiTumpulPanel_() {
       el.innerHTML =
         '<div class="card">' +
         rows
-          .map(function (r) {
-            return (
+          .map(
+            (r) =>
               '<div class="rank-row" data-pengajuan-id="' +
               escapeAttr(r.id) +
               '">' +
@@ -2152,28 +2125,27 @@ function loadKonfirmasiTumpulPanel_() {
               escapeAttr(r.id) +
               '">Konfirmasi</button>' +
               '</div></div>'
-            );
-          })
+          )
           .join('') +
         '</div>';
 
-      el.querySelectorAll('.kt-approve-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+      el.querySelectorAll('.kt-approve-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
           handleKonfirmasiTumpul_(btn.dataset.id, true, btn);
         });
       });
-      el.querySelectorAll('.kt-reject-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+      el.querySelectorAll('.kt-reject-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
           handleKonfirmasiTumpul_(btn.dataset.id, false, btn);
         });
       });
     })
-    .catch(function (err) {
+    .catch((err) => {
       // FIX Temuan 1 (audit FE-BE): apiGet melempar ApiError saat body berupa
       // {error: "..."} tanpa field success (baris 271-273). Karena itu,
       // pengecekan UNAUTHORIZED_SESSION harus dilakukan di sini (catch),
       // bukan di rows.error di dalam .then (dead code sebelumnya).
-      const msg = (err && err.message) ? String(err.message) : '';
+      const msg = err && err.message ? String(err.message) : '';
       if (msg.indexOf('UNAUTHORIZED_SESSION') === 0 || (err && err.code === 'UNAUTHORIZED_SESSION')) {
         setSession_('', '', '');
         renderAccountState_();
@@ -2187,7 +2159,7 @@ function loadKonfirmasiTumpulPanel_() {
 
 function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
   const row = triggerBtn.closest('.rank-row');
-  row.querySelectorAll('button').forEach(function (b) {
+  row.querySelectorAll('button').forEach((b) => {
     b.disabled = true;
   });
   apiPost('confirmPengajuanTumpul', {
@@ -2195,10 +2167,10 @@ function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
     id: id,
     approve: approve,
   })
-    .then(function (res) {
+    .then((res) => {
       if (!res || res.success !== true) {
         showKonfirmasiTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal memproses pengajuan.');
-        row.querySelectorAll('button').forEach(function (b) {
+        row.querySelectorAll('button').forEach((b) => {
           b.disabled = false;
         });
         return;
@@ -2210,9 +2182,9 @@ function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
       row.remove();
       loadKonfirmasiTumpulPanel_();
     })
-    .catch(function (err) {
+    .catch((err) => {
       showKonfirmasiTumpulMsg_('error', (err && err.message) || 'Gagal memproses pengajuan.');
-      row.querySelectorAll('button').forEach(function (b) {
+      row.querySelectorAll('button').forEach((b) => {
         b.disabled = false;
       });
     });
@@ -2225,14 +2197,14 @@ let vendorPerfMap_ = {}; // vendor -> { avgLeadTime, maxLeadTime, selisihTelat }
 
 function loadKontrolAsah() {
   apiGet('getVendorPerformance')
-    .then(function (rows) {
+    .then((rows) => {
       vendorPerfMap_ = {};
-      (rows || []).forEach(function (v) {
+      (rows || []).forEach((v) => {
         vendorPerfMap_[v.vendor] = v;
       });
       renderVendorPerformance_(rows);
     })
-    .catch(function (err) {
+    .catch((err) => {
       document.getElementById('ka-vendor-list').innerHTML =
         err && err.code === 'CONFIGURATION_ERROR'
           ? stateCardHtml_(
@@ -2252,17 +2224,13 @@ function loadKontrolAsah() {
     });
 
   apiGet('getKontrolAsahList')
-    .then(function (rows) {
-      const menunggu = (rows || []).filter(function (r) {
-        return r.statusAsah === 'MENUNGGU KIRIM';
-      });
-      const proses = (rows || []).filter(function (r) {
-        return r.statusAsah === 'PROSES ASAH';
-      });
+    .then((rows) => {
+      const menunggu = (rows || []).filter((r) => r.statusAsah === 'MENUNGGU KIRIM');
+      const proses = (rows || []).filter((r) => r.statusAsah === 'PROSES ASAH');
       renderKontrolAsahList_('ka-menunggu-list', menunggu, 'Belum ada unit yang menunggu kirim ke vendor.');
       renderKontrolAsahList_('ka-proses-list', proses, 'Belum ada unit yang sedang diasah di vendor.');
     })
-    .catch(function (err) {
+    .catch((err) => {
       const msg =
         err && err.code === 'CONFIGURATION_ERROR'
           ? stateCardHtml_(
@@ -2294,8 +2262,8 @@ function renderVendorPerformance_(rows) {
   el.innerHTML =
     '<div class="card">' +
     rows
-      .map(function (v) {
-        return (
+      .map(
+        (v) =>
           '<div class="rank-row">' +
           '<div class="rank-info">' +
           '<div class="rk-title">' +
@@ -2314,8 +2282,7 @@ function renderVendorPerformance_(rows) {
           '<div class="rk-unit">hari rata┬▓</div>' +
           '</div>' +
           '</div>'
-        );
-      })
+      )
       .join('') +
     '</div>';
 }
@@ -2335,7 +2302,7 @@ function renderKontrolAsahList_(elId, rows, emptyText) {
   el.innerHTML =
     '<div class="card">' +
     rows
-      .map(function (r) {
+      .map((r) => {
         const vp = vendorPerfMap_[r.vendor];
         const isProses = r.statusAsah === 'PROSES ASAH';
         const isTelat = isProses && vp && r.hariBerjalan > vp.avgLeadTime;
@@ -2378,10 +2345,10 @@ function renderKontrolAsahList_(elId, rows, emptyText) {
        ============================================================ */
 function loadFormReferenceData() {
   apiGet('getActivityOptions')
-    .then(function (list) {
+    .then((list) => {
       activityOptions = list || [];
       const sel = document.getElementById('f-activity');
-      activityOptions.forEach(function (a) {
+      activityOptions.forEach((a) => {
         const opt = document.createElement('option');
         opt.value = a;
         opt.textContent = a;
@@ -2391,7 +2358,7 @@ function loadFormReferenceData() {
     .catch(console.error);
 
   apiGet('getMasterToolsList')
-    .then(function (list) {
+    .then((list) => {
       masterTools = list || [];
       populateKodeAlatSelect_(masterTools);
     })
@@ -2399,10 +2366,10 @@ function loadFormReferenceData() {
 
   // [REVISI-02] Daftar mesin untuk field "Mesin" (mode mesin-dulu).
   apiGet('getMachineList')
-    .then(function (list) {
+    .then((list) => {
       machineList = list || [];
       const sel = document.getElementById('f-mesin-driver');
-      machineList.forEach(function (m) {
+      machineList.forEach((m) => {
         const opt = document.createElement('option');
         opt.value = m.kodeMesin;
         opt.textContent = m.kodeMesin + (m.mesin ? ' — ' + m.mesin : '');
@@ -2410,7 +2377,7 @@ function loadFormReferenceData() {
         sel.appendChild(opt);
       });
     })
-    .catch(function (err) {
+    .catch((err) => {
       // [v8.18.0] Sebelumnya cuma console.error -- operator tidak
       // pernah tahu kenapa dropdown Mesin kosong. Sekarang tampil
       // hint visible langsung di bawah field-nya.
@@ -2430,10 +2397,10 @@ function loadFormReferenceData() {
   // getMachineList) bisa langsung ketahuan tanpa harus reverse-
   // engineer dari gejala UI seperti dropdown kosong.
   apiGet('getBackendVersion')
-    .then(function (res) {
+    .then((res) => {
       console.log('[APP] Backend version:', (res && res.version) || '(tidak diketahui)');
     })
-    .catch(function (err) {
+    .catch((err) => {
       console.warn(
         '[APP] Gagal cek versi backend (kemungkinan deployment lama, belum punya action getBackendVersion):',
         err && err.message
@@ -2461,9 +2428,7 @@ function populateKodeAlatSelect_(list) {
   sel.innerHTML =
     '<option value="">Pilih kode alat…</option>' +
     (list || [])
-      .map(function (t) {
-        return '<option value="' + escapeAttr(t.kodeAlat) + '">' + escapeHtml(kodeAlatOptionLabel_(t)) + '</option>';
-      })
+      .map((t) => '<option value="' + escapeAttr(t.kodeAlat) + '">' + escapeHtml(kodeAlatOptionLabel_(t)) + '</option>')
       .join('');
 }
 
@@ -2524,7 +2489,7 @@ function updateInputWizardProgress_() {
   let completedCount = 0;
   let activeAssigned = false;
 
-  INPUT_WIZARD_STEP_IDS.forEach(function (stepNum) {
+  INPUT_WIZARD_STEP_IDS.forEach((stepNum) => {
     const cardEl = document.getElementById('input-card-' + stepNum);
     const badgeEl = document.getElementById('input-step-' + stepNum);
     if (!cardEl || !badgeEl) return;
@@ -2633,10 +2598,8 @@ function onMesinDriverChange() {
     kodeAlatSel.innerHTML =
       '<option value="">Pilih kode alat…</option>' +
       kodeAlatList
-        .map(function (kodeAlat) {
-          const t = masterTools.find(function (mt) {
-            return mt.kodeAlat === kodeAlat;
-          });
+        .map((kodeAlat) => {
+          const t = masterTools.find((mt) => mt.kodeAlat === kodeAlat);
           const label = t ? kodeAlatOptionLabel_(t) : kodeAlat;
           return '<option value="' + escapeAttr(kodeAlat) + '">' + escapeHtml(label) + '</option>';
         })
@@ -2649,18 +2612,18 @@ function onMesinDriverChange() {
   if (activity === 'KEMBALI KE GUDANG (TUMPUL)') {
     // Hanya alat yang BENAR-BENAR sedang tercatat terpasang di mesin ini.
     apiGet('getUnitsByMesin', { kodeMesin: mesin, statusFilter: 'DIPAKAI' })
-      .then(function (units) {
+      .then((units) => {
         mesinDrivenUnitsCache = units || [];
         const seen = {};
         const kodeAlatList = [];
-        mesinDrivenUnitsCache.forEach(function (u) {
+        mesinDrivenUnitsCache.forEach((u) => {
           if (seen[u.kodeAlat]) return;
           seen[u.kodeAlat] = true;
           kodeAlatList.push(u.kodeAlat);
         });
         renderKodeAlatOptions(kodeAlatList, 'Tidak ada alat terpasang di mesin ini');
       })
-      .catch(function (err) {
+      .catch((err) => {
         kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
         console.error(err);
       });
@@ -2669,13 +2632,11 @@ function onMesinDriverChange() {
     // (dari Mapping Alat Mesin), unit-nya sendiri masih ditarik dari
     // GUDANG lewat getUnitsByKodeAlat seperti biasa di onKodeAlatChange.
     apiGet('getKodeAlatOptionsForMesin', { kodeMesin: mesin })
-      .then(function (list) {
-        const kodeAlatList = (list || []).map(function (a) {
-          return a.kodeAlat;
-        });
+      .then((list) => {
+        const kodeAlatList = (list || []).map((a) => a.kodeAlat);
         renderKodeAlatOptions(kodeAlatList, 'Tidak ada alat valid untuk mesin ini');
       })
-      .catch(function (err) {
+      .catch((err) => {
         kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
         console.error(err);
       });
@@ -2736,10 +2697,8 @@ function onKodeAlatChange() {
     unitHint.style.display = 'block';
 
     apiGet('getUnitsByKodeAlat', { kodeAlat: kodeAlat, statusFilter: '' })
-      .then(function (existingUnits) {
-        const ids = (existingUnits || []).map(function (u) {
-          return u.unitId;
-        });
+      .then((existingUnits) => {
+        const ids = (existingUnits || []).map((u) => u.unitId);
         const suggestion = suggestNextUnitId_(kodeAlat, ids);
         unitManual.placeholder = suggestion ? 'Mis. ' + suggestion : 'Ketik Unit_ID baru';
         unitHint.textContent = ids.length
@@ -2751,7 +2710,7 @@ function onKodeAlatChange() {
             (suggestion ? ' Saran ID berikutnya: ' + suggestion + '.' : '')
           : 'Belum ada unit terdaftar untuk ' + kodeAlat + ' — ini akan jadi unit pertama.';
       })
-      .catch(function (err) {
+      .catch((err) => {
         unitHint.textContent = 'Gagal cek unit existing (tetap bisa lanjut input manual).';
         console.error(err);
       });
@@ -2762,9 +2721,7 @@ function onKodeAlatChange() {
     // tercatat ADA di mesin ini yang bisa dipilih operator.
     setUnitMode_('select');
     unitHint.style.display = 'none';
-    const units = mesinDrivenUnitsCache.filter(function (u) {
-      return u.kodeAlat === kodeAlat;
-    });
+    const units = mesinDrivenUnitsCache.filter((u) => u.kodeAlat === kodeAlat);
     if (!units.length) {
       unitSel.innerHTML = '<option value="">Tidak ada unit tersedia untuk status ini</option>';
       unitSel.disabled = true;
@@ -2772,8 +2729,8 @@ function onKodeAlatChange() {
       unitSel.innerHTML =
         '<option value="">Pilih unit…</option>' +
         units
-          .map(function (u) {
-            return (
+          .map(
+            (u) =>
               '<option value="' +
               escapeAttr(u.unitId) +
               '">' +
@@ -2781,8 +2738,7 @@ function onKodeAlatChange() {
               ' (' +
               escapeHtml(u.statusUnit) +
               ')</option>'
-            );
-          })
+          )
           .join('');
       unitSel.disabled = false;
     }
@@ -2795,7 +2751,7 @@ function onKodeAlatChange() {
     const statusFilter = STATUS_FILTER_BY_ACTIVITY[activity] || '';
 
     apiGet('getUnitsByKodeAlat', { kodeAlat: kodeAlat, statusFilter: statusFilter })
-      .then(function (units) {
+      .then((units) => {
         if (!units || units.length === 0) {
           unitSel.innerHTML = '<option value="">Tidak ada unit tersedia untuk status ini</option>';
           unitSel.disabled = true;
@@ -2805,8 +2761,8 @@ function onKodeAlatChange() {
         unitSel.innerHTML =
           '<option value="">Pilih unit…</option>' +
           units
-            .map(function (u) {
-              return (
+            .map(
+              (u) =>
                 '<option value="' +
                 escapeAttr(u.unitId) +
                 '">' +
@@ -2814,13 +2770,12 @@ function onKodeAlatChange() {
                 ' (' +
                 escapeHtml(u.statusUnit) +
                 ')</option>'
-              );
-            })
+            )
             .join('');
         unitSel.disabled = false;
         updateInputWizardProgress_();
       })
-      .catch(function (err) {
+      .catch((err) => {
         unitSel.innerHTML = '<option value="">Gagal memuat unit</option>';
         console.error(err);
         updateInputWizardProgress_();
@@ -2837,7 +2792,7 @@ function onKodeAlatChange() {
   mesinSel.disabled = true;
   mesinSel.innerHTML = '<option value="">Memuat mesin…</option>';
   apiGet('getMesinOptionsForKodeAlat', { kodeAlat: kodeAlat })
-    .then(function (mesinList) {
+    .then((mesinList) => {
       if (!mesinList || mesinList.length === 0) {
         // [REVISI] Alat yang belum punya mapping mesin sama sekali di
         // Master (belum sempat di-set admin) tetap boleh dipakai untuk
@@ -2850,8 +2805,8 @@ function onKodeAlatChange() {
       mesinSel.innerHTML =
         '<option value="">—</option>' +
         mesinList
-          .map(function (m) {
-            return (
+          .map(
+            (m) =>
               '<option value="' +
               escapeAttr(m.kodeMesin) +
               '" data-mesin-name="' +
@@ -2859,8 +2814,7 @@ function onKodeAlatChange() {
               '">' +
               escapeHtml(m.kodeMesin) +
               '</option>'
-            );
-          })
+          )
           .join('');
       mesinSel.disabled = false;
     })
@@ -2896,7 +2850,7 @@ function suggestNextUnitId_(kodeAlat, existingIds) {
   let maxNum = 0,
     padLen = 3,
     found = false;
-  existingIds.forEach(function (id) {
+  existingIds.forEach((id) => {
     const m = /^(.*)-(\d+)$/.exec(id);
     if (!m) return;
     const num = parseInt(m[2], 10);
@@ -2961,7 +2915,7 @@ function onSubmitForm(e) {
     return;
   }
 
-  if (isNewUnit && !/^[A-Za-z0-9\-]+$/.test(unitId)) {
+  if (isNewUnit && !/^[A-Za-z0-9-]+$/.test(unitId)) {
     showFormMsg('error', 'Unit_ID baru cuma boleh huruf, angka, dan tanda "-" (tanpa spasi/simbol lain).');
     return;
   }
@@ -2973,9 +2927,7 @@ function onSubmitForm(e) {
     return;
   }
 
-  const tool = masterTools.find(function (t) {
-    return t.kodeAlat === kodeAlat;
-  });
+  const tool = masterTools.find((t) => t.kodeAlat === kodeAlat);
   const today = formatToday_();
   // P1-02 — requestId dibuat sekali di sini dan dipakai apa adanya
   // untuk seluruh lifecycle request ini (tidak dibuat ulang saat retry manual).
@@ -3001,7 +2953,7 @@ function onSubmitForm(e) {
     pic: pic,
     remark: remark,
   })
-    .then(function (res) {
+    .then((res) => {
       const validated = validateTransactionResponse_(res);
       showFormMsg('success', 'Tersimpan — ID Transaksi #' + validated.idTransaksi + ', Cycle ' + validated.cycleId);
       document.getElementById('movement-form').reset();
@@ -3028,14 +2980,14 @@ function onSubmitForm(e) {
       loadStockStatus();
       loadMachineAnalytics();
     })
-    .catch(function (err) {
+    .catch((err) => {
       showFormMsg('error', mapErrorToMessage_(err, isNewUnit));
       // P1-06 — kalau Unit_ID baru bentrok, refresh saran nomor unit berikutnya.
       if (err && err.code === 'DUPLICATE_UNIT_ID' && isNewUnit) {
         onKodeAlatChange();
       }
     })
-    .finally(function () {
+    .finally(() => {
       // P1-08 — jalur ini SELALU dieksekusi (success / error / timeout / network /
       // invalid response), jadi tombol tidak pernah macet di "Menyimpan…".
       isSubmittingTx = false;
@@ -3063,9 +3015,7 @@ function showFormMsg(type, text) {
  */
 function generateRequestId_() {
   const d = new Date();
-  const pad = function (n) {
-    return String(n).padStart(2, '0');
-  };
+  const pad = (n) => String(n).padStart(2, '0');
   const datePart = '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
   let randomPart;
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -3147,9 +3097,7 @@ function mapErrorToMessage_(err, isNewUnit) {
 
 function formatToday_() {
   const d = new Date();
-  const pad = function (n) {
-    return String(n).padStart(2, '0');
-  };
+  const pad = (n) => String(n).padStart(2, '0');
   return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
 }
 
@@ -3162,4 +3110,3 @@ function escapeHtml(str) {
 function escapeAttr(str) {
   return escapeHtml(str).replace(/"/g, '&quot;');
 }
-

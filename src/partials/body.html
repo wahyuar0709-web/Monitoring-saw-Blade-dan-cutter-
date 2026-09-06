@@ -753,7 +753,7 @@
       // memang boleh dimulai operator), sementara utk admin tetap "Input"
       // seperti semula. Backend (addMovementRow) tetap independen menegakkan
       // role, jadi ini murni navigasi/kosmetik.
-      inputTabs.forEach(function (inputTab) {
+      inputTabs.forEach((inputTab) => {
         inputTab.dataset.panel = op ? 'panel-ajukan-tumpul' : 'panel-input';
         inputTab.innerHTML = op ? RAISED_TAB_HTML_OPERATOR_ : RAISED_TAB_HTML_ADMIN_;
         // Sidebar icon-only pakai tooltip (::after, attr(data-tooltip)),
@@ -851,17 +851,17 @@
     function apiRequest_(url, options, timeoutMs) {
       timeoutMs = timeoutMs || API_TIMEOUT_MS;
       const controller = new AbortController();
-      const timer = setTimeout(function () { controller.abort(); }, timeoutMs);
+      const timer = setTimeout(() => { controller.abort(); }, timeoutMs);
       const opts = Object.assign({}, options, { signal: controller.signal });
 
       return fetch(url, opts)
-        .then(function (res) {
+        .then((res) => {
           if (!res.ok) {
             throw new ApiError('HTTP', 'Request gagal (HTTP ' + res.status + ').', { status: res.status });
           }
           return res.text();
         })
-        .then(function (text) {
+        .then((text) => {
           if (!text) return null;
           try {
             return JSON.parse(text);
@@ -869,14 +869,14 @@
             throw new ApiError('PARSE', 'Respons server tidak valid.');
           }
         })
-        .catch(function (err) {
+        .catch((err) => {
           if (err instanceof ApiError) throw err;
           if (err && err.name === 'AbortError') {
             throw new ApiError('TIMEOUT', 'Request timeout. Periksa koneksi lalu coba lagi.');
           }
           throw new ApiError('NETWORK', 'Gagal terhubung ke server. Periksa koneksi lalu coba lagi.');
         })
-        .finally(function () { clearTimeout(timer); });
+        .finally(() => { clearTimeout(timer); });
     }
 
     /**
@@ -899,13 +899,13 @@
       const url = new URL(baseUrl);
       url.searchParams.set('action', action);
       url.searchParams.set('token', runtimeApiToken_); // [FIX — TOKEN API]
-      Object.keys(params || {}).forEach(function (k) {
+      Object.keys(params || {}).forEach((k) => {
         url.searchParams.set(k, params[k]);
       });
 
       function attempt(n) {
         return apiRequest_(url.toString(), { method: 'GET' })
-          .then(function (body) {
+          .then((body) => {
             // [v8.18.0] Kontrak GET backend (jsonOutput_ di handleApiRequest_):
             // sukses -> data apa adanya; gagal -> {error: "pesan"} dgn HTTP 200
             // tetap. Sebelumnya field `error` ini TIDAK pernah dicek di sini,
@@ -919,7 +919,7 @@
             }
             return body;
           })
-          .catch(function (err) {
+          .catch((err) => {
             const retryable = err.code === 'TIMEOUT' || err.code === 'NETWORK';
             if (retryable && n < maxAttempts) {
               logApiError_(action, null, err, 'retrying (' + n + '/' + maxAttempts + ')');
@@ -955,7 +955,7 @@
         // action/payload), sesuai kontrak doPost() backend -- BUKAN
         // nested di dalam payload.
         body: JSON.stringify({ action: action, payload: payload, token: runtimeApiToken_ })
-      }).catch(function (err) {
+      }).catch((err) => {
         logApiError_(action, requestId, err);
         throw err;
       });
@@ -1026,7 +1026,7 @@
        ============================================================ */
     let appHasLoadedOnce_ = false; // P2-J/L: cegah refresh data dobel saat 'online' fire sebelum init selesai
 
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', () => {
       console.log('[APP] Monitoring Saw Blade & Cutter', APP_VERSION);
       const badge = document.getElementById('version-badge');
       if (badge) badge.textContent = APP_VERSION_SHORT;
@@ -1097,7 +1097,7 @@
         headerEl.classList.toggle('is-collapsed', y > HEADER_COLLAPSE_THRESHOLD);
       }
 
-      window.addEventListener('scroll', function () {
+      window.addEventListener('scroll', () => {
         if (headerCollapseTicking_) return;
         headerCollapseTicking_ = true;
         window.requestAnimationFrame(applyState_);
@@ -1127,17 +1127,15 @@
     function wireThemeToggle_() {
       const btn = document.getElementById('theme-toggle');
       const switchEl = document.getElementById('settings-theme-switch');
-      const currentTheme = function () {
-        return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-      };
+      const currentTheme = () => document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
       if (switchEl) switchEl.checked = (currentTheme() === 'dark');
       if (btn) {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', () => {
           applyTheme_(currentTheme() === 'dark' ? 'light' : 'dark');
         });
       }
       if (switchEl) {
-        switchEl.addEventListener('change', function () {
+        switchEl.addEventListener('change', () => {
           applyTheme_(switchEl.checked ? 'dark' : 'light');
         });
       }
@@ -1148,7 +1146,7 @@
        ============================================================ */
     function wireConnectivityIndicator_() {
       updateConnIndicator_();
-      window.addEventListener('online', function () {
+      window.addEventListener('online', () => {
         updateConnIndicator_();
         // L — reconnect: refresh data read-only, TIDAK mengulang POST transaksi
         // yang sebelumnya gagal (Phase 1 idempotency tetap satu-satunya authority).
@@ -1202,7 +1200,7 @@
       // belum diuji ulang di sesi ini, tampilkan "Belum diuji", bukan "Terhubung".
       setSettingsStatus_(runtimeApiUrl_ ? 'untested' : 'disconnected');
 
-      btnSave.addEventListener('click', function () {
+      btnSave.addEventListener('click', () => {
         // 13 — flow: input -> trim -> validate -> save localStorage -> update runtime -> update status UI
         const raw = input.value.trim();
         const rawToken = tokenInput.value.trim(); // [FIX — TOKEN API]
@@ -1233,7 +1231,7 @@
         updateConnIndicator_();
       });
 
-      btnTest.addEventListener('click', function () {
+      btnTest.addEventListener('click', () => {
         if (isTestingConnection_) return;
 
         // Uji Koneksi memakai URL yang sedang aktif di runtime (bukan isi input
@@ -1252,25 +1250,25 @@
         // TIDAK mengarang endpoint backend baru. Response tetap divalidasi
         // seperti kontrak Phase 1 (26 Case 6: HTTP 200 tidak selalu berarti sehat).
         apiGet('getDashboardSummary', {}, { retry: false })
-          .then(function (res) {
+          .then((res) => {
             if (!res || typeof res !== 'object') {
               throw new ApiError('API_RESPONSE_INVALID', 'Respons server tidak sesuai format yang diharapkan.');
             }
             setSettingsStatus_('connected');
             showSettingsMsg_('success', 'Terhubung. Google Apps Script dapat diakses.');
           })
-          .catch(function (err) {
+          .catch((err) => {
             console.error('[Uji Koneksi]', err); // 15 — detail error ke console, bukan ke user
             setSettingsStatus_('disconnected');
             showSettingsMsg_('error', mapConnectionTestError_(err));
           })
-          .finally(function () {
+          .finally(() => {
             isTestingConnection_ = false;
             btnTest.disabled = false;
           });
       });
 
-      btnReset.addEventListener('click', function () {
+      btnReset.addEventListener('click', () => {
         // 16 — konfirmasi wajib sebelum menghapus.
         const confirmed = window.confirm('Apakah Anda yakin ingin menghapus konfigurasi Google Apps Script URL?');
         if (!confirmed) return; // batal -> tidak ada perubahan
@@ -1344,7 +1342,7 @@
         hideGateMsg_();
 
         apiPost('login', { username: username, password: password })
-          .then(function (res) {
+          .then((res) => {
             if (!res || res.success !== true || !res.sessionToken) {
               const msg = (res && res.error && res.error.message) || 'Login gagal.';
               throw new Error(msg);
@@ -1354,18 +1352,18 @@
             renderAccountState_(); // sinkronkan tampilan card di Pengaturan ▸ Akun juga
             hideLoginGate_();
           })
-          .catch(function (err) {
+          .catch((err) => {
             console.error('[LoginGate]', err);
             showGateMsg_('error', err.message || 'Login gagal. Periksa username/password.');
           })
-          .finally(function () {
+          .finally(() => {
             isGateLoggingIn_ = false;
             btnSubmit.disabled = false;
           });
       }
 
       btnSubmit.addEventListener('click', doGateLogin);
-      passInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doGateLogin(); });
+      passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doGateLogin(); });
 
       /* [FIX] Escape hatch admin TIDAK LAGI menavigasi ke Pengaturan app
          (yang membuka header/tabbar/dashboard di baliknya — bertentangan
@@ -1387,7 +1385,7 @@
       btnConfig.addEventListener('click', showConfigView_);
       btnConfigBack.addEventListener('click', showLoginView_);
 
-      btnConfigSave.addEventListener('click', function () {
+      btnConfigSave.addEventListener('click', () => {
         const raw = configUrlInput.value.trim();
         const rawToken = configTokenInput.value.trim();
 
@@ -1448,7 +1446,7 @@
 
       renderAccountState_();
 
-      btnLogin.addEventListener('click', function () {
+      btnLogin.addEventListener('click', () => {
         if (isLoggingIn_) return;
         const username = userInput.value.trim();
         const password = passInput.value;
@@ -1467,7 +1465,7 @@
         hideAccountMsg_();
 
         apiPost('login', { username: username, password: password })
-          .then(function (res) {
+          .then((res) => {
             if (!res || res.success !== true || !res.sessionToken) {
               const msg = (res && res.error && res.error.message) || 'Login gagal.';
               throw new Error(msg);
@@ -1477,17 +1475,17 @@
             renderAccountState_();
             showAccountMsg_('success', 'Login berhasil sebagai ' + res.actorName + '.');
           })
-          .catch(function (err) {
+          .catch((err) => {
             console.error('[Login]', err);
             showAccountMsg_('error', err.message || 'Login gagal. Periksa username/password.');
           })
-          .finally(function () {
+          .finally(() => {
             isLoggingIn_ = false;
             btnLogin.disabled = false;
           });
       });
 
-      btnLogout.addEventListener('click', function () {
+      btnLogout.addEventListener('click', () => {
         const confirmed = window.confirm('Logout dari akun ini di perangkat ini?');
         if (!confirmed) return;
         // [Audit fix — logout tidak invalidasi session] Sebelumnya logout
@@ -1503,7 +1501,7 @@
         hideAccountMsg_();
         showLoginGate_(); // [WO-2.2.2] logout -> app tertutup lagi di balik gate
         if (tokenToRevoke) {
-          apiPost('logout', { sessionToken: tokenToRevoke }).catch(function (err) {
+          apiPost('logout', { sessionToken: tokenToRevoke }).catch((err) => {
             console.error('[Logout] gagal mencabut sesi di server (token tetap dihapus dari perangkat ini):', err);
           });
         }
@@ -1625,7 +1623,7 @@
       let hadController_ = !!navigator.serviceWorker.controller;
 
       navigator.serviceWorker.register('./service-worker.js')
-        .catch(function (err) {
+        .catch((err) => {
           // R — registrasi gagal TIDAK boleh menjadi fatal error untuk app.
           console.warn('[SW] registration failed, app tetap jalan online:', err);
         });
@@ -1635,7 +1633,7 @@
       // jangan auto-reload halaman supaya tidak mengganggu transaksi berjalan.
       // hadController_ dipakai supaya banner TIDAK muncul di kontrol pertama
       // (first install), hanya muncul untuk update yang genuine.
-      navigator.serviceWorker.addEventListener('controllerchange', function () {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (hadController_) {
           const banner = document.getElementById('update-banner');
           if (banner) banner.classList.add('show');
@@ -1645,7 +1643,7 @@
 
       const updateBtn = document.getElementById('update-banner-btn');
       if (updateBtn) {
-        updateBtn.addEventListener('click', function () {
+        updateBtn.addEventListener('click', () => {
           window.location.reload();
         });
       }
@@ -1712,11 +1710,11 @@
     }
 
     function goToPanel(panelId) {
-      document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach((p) => { p.classList.remove('active'); });
       const target = document.getElementById(panelId);
       if (target) target.classList.add('active');
 
-      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-btn').forEach((b) => { b.classList.remove('active'); });
       // Mesin, Pengaturan, Kontrol Asah, Konfirmasi Pengajuan tidak pernah
       // punya tab sendiri — sorot tab "Lainnya". [REVISI] panel-ajukan-tumpul
       // DIKELUARKAN dari daftar ini: sekarang punya tab sendiri (tab tengah)
@@ -1734,7 +1732,7 @@
       // v8.19 — querySelectorAll (bukan querySelector) supaya tombol yang
       // sama di sidebar desktop DAN bottom-nav mobile dua-duanya kesorot
       // "active", bukan cuma yang pertama ketemu di DOM.
-      document.querySelectorAll('.tab-btn[data-panel="' + tabPanelId + '"]').forEach(function (b) {
+      document.querySelectorAll('.tab-btn[data-panel="' + tabPanelId + '"]').forEach((b) => {
         b.classList.add('active');
       });
 
@@ -1758,14 +1756,14 @@
     }
 
     function wireTabBar() {
-      document.querySelectorAll('.tab-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () { goToPanel(btn.dataset.panel); });
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => { goToPanel(btn.dataset.panel); });
       });
-      document.querySelectorAll('.lainnya-item').forEach(function (btn) {
-        btn.addEventListener('click', function () { goToPanel(btn.dataset.panel); });
+      document.querySelectorAll('.lainnya-item').forEach((btn) => {
+        btn.addEventListener('click', () => { goToPanel(btn.dataset.panel); });
       });
-      document.querySelectorAll('.panel-back-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () { goToPanel(btn.dataset.back); });
+      document.querySelectorAll('.panel-back-btn').forEach((btn) => {
+        btn.addEventListener('click', () => { goToPanel(btn.dataset.back); });
       });
     }
 
@@ -1782,10 +1780,10 @@
         apiGet('getDashboardSummary'),
         apiGet('getStockStatusList')
       ])
-        .then(function (results) {
+        .then((results) => {
           renderDashboard(results[0], results[1] || []);
         })
-        .catch(function (err) {
+        .catch((err) => {
           document.getElementById('header-sub').textContent =
             (err && err.code === 'CONFIGURATION_ERROR')
               ? 'API belum dikonfigurasi. Buka menu Pengaturan.'
@@ -1820,7 +1818,7 @@
       const list = rows || [];
       const jenisAlat = list.length;
       let amanCount = 0, kritisCount = 0, habisCount = 0;
-      list.forEach(function (r) {
+      list.forEach((r) => {
         const s = String(r.status || '').trim().toUpperCase();
         if (s === 'AMAN') amanCount++;
         else if (s === 'KRITIS') kritisCount++;
@@ -1856,13 +1854,13 @@
           '<div class="dash-section-head"><h3>Distribusi Status Unit</h3><span class="dash-hint">' + total + ' unit</span></div>' +
           '<div class="dist-card">' +
             '<div class="dist-bar">' +
-              distItems.map(function (it) {
+              distItems.map((it) => {
                 const w = total > 0 ? (it.num / total * 100) : 0;
                 return '<div class="dist-bar-seg ' + it.seg + '" style="width:' + w.toFixed(2) + '%"></div>';
               }).join('') +
             '</div>' +
             '<div class="dist-legend">' +
-              distItems.map(function (it) {
+              distItems.map((it) => {
                 const pct = total > 0 ? Math.round(it.num / total * 100) : 0;
                 return '<div class="dist-legend-item">' +
                   '<span class="dist-legend-dot ' + it.seg + '"></span>' +
@@ -1898,7 +1896,7 @@
     function loadTransactions() {
       apiGet('getRecentTransactions', { limit: 30 })
         .then(renderTransactions)
-        .catch(function (err) {
+        .catch((err) => {
           document.getElementById('txn-list').innerHTML =
             (err && err.code === 'CONFIGURATION_ERROR')
               ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu untuk memuat riwayat.', 'Buka Pengaturan')
@@ -1913,7 +1911,7 @@
         el.innerHTML = emptyStateHtml_('Belum ada data', 'Transaksi yang tercatat akan muncul di sini.');
         return;
       }
-      el.innerHTML = '<div class="card">' + rows.map(function (r) {
+      el.innerHTML = '<div class="card">' + rows.map((r) => {
         const meta = activityMeta_(r.activity);
         return '<div class="txn-row">' +
           '<div class="txn-icon' + (meta.color ? ' ' + meta.color : '') + '">' + ICONS[meta.icon] + '</div>' +
@@ -1931,13 +1929,13 @@
        ============================================================ */
     function loadStockStatus() {
       apiGet('getStockStatusList')
-        .then(function (rows) {
+        .then((rows) => {
           allStockRows = rows || [];
           renderStokStats_(allStockRows);
           populateStokFilterOptions_(allStockRows);
           applyStokFilters_();
         })
-        .catch(function (err) {
+        .catch((err) => {
           const statEl = document.getElementById('stok-stat-row');
           if (statEl) statEl.innerHTML = '';
           document.getElementById('stok-list').innerHTML =
@@ -1971,7 +1969,7 @@
         el.innerHTML = emptyStateHtml_('Tidak ada alat yang cocok', 'Coba ubah kata kunci pencarian atau filter status.');
         return;
       }
-      el.innerHTML = rows.map(function (r) {
+      el.innerHTML = rows.map((r) => {
         const cls = statusClass_(r.status);
         const jb = splitJenisBrand_(r.namaAlat);
         const material = r.bahan ? escapeHtml(r.bahan) : '<span class="sc-value muted">—</span>';
@@ -2033,7 +2031,7 @@
       if (!el) return;
       if (!rows || rows.length === 0) { el.innerHTML = ''; return; }
       const totalAlat = rows.length;
-      const totalSiap = rows.reduce(function (sum, r) { return sum + (Number(r.siapPakai) || 0); }, 0);
+      const totalSiap = rows.reduce((sum, r) => sum + (Number(r.siapPakai) || 0), 0);
       el.innerHTML =
         '<div class="stok-stat-card"><div class="ssc-label">Total Alat</div><div class="ssc-num">' + totalAlat + '</div></div>' +
         '<div class="stok-stat-card"><div class="ssc-label">Total Siap Pakai</div><div class="ssc-num">' + totalSiap + '</div></div>';
@@ -2071,7 +2069,7 @@
     function rowMatchesMesin_(row, mesinFilter) {
       if (!mesinFilter) return true;
       const target = mesinFilter.trim().toLowerCase();
-      const tokens = String(row.kodeMesin || '').split(/[\/,]/).map(function (t) { return t.trim().toLowerCase(); });
+      const tokens = String(row.kodeMesin || '').split(/[/,]/).map((t) => t.trim().toLowerCase());
       return tokens.indexOf(target) !== -1;
     }
 
@@ -2079,18 +2077,16 @@
       const q = document.getElementById('stok-search').value.trim().toLowerCase();
       let rows = allStockRows;
       if (stokActiveStatus_) {
-        rows = rows.filter(function (r) { return statusClass_(r.status) === statusClass_(stokActiveStatus_); });
+        rows = rows.filter((r) => statusClass_(r.status) === statusClass_(stokActiveStatus_));
       }
       if (stokActiveMesin_) {
-        rows = rows.filter(function (r) { return rowMatchesMesin_(r, stokActiveMesin_); });
+        rows = rows.filter((r) => rowMatchesMesin_(r, stokActiveMesin_));
       }
       if (stokActiveUkuran_) {
-        rows = rows.filter(function (r) { return r.spesifikasi === stokActiveUkuran_; });
+        rows = rows.filter((r) => r.spesifikasi === stokActiveUkuran_);
       }
       if (q) {
-        rows = rows.filter(function (r) {
-          return r.kodeAlat.toLowerCase().indexOf(q) !== -1 || r.namaAlat.toLowerCase().indexOf(q) !== -1;
-        });
+        rows = rows.filter((r) => r.kodeAlat.toLowerCase().indexOf(q) !== -1 || r.namaAlat.toLowerCase().indexOf(q) !== -1);
       }
       renderStockList(rows);
     }
@@ -2104,13 +2100,13 @@
     function populateStokFilterOptions_(rows) {
       const mesinSet = {};
       const ukuranSet = {};
-      (rows || []).forEach(function (r) {
+      (rows || []).forEach((r) => {
         // [BUGFIX] sumber opsi dipindah dari r.mesin (nama tipe mesin,
         // bisa mengandung "/" di dalam satu nama -- lihat rowMatchesMesin_)
         // ke r.kodeMesin (RDS0xx, aman di-split "/" krn satu kode tidak
         // pernah mengandung "/"). Konsisten dgn kode mesin yang dipakai di
         // seluruh bagian app lain.
-        String(r.kodeMesin || '').split(/[\/,]/).forEach(function (m) {
+        String(r.kodeMesin || '').split(/[/,]/).forEach((m) => {
           const v = m.trim();
           if (v) mesinSet[v] = true;
         });
@@ -2123,13 +2119,9 @@
       const currentUkuran = ukuranSel.value;
 
       mesinSel.innerHTML = '<option value="">Semua mesin</option>' +
-        Object.keys(mesinSet).sort().map(function (m) {
-          return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>';
-        }).join('');
+        Object.keys(mesinSet).sort().map((m) => '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>').join('');
       ukuranSel.innerHTML = '<option value="">Semua ukuran</option>' +
-        Object.keys(ukuranSet).sort().map(function (u) {
-          return '<option value="' + escapeHtml(u) + '">' + escapeHtml(u) + '</option>';
-        }).join('');
+        Object.keys(ukuranSet).sort().map((u) => '<option value="' + escapeHtml(u) + '">' + escapeHtml(u) + '</option>').join('');
 
       // Pertahankan pilihan sebelumnya kalau masih ada di opsi baru (refresh data).
       if (currentMesin && mesinSet[currentMesin]) mesinSel.value = currentMesin;
@@ -2138,19 +2130,19 @@
 
     function wireStokSearch() {
       document.getElementById('stok-search').addEventListener('input', applyStokFilters_);
-      document.querySelectorAll('#stok-filter-row .filter-chip').forEach(function (chip) {
-        chip.addEventListener('click', function () {
-          document.querySelectorAll('#stok-filter-row .filter-chip').forEach(function (c) { c.classList.remove('active'); });
+      document.querySelectorAll('#stok-filter-row .filter-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('#stok-filter-row .filter-chip').forEach((c) => { c.classList.remove('active'); });
           chip.classList.add('active');
           stokActiveStatus_ = chip.dataset.status || '';
           applyStokFilters_();
         });
       });
-      document.getElementById('stok-filter-mesin').addEventListener('change', function (e) {
+      document.getElementById('stok-filter-mesin').addEventListener('change', (e) => {
         stokActiveMesin_ = e.target.value;
         applyStokFilters_();
       });
-      document.getElementById('stok-filter-ukuran').addEventListener('change', function (e) {
+      document.getElementById('stok-filter-ukuran').addEventListener('change', (e) => {
         stokActiveUkuran_ = e.target.value;
         applyStokFilters_();
       });
@@ -2162,7 +2154,7 @@
     function loadMachineAnalytics() {
       apiGet('getMachineWearStats')
         .then(renderMachineWear_)
-        .catch(function (err) {
+        .catch((err) => {
           document.getElementById('mesin-wear-list').innerHTML =
             (err && err.code === 'CONFIGURATION_ERROR')
               ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
@@ -2172,7 +2164,7 @@
 
       apiGet('getLeadTimeByMachine')
         .then(renderLeadTimeByMachine_)
-        .catch(function (err) {
+        .catch((err) => {
           document.getElementById('mesin-leadtime-list').innerHTML =
             (err && err.code === 'CONFIGURATION_ERROR')
               ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
@@ -2189,7 +2181,7 @@
         return;
       }
       const top = rows.slice(0, 10); // ranking, top 10 paling boros
-      el.innerHTML = '<div class="card">' + top.map(function (r, i) {
+      el.innerHTML = '<div class="card">' + top.map((r, i) => {
         const usia = (r.avgUsiaHari === null || r.avgUsiaHari === undefined)
           ? '—'
           : r.avgUsiaHari + ' hari';
@@ -2215,8 +2207,7 @@
         return;
       }
       const top = rows.slice(0, 10);
-      el.innerHTML = '<div class="card">' + top.map(function (r, i) {
-        return '<div class="rank-row">' +
+      el.innerHTML = '<div class="card">' + top.map((r, i) => '<div class="rank-row">' +
           '<div class="rank-pos">' + (i + 1) + '</div>' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(r.kodeMesin) + '</div>' +
@@ -2226,8 +2217,7 @@
             '<div class="rk-num">' + r.avgLeadTime + '</div>' +
             '<div class="rk-unit">hari rata┬▓</div>' +
           '</div>' +
-        '</div>';
-      }).join('') + '</div>';
+        '</div>').join('') + '</div>';
     }
 
     /* ============================================================
@@ -2249,7 +2239,7 @@
     function populateAjukanMesinOptions_() {
       const sel = document.getElementById('at-mesin');
       if (!sel || ajukanTumpulMesinLoaded_ || !machineList || machineList.length === 0) return;
-      machineList.forEach(function (m) {
+      machineList.forEach((m) => {
         const opt = document.createElement('option');
         opt.value = m.kodeMesin;
         opt.dataset.mesinName = m.mesin || '';
@@ -2281,11 +2271,11 @@
       kodeAlatSel.innerHTML = '<option value="">Memuat kode alat…</option>';
 
       apiGet('getUnitsByMesin', { kodeMesin: kodeMesin, statusFilter: 'DIPAKAI' })
-        .then(function (units) {
+        .then((units) => {
           ajukanTumpulUnitsCache_ = units || [];
           const seen = {};
           const kodeAlatList = [];
-          ajukanTumpulUnitsCache_.forEach(function (u) {
+          ajukanTumpulUnitsCache_.forEach((u) => {
             if (seen[u.kodeAlat]) return;
             seen[u.kodeAlat] = true;
             kodeAlatList.push(u.kodeAlat);
@@ -2295,8 +2285,8 @@
             kodeAlatSel.disabled = true;
             return;
           }
-          kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map(function (kodeAlat) {
-            const t = (masterTools || []).find(function (mt) { return mt.kodeAlat === kodeAlat; });
+          kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map((kodeAlat) => {
+            const t = (masterTools || []).find((mt) => mt.kodeAlat === kodeAlat);
             // [REVISI] Label dipersamakan dengan form Input admin — pakai
             // kodeAlatOptionLabel_ supaya Brand/Bahan/Spesifikasi (ukuran)
             // ikut tampil, bukan cuma "kode — nama". Operator jarang hafal
@@ -2306,7 +2296,7 @@
           }).join('');
           kodeAlatSel.disabled = false;
         })
-        .catch(function (err) {
+        .catch((err) => {
           kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
           console.error(err);
         });
@@ -2323,7 +2313,7 @@
         unitSel.disabled = true;
         return;
       }
-      const units = ajukanTumpulUnitsCache_.filter(function (u) { return u.kodeAlat === kodeAlat; });
+      const units = ajukanTumpulUnitsCache_.filter((u) => u.kodeAlat === kodeAlat);
       if (!units.length) {
         unitSel.innerHTML = '<option value="">Tidak ada unit tersedia</option>';
         unitSel.disabled = true;
@@ -2334,11 +2324,9 @@
       // [REVISI] Ukuran/spesifikasi ikut ditampilkan di label Unit --
       // spesifikasi melekat ke Kode Alat (bukan per unit), jadi cukup
       // dilihat sekali dari masterTools, tidak perlu request tambahan.
-      const toolForUkuran = (masterTools || []).find(function (mt) { return mt.kodeAlat === kodeAlat; });
+      const toolForUkuran = (masterTools || []).find((mt) => mt.kodeAlat === kodeAlat);
       const ukuranSuffix = toolForUkuran && toolForUkuran.spesifikasi ? (' (' + toolForUkuran.spesifikasi + ')') : '';
-      unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map(function (u) {
-        return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId + ukuranSuffix) + '</option>';
-      }).join('');
+      unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map((u) => '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId + ukuranSuffix) + '</option>').join('');
       unitSel.disabled = false;
     }
 
@@ -2354,7 +2342,7 @@
       const el = document.getElementById('at-riwayat-list');
       if (!el) return;
       apiGet('getPengajuanTumpulList', { status: 'ALL', sessionToken: runtimeSessionToken_ })
-        .then(function (rows) {
+        .then((rows) => {
           // [BUGFIX v8.14.1] Server sekarang SUDAH membatasi hasil ke
           // pengajuan milik akun yang login (lihat getPengajuanTumpulList_).
           // Filter client-side ("mine") DIHAPUS -- sebelumnya ada fallback
@@ -2376,7 +2364,7 @@
             el.innerHTML = emptyStateHtml_('Belum ada pengajuan', 'Riwayat pengajuanmu akan muncul di sini.');
             return;
           }
-          el.innerHTML = '<div class="card">' + list.slice(0, 15).map(function (r) {
+          el.innerHTML = '<div class="card">' + list.slice(0, 15).map((r) => {
             const statusClass = r.status === 'Selesai' ? 'st-connected' : (r.status === 'Ditolak' ? 'st-disconnected' : 'st-warn');
             return '<div class="rank-row"><div class="rank-info">' +
               '<div class="rk-title">' + escapeHtml(r.unitId) + ' ┬╖ ' + escapeHtml(r.kodeAlat) + '</div>' +
@@ -2384,7 +2372,7 @@
               '</div><div class="rank-metric"><span class="' + statusClass + '">' + escapeHtml(r.status) + '</span></div></div>';
           }).join('') + '</div>';
         })
-        .catch(function () {
+        .catch(() => {
           el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
         });
     }
@@ -2394,7 +2382,7 @@
       if (!form) return;
       document.getElementById('at-mesin').addEventListener('change', onAjukanMesinChange_);
       document.getElementById('at-kode-alat').addEventListener('change', onAjukanKodeAlatChange_);
-      form.addEventListener('submit', function (e) {
+      form.addEventListener('submit', (e) => {
         e.preventDefault();
         const mesinSel = document.getElementById('at-mesin');
         const kodeMesin = mesinSel.value;
@@ -2415,7 +2403,7 @@
         apiPost('submitPengajuanTumpul', {
           sessionToken: runtimeSessionToken_,
           kodeAlat: kodeAlat, unitId: unitId, mesin: mesin, kodeMesin: kodeMesin, pic: pic
-        }).then(function (res) {
+        }).then((res) => {
           btn.disabled = false;
           if (!res || res.success !== true) {
             showAjukanTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal mengajukan. Coba lagi.');
@@ -2429,7 +2417,7 @@
           document.getElementById('at-unit-id').disabled = true;
           ajukanTumpulUnitsCache_ = [];
           loadRiwayatPengajuanSaya_();
-        }).catch(function (err) {
+        }).catch((err) => {
           btn.disabled = false;
           showAjukanTumpulMsg_('error', (err && err.message) || 'Gagal mengajukan. Coba lagi.');
         });
@@ -2452,7 +2440,7 @@
       if (!el) return;
       el.innerHTML = '<div class="skeleton-block sk-row"></div><div class="skeleton-block sk-row"></div>';
       apiGet('getPengajuanTumpulList', { status: 'Menunggu Konfirmasi WH', sessionToken: runtimeSessionToken_ })
-        .then(function (rows) {
+        .then((rows) => {
           if (rows && typeof rows === 'object' && !Array.isArray(rows) && rows.error) {
             if (String(rows.error).indexOf('UNAUTHORIZED_SESSION') === 0) {
               setSession_('', '', '');
@@ -2466,8 +2454,7 @@
             el.innerHTML = emptyStateHtml_('Tidak ada antrian', 'Semua pengajuan sudah dikonfirmasi.');
             return;
           }
-          el.innerHTML = '<div class="card">' + rows.map(function (r) {
-            return '<div class="rank-row" data-pengajuan-id="' + escapeAttr(r.id) + '">' +
+          el.innerHTML = '<div class="card">' + rows.map((r) => '<div class="rank-row" data-pengajuan-id="' + escapeAttr(r.id) + '">' +
               '<div class="rank-info">' +
                 '<div class="rk-title">' + escapeHtml(r.unitId) + ' ┬╖ ' + escapeHtml(r.kodeAlat) + '</div>' +
                 // [REVISI] Tampilkan PIC (nama yang mengajukan, diisi manual)
@@ -2482,38 +2469,37 @@
               '<div class="rank-metric" style="display:flex; gap:6px;">' +
                 '<button type="button" class="btn-secondary kt-reject-btn" data-id="' + escapeAttr(r.id) + '">Tolak</button>' +
                 '<button type="button" class="btn-primary kt-approve-btn" data-id="' + escapeAttr(r.id) + '">Konfirmasi</button>' +
-              '</div></div>';
-          }).join('') + '</div>';
+              '</div></div>').join('') + '</div>';
 
-          el.querySelectorAll('.kt-approve-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () { handleKonfirmasiTumpul_(btn.dataset.id, true, btn); });
+          el.querySelectorAll('.kt-approve-btn').forEach((btn) => {
+            btn.addEventListener('click', () => { handleKonfirmasiTumpul_(btn.dataset.id, true, btn); });
           });
-          el.querySelectorAll('.kt-reject-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () { handleKonfirmasiTumpul_(btn.dataset.id, false, btn); });
+          el.querySelectorAll('.kt-reject-btn').forEach((btn) => {
+            btn.addEventListener('click', () => { handleKonfirmasiTumpul_(btn.dataset.id, false, btn); });
           });
         })
-        .catch(function () {
+        .catch(() => {
           el.innerHTML = emptyStateHtml_('Gagal memuat', 'Coba buka ulang panel ini.');
         });
     }
 
     function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
       const row = triggerBtn.closest('.rank-row');
-      row.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      row.querySelectorAll('button').forEach((b) => { b.disabled = true; });
       apiPost('confirmPengajuanTumpul', {
         sessionToken: runtimeSessionToken_, id: id, approve: approve
-      }).then(function (res) {
+      }).then((res) => {
         if (!res || res.success !== true) {
           showKonfirmasiTumpulMsg_('error', (res && res.error && res.error.message) || 'Gagal memproses pengajuan.');
-          row.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+          row.querySelectorAll('button').forEach((b) => { b.disabled = false; });
           return;
         }
         showKonfirmasiTumpulMsg_('success', approve ? 'Dikonfirmasi — transaksi resmi sudah tercatat.' : 'Pengajuan ditolak.');
         row.remove();
         loadKonfirmasiTumpulPanel_();
-      }).catch(function (err) {
+      }).catch((err) => {
         showKonfirmasiTumpulMsg_('error', (err && err.message) || 'Gagal memproses pengajuan.');
-        row.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        row.querySelectorAll('button').forEach((b) => { b.disabled = false; });
       });
     }
 
@@ -2524,12 +2510,12 @@
 
     function loadKontrolAsah() {
       apiGet('getVendorPerformance')
-        .then(function (rows) {
+        .then((rows) => {
           vendorPerfMap_ = {};
-          (rows || []).forEach(function (v) { vendorPerfMap_[v.vendor] = v; });
+          (rows || []).forEach((v) => { vendorPerfMap_[v.vendor] = v; });
           renderVendorPerformance_(rows);
         })
-        .catch(function (err) {
+        .catch((err) => {
           document.getElementById('ka-vendor-list').innerHTML =
             (err && err.code === 'CONFIGURATION_ERROR')
               ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
@@ -2538,13 +2524,13 @@
         });
 
       apiGet('getKontrolAsahList')
-        .then(function (rows) {
-          const menunggu = (rows || []).filter(function (r) { return r.statusAsah === 'MENUNGGU KIRIM'; });
-          const proses = (rows || []).filter(function (r) { return r.statusAsah === 'PROSES ASAH'; });
+        .then((rows) => {
+          const menunggu = (rows || []).filter((r) => r.statusAsah === 'MENUNGGU KIRIM');
+          const proses = (rows || []).filter((r) => r.statusAsah === 'PROSES ASAH');
           renderKontrolAsahList_('ka-menunggu-list', menunggu, 'Belum ada unit yang menunggu kirim ke vendor.');
           renderKontrolAsahList_('ka-proses-list', proses, 'Belum ada unit yang sedang diasah di vendor.');
         })
-        .catch(function (err) {
+        .catch((err) => {
           const msg = (err && err.code === 'CONFIGURATION_ERROR')
             ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
             : stateCardHtml_('error', 'Data belum dapat dimuat', 'Periksa koneksi aplikasi.', 'Coba Lagi', 'loadKontrolAsah');
@@ -2561,8 +2547,7 @@
         el.innerHTML = emptyStateHtml_('Belum ada data', 'Performa vendor akan muncul setelah ada siklus asah SELESAI.');
         return;
       }
-      el.innerHTML = '<div class="card">' + rows.map(function (v) {
-        return '<div class="rank-row">' +
+      el.innerHTML = '<div class="card">' + rows.map((v) => '<div class="rank-row">' +
           '<div class="rank-info">' +
             '<div class="rk-title">' + escapeHtml(v.vendor) + '</div>' +
             '<div class="rk-sub">Maksimum ' + v.maxLeadTime + ' hari ┬╖ selisih telat rata┬▓ ' + v.selisihTelat + ' hari</div>' +
@@ -2571,8 +2556,7 @@
             '<div class="rk-num">' + v.avgLeadTime + '</div>' +
             '<div class="rk-unit">hari rata┬▓</div>' +
           '</div>' +
-        '</div>';
-      }).join('') + '</div>';
+        '</div>').join('') + '</div>';
     }
 
     /**
@@ -2587,7 +2571,7 @@
         el.innerHTML = emptyStateHtml_('Belum ada data', emptyText);
         return;
       }
-      el.innerHTML = '<div class="card">' + rows.map(function (r) {
+      el.innerHTML = '<div class="card">' + rows.map((r) => {
         const vp = vendorPerfMap_[r.vendor];
         const isProses = r.statusAsah === 'PROSES ASAH';
         const isTelat = isProses && vp && r.hariBerjalan > vp.avgLeadTime;
@@ -2610,10 +2594,10 @@
        ============================================================ */
     function loadFormReferenceData() {
       apiGet('getActivityOptions')
-        .then(function (list) {
+        .then((list) => {
           activityOptions = list || [];
           const sel = document.getElementById('f-activity');
-          activityOptions.forEach(function (a) {
+          activityOptions.forEach((a) => {
             const opt = document.createElement('option');
             opt.value = a; opt.textContent = a;
             sel.appendChild(opt);
@@ -2622,7 +2606,7 @@
         .catch(console.error);
 
       apiGet('getMasterToolsList')
-        .then(function (list) {
+        .then((list) => {
           masterTools = list || [];
           populateKodeAlatSelect_(masterTools);
         })
@@ -2630,10 +2614,10 @@
 
       // [REVISI-02] Daftar mesin untuk field "Mesin" (mode mesin-dulu).
       apiGet('getMachineList')
-        .then(function (list) {
+        .then((list) => {
           machineList = list || [];
           const sel = document.getElementById('f-mesin-driver');
-          machineList.forEach(function (m) {
+          machineList.forEach((m) => {
             const opt = document.createElement('option');
             opt.value = m.kodeMesin;
             opt.textContent = m.kodeMesin + (m.mesin ? ' — ' + m.mesin : '');
@@ -2641,7 +2625,7 @@
             sel.appendChild(opt);
           });
         })
-        .catch(function (err) {
+        .catch((err) => {
           // [v8.18.0] Sebelumnya cuma console.error -- operator tidak
           // pernah tahu kenapa dropdown Mesin kosong. Sekarang tampil
           // hint visible langsung di bawah field-nya.
@@ -2658,10 +2642,10 @@
       // getMachineList) bisa langsung ketahuan tanpa harus reverse-
       // engineer dari gejala UI seperti dropdown kosong.
       apiGet('getBackendVersion')
-        .then(function (res) {
+        .then((res) => {
           console.log('[APP] Backend version:', (res && res.version) || '(tidak diketahui)');
         })
-        .catch(function (err) {
+        .catch((err) => {
           console.warn('[APP] Gagal cek versi backend (kemungkinan deployment lama, belum punya action getBackendVersion):', err && err.message);
         });
     }
@@ -2683,9 +2667,7 @@
 
     function populateKodeAlatSelect_(list) {
       const sel = document.getElementById('f-kode-alat');
-      sel.innerHTML = '<option value="">Pilih kode alat…</option>' + (list || []).map(function (t) {
-        return '<option value="' + escapeAttr(t.kodeAlat) + '">' + escapeHtml(kodeAlatOptionLabel_(t)) + '</option>';
-      }).join('');
+      sel.innerHTML = '<option value="">Pilih kode alat…</option>' + (list || []).map((t) => '<option value="' + escapeAttr(t.kodeAlat) + '">' + escapeHtml(kodeAlatOptionLabel_(t)) + '</option>').join('');
     }
 
     function wireForm() {
@@ -2744,7 +2726,7 @@
       let completedCount = 0;
       let activeAssigned = false;
 
-      INPUT_WIZARD_STEP_IDS.forEach(function (stepNum) {
+      INPUT_WIZARD_STEP_IDS.forEach((stepNum) => {
         const cardEl = document.getElementById('input-card-' + stepNum);
         const badgeEl = document.getElementById('input-step-' + stepNum);
         if (!cardEl || !badgeEl) return;
@@ -2850,8 +2832,8 @@
           updateInputWizardProgress_();
           return;
         }
-        kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map(function (kodeAlat) {
-          const t = masterTools.find(function (mt) { return mt.kodeAlat === kodeAlat; });
+        kodeAlatSel.innerHTML = '<option value="">Pilih kode alat…</option>' + kodeAlatList.map((kodeAlat) => {
+          const t = masterTools.find((mt) => mt.kodeAlat === kodeAlat);
           const label = t ? kodeAlatOptionLabel_(t) : kodeAlat;
           return '<option value="' + escapeAttr(kodeAlat) + '">' + escapeHtml(label) + '</option>';
         }).join('');
@@ -2863,18 +2845,18 @@
       if (activity === 'KEMBALI KE GUDANG (TUMPUL)') {
         // Hanya alat yang BENAR-BENAR sedang tercatat terpasang di mesin ini.
         apiGet('getUnitsByMesin', { kodeMesin: mesin, statusFilter: 'DIPAKAI' })
-          .then(function (units) {
+          .then((units) => {
             mesinDrivenUnitsCache = units || [];
             const seen = {};
             const kodeAlatList = [];
-            mesinDrivenUnitsCache.forEach(function (u) {
+            mesinDrivenUnitsCache.forEach((u) => {
               if (seen[u.kodeAlat]) return;
               seen[u.kodeAlat] = true;
               kodeAlatList.push(u.kodeAlat);
             });
             renderKodeAlatOptions(kodeAlatList, 'Tidak ada alat terpasang di mesin ini');
           })
-          .catch(function (err) {
+          .catch((err) => {
             kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
             console.error(err);
           });
@@ -2883,11 +2865,11 @@
         // (dari Mapping Alat Mesin), unit-nya sendiri masih ditarik dari
         // GUDANG lewat getUnitsByKodeAlat seperti biasa di onKodeAlatChange.
         apiGet('getKodeAlatOptionsForMesin', { kodeMesin: mesin })
-          .then(function (list) {
-            const kodeAlatList = (list || []).map(function (a) { return a.kodeAlat; });
+          .then((list) => {
+            const kodeAlatList = (list || []).map((a) => a.kodeAlat);
             renderKodeAlatOptions(kodeAlatList, 'Tidak ada alat valid untuk mesin ini');
           })
-          .catch(function (err) {
+          .catch((err) => {
             kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
             console.error(err);
           });
@@ -2940,15 +2922,15 @@
         unitHint.style.display = 'block';
 
         apiGet('getUnitsByKodeAlat', { kodeAlat: kodeAlat, statusFilter: '' })
-          .then(function (existingUnits) {
-            const ids = (existingUnits || []).map(function (u) { return u.unitId; });
+          .then((existingUnits) => {
+            const ids = (existingUnits || []).map((u) => u.unitId);
             const suggestion = suggestNextUnitId_(kodeAlat, ids);
             unitManual.placeholder = suggestion ? ('Mis. ' + suggestion) : 'Ketik Unit_ID baru';
             unitHint.textContent = ids.length
               ? ('Sudah ada ' + ids.length + ' unit terdaftar untuk ' + kodeAlat + '.' + (suggestion ? ' Saran ID berikutnya: ' + suggestion + '.' : ''))
               : 'Belum ada unit terdaftar untuk ' + kodeAlat + ' — ini akan jadi unit pertama.';
           })
-          .catch(function (err) {
+          .catch((err) => {
             unitHint.textContent = 'Gagal cek unit existing (tetap bisa lanjut input manual).';
             console.error(err);
           });
@@ -2959,14 +2941,12 @@
         // tercatat ADA di mesin ini yang bisa dipilih operator.
         setUnitMode_('select');
         unitHint.style.display = 'none';
-        const units = mesinDrivenUnitsCache.filter(function (u) { return u.kodeAlat === kodeAlat; });
+        const units = mesinDrivenUnitsCache.filter((u) => u.kodeAlat === kodeAlat);
         if (!units.length) {
           unitSel.innerHTML = '<option value="">Tidak ada unit tersedia untuk status ini</option>';
           unitSel.disabled = true;
         } else {
-          unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map(function (u) {
-            return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + ' (' + escapeHtml(u.statusUnit) + ')</option>';
-          }).join('');
+          unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map((u) => '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + ' (' + escapeHtml(u.statusUnit) + ')</option>').join('');
           unitSel.disabled = false;
         }
         updateInputWizardProgress_();
@@ -2978,20 +2958,18 @@
         const statusFilter = STATUS_FILTER_BY_ACTIVITY[activity] || '';
 
         apiGet('getUnitsByKodeAlat', { kodeAlat: kodeAlat, statusFilter: statusFilter })
-          .then(function (units) {
+          .then((units) => {
             if (!units || units.length === 0) {
               unitSel.innerHTML = '<option value="">Tidak ada unit tersedia untuk status ini</option>';
               unitSel.disabled = true;
               updateInputWizardProgress_();
               return;
             }
-            unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map(function (u) {
-              return '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + ' (' + escapeHtml(u.statusUnit) + ')</option>';
-            }).join('');
+            unitSel.innerHTML = '<option value="">Pilih unit…</option>' + units.map((u) => '<option value="' + escapeAttr(u.unitId) + '">' + escapeHtml(u.unitId) + ' (' + escapeHtml(u.statusUnit) + ')</option>').join('');
             unitSel.disabled = false;
             updateInputWizardProgress_();
           })
-          .catch(function (err) {
+          .catch((err) => {
             unitSel.innerHTML = '<option value="">Gagal memuat unit</option>';
             console.error(err);
             updateInputWizardProgress_();
@@ -3008,7 +2986,7 @@
       mesinSel.disabled = true;
       mesinSel.innerHTML = '<option value="">Memuat mesin…</option>';
       apiGet('getMesinOptionsForKodeAlat', { kodeAlat: kodeAlat })
-        .then(function (mesinList) {
+        .then((mesinList) => {
           if (!mesinList || mesinList.length === 0) {
             // [REVISI] Alat yang belum punya mapping mesin sama sekali di
             // Master (belum sempat di-set admin) tetap boleh dipakai untuk
@@ -3018,9 +2996,7 @@
             mesinSel.disabled = true;
             return;
           }
-          mesinSel.innerHTML = '<option value="">—</option>' + mesinList.map(function (m) {
-            return '<option value="' + escapeAttr(m.kodeMesin) + '" data-mesin-name="' + escapeAttr(m.mesin) + '">' + escapeHtml(m.kodeMesin) + '</option>';
-          }).join('');
+          mesinSel.innerHTML = '<option value="">—</option>' + mesinList.map((m) => '<option value="' + escapeAttr(m.kodeMesin) + '" data-mesin-name="' + escapeAttr(m.mesin) + '">' + escapeHtml(m.kodeMesin) + '</option>').join('');
           mesinSel.disabled = false;
         })
         .catch(console.error);
@@ -3053,7 +3029,7 @@
      */
     function suggestNextUnitId_(kodeAlat, existingIds) {
       let maxNum = 0, padLen = 3, found = false;
-      existingIds.forEach(function (id) {
+      existingIds.forEach((id) => {
         const m = /^(.*)-(\d+)$/.exec(id);
         if (!m) return;
         const num = parseInt(m[2], 10);
@@ -3112,7 +3088,7 @@
         return;
       }
 
-      if (isNewUnit && !/^[A-Za-z0-9\-]+$/.test(unitId)) {
+      if (isNewUnit && !/^[A-Za-z0-9-]+$/.test(unitId)) {
         showFormMsg('error', 'Unit_ID baru cuma boleh huruf, angka, dan tanda "-" (tanpa spasi/simbol lain).');
         return;
       }
@@ -3124,7 +3100,7 @@
         return;
       }
 
-      const tool = masterTools.find(function (t) { return t.kodeAlat === kodeAlat; });
+      const tool = masterTools.find((t) => t.kodeAlat === kodeAlat);
       const today = formatToday_();
       // P1-02 — requestId dibuat sekali di sini dan dipakai apa adanya
       // untuk seluruh lifecycle request ini (tidak dibuat ulang saat retry manual).
@@ -3149,7 +3125,7 @@
         pic: pic,
         remark: remark
       })
-        .then(function (res) {
+        .then((res) => {
           const validated = validateTransactionResponse_(res);
           showFormMsg('success', 'Tersimpan — ID Transaksi #' + validated.idTransaksi + ', Cycle ' + validated.cycleId);
           document.getElementById('movement-form').reset();
@@ -3176,14 +3152,14 @@
           loadStockStatus();
           loadMachineAnalytics();
         })
-        .catch(function (err) {
+        .catch((err) => {
           showFormMsg('error', mapErrorToMessage_(err, isNewUnit));
           // P1-06 — kalau Unit_ID baru bentrok, refresh saran nomor unit berikutnya.
           if (err && err.code === 'DUPLICATE_UNIT_ID' && isNewUnit) {
             onKodeAlatChange();
           }
         })
-        .finally(function () {
+        .finally(() => {
           // P1-08 — jalur ini SELALU dieksekusi (success / error / timeout / network /
           // invalid response), jadi tombol tidak pernah macet di "Menyimpan…".
           isSubmittingTx = false;
@@ -3210,7 +3186,7 @@
      */
     function generateRequestId_() {
       const d = new Date();
-      const pad = function (n) { return String(n).padStart(2, '0'); };
+      const pad = (n) => String(n).padStart(2, '0');
       const datePart = '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
       let randomPart;
       if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -3292,7 +3268,7 @@
 
     function formatToday_() {
       const d = new Date();
-      const pad = function (n) { return String(n).padStart(2, '0'); };
+      const pad = (n) => String(n).padStart(2, '0');
       return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
     }
 
