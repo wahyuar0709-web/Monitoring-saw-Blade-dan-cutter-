@@ -3423,3 +3423,27 @@ nav.sidebar-nav button:hover::after {
 .login-gate-back-link:active {
   opacity: 0.7;
 }
+
+.login-gate-contact-link {
+  color: #4c8c9e;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.login-gate-title--sm {
+  font-size: 20px;
+}
+
+#login-gate-view-config,
+#f-mesin-driver-wrap,
+#f-mesin-driver-hint,
+#f-unit-id-manual,
+#f-unit-id-hint,
+#account-logged-in,
+#at-unit-hint {
+  display: none;
+}
+
+.settings-group-title.mt-28 {
+  margin-top: 28px;
+}
