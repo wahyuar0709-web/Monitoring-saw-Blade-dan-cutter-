@@ -1226,6 +1226,371 @@ function confirmPengajuanTumpul_(payload) {
   return { success: true, id: id, status: PENGAJUAN_STATUS_SELESAI, idTransaksi: txResult.idTransaksi };
 }
 
+/* ================================================================
+ * [ADMIN CRUD] Kelola isi spreadsheet langsung dari aplikasi -- khusus
+ * role admin. Prinsip keamanan yang dipakai di sini SAMA dengan pola
+ * yang sudah ada di file ini (validateSession_, applyFormulaGuard_,
+ * logAuditEvent_), supaya tidak ada jalur baru yang standarnya beda:
+ *
+ * 1. Setiap fungsi WAJIB divalidasi lewat requireAdminSession_ dulu,
+ *    sebelum menyentuh sheet apa pun.
+ * 2. Sheet "Users" TIDAK BISA diedit lewat editor sel generik untuk
+ *    kolom Salt & PasswordHash (lihat ADMIN_PROTECTED_COLUMNS_) --
+ *    password HARUS lewat adminUpsertUser_, supaya SELALU di-hash
+ *    dengan pbkdf2Hash_ yang benar, tidak pernah ditulis mentah.
+ * 3. Kalau sebuah sel SUDAH berisi rumus, adminUpdateCell_ menolak
+ *    menimpanya kecuali payload.force=true dikirim eksplisit --
+ *    supaya dashboard/Stock Status yang bergantung pada SUMIFS dkk.
+ *    tidak ketiban rusak tanpa sengaja/tanpa sadar.
+ * 4. Semua tulisan teks bebas (nilai sel, nilai baris baru) tetap
+ *    lewat applyFormulaGuard_ -- payload dari admin sama-sama tidak
+ *    dipercaya buta seperti payload transaksi biasa.
+ * 5. Setiap perubahan (update sel/tambah baris/hapus baris/kelola
+ *    user) dicatat ke Audit Log lewat logAuditEvent_, sama seperti
+ *    transaksi movement -- supaya "siapa mengubah apa" tetap terlacak.
+ * ================================================================ */
+
+const ADMIN_PROTECTED_COLUMNS_ = {
+  'Users': ['Salt', 'PasswordHash']
+};
+
+/**
+ * Gerbang admin generik: sesi harus valid DAN rolenya admin.
+ * @return {{ok:true, session:{username,actorName,role}}|{ok:false, error:{code,message}}}
+ */
+function requireAdminSession_(sessionToken) {
+  const check = validateSession_(sessionToken);
+  if (!check.ok) return { ok: false, error: check.error };
+  if (check.role !== ROLE_ADMIN) {
+    return { ok: false, error: { code: 'FORBIDDEN_ROLE', message: 'Fitur kelola data khusus admin.' } };
+  }
+  return { ok: true, session: check };
+}
+
+/** Daftar semua sheet di spreadsheet ini, buat dropdown pemilihan sheet di app. */
+function adminListSheets_(payload) {
+  const guard = requireAdminSession_(payload && payload.sessionToken);
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets().map(function (s) {
+    return { name: s.getName(), rows: Math.max(0, s.getLastRow() - 1), cols: s.getLastColumn() };
+  });
+  return { success: true, sheets: sheets };
+}
+
+/**
+ * Ambil isi sebuah sheet (dengan pagination -- sheet spt Movement Log
+ * dan Tool Unit isinya ribuan baris, tidak aman ditarik sekaligus).
+ * Setiap sel juga membawa flag isFormula supaya UI bisa kasih tanda
+ * visual (dan minta konfirmasi) sebelum sel itu ditimpa.
+ */
+function adminGetSheetData_(payload) {
+  const guard = requireAdminSession_(payload && payload.sessionToken);
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  const sheetNameCheck = validateStringField_(payload, 'sheetName', true);
+  if (!sheetNameCheck.ok) return { success: false, error: { code: sheetNameCheck.errorCode, message: sheetNameCheck.error } };
+  const sheetName = sheetNameCheck.value;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, error: { code: 'SHEET_NOT_FOUND', message: 'Sheet "' + sheetName + '" tidak ditemukan.' } };
+
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow === 0 || lastCol === 0) {
+    return { success: true, sheetName: sheetName, headers: [], rows: [], totalRows: 0, offset: 0, limit: 0, protectedCols: [] };
+  }
+
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const totalDataRows = Math.max(0, lastRow - 1);
+  const offset = Math.max(0, Math.floor(Number(payload && payload.offset) || 0));
+  // Batas atas 500 baris/permintaan -- pengaman biar tidak narik ribuan
+  // baris sekaligus (Movement Log/Tool Unit bisa >1000 baris).
+  const limit = Math.max(1, Math.min(Math.floor(Number(payload && payload.limit) || 100), 500));
+  const startRow = 2 + offset;
+  const numRows = Math.max(0, Math.min(limit, totalDataRows - offset));
+
+  let rows = [];
+  if (numRows > 0) {
+    const range = sheet.getRange(startRow, 1, numRows, lastCol);
+    const values = range.getValues();
+    const formulas = range.getFormulas();
+    rows = values.map(function (rowVals, i) {
+      return {
+        rowIndex: startRow + i, // nomor baris ASLI di sheet -- dipakai balik utk update/hapus
+        cells: rowVals.map(function (v, c) {
+          return { value: v, isFormula: !!formulas[i][c] };
+        })
+      };
+    });
+  }
+
+  const protectedLabels = ADMIN_PROTECTED_COLUMNS_[sheetName] || [];
+  const protectedCols = [];
+  headers.forEach(function (h, i) {
+    for (let p = 0; p < protectedLabels.length; p++) {
+      if (String(h).indexOf(protectedLabels[p]) !== -1) { protectedCols.push(i); break; }
+    }
+  });
+
+  // Nilai kolom yang dilindungi (Salt/PasswordHash) DISAMARKAN DI SINI, sebelum
+  // dikirim lewat jaringan -- bukan cuma disembunyikan di tampilan. Jangan pernah
+  // biarkan nilai hash/salt asli keluar dari server ini, meski cuma buat admin.
+  if (protectedCols.length) {
+    rows.forEach(function (row) {
+      protectedCols.forEach(function (ci) {
+        row.cells[ci] = { value: '••••••••', isFormula: false };
+      });
+    });
+  }
+
+  return {
+    success: true, sheetName: sheetName, headers: headers, rows: rows,
+    totalRows: totalDataRows, offset: offset, limit: limit, protectedCols: protectedCols
+  };
+}
+
+/** Update SATU sel. Menolak menimpa rumus kecuali force=true. */
+function adminUpdateCell_(payload) {
+  const guard = requireAdminSession_(payload && payload.sessionToken);
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  const sheetNameCheck = validateStringField_(payload, 'sheetName', true);
+  if (!sheetNameCheck.ok) return { success: false, error: { code: sheetNameCheck.errorCode, message: sheetNameCheck.error } };
+  const sheetName = sheetNameCheck.value;
+
+  const rowIndex = Math.floor(Number(payload && payload.rowIndex));
+  const colIndex = Math.floor(Number(payload && payload.colIndex));
+  if (!Number.isInteger(rowIndex) || rowIndex < 2) {
+    return { success: false, error: { code: 'INVALID_ROW', message: 'Nomor baris tidak valid.' } };
+  }
+  if (!Number.isInteger(colIndex) || colIndex < 1) {
+    return { success: false, error: { code: 'INVALID_COL', message: 'Nomor kolom tidak valid.' } };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, error: { code: 'SHEET_NOT_FOUND', message: 'Sheet "' + sheetName + '" tidak ditemukan.' } };
+  if (rowIndex > sheet.getLastRow() || colIndex > sheet.getLastColumn()) {
+    return { success: false, error: { code: 'OUT_OF_RANGE', message: 'Sel di luar jangkauan data sheet ini.' } };
+  }
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const headerLabel = String(headers[colIndex - 1] || '');
+  const protectedLabels = ADMIN_PROTECTED_COLUMNS_[sheetName] || [];
+  for (let i = 0; i < protectedLabels.length; i++) {
+    if (headerLabel.indexOf(protectedLabels[i]) !== -1) {
+      return {
+        success: false,
+        error: {
+          code: 'PROTECTED_COLUMN',
+          message: 'Kolom "' + headerLabel + '" tidak bisa diedit langsung dari sini demi keamanan akun. Gunakan menu "Reset Password" untuk mengganti password user.'
+        }
+      };
+    }
+  }
+
+  const cell = sheet.getRange(rowIndex, colIndex);
+  const existingFormula = cell.getFormula();
+  const force = !!(payload && payload.force);
+  if (existingFormula && !force) {
+    return {
+      success: false,
+      error: {
+        code: 'FORMULA_OVERWRITE_BLOCKED',
+        message: 'Sel ini berisi rumus. Kirim ulang dengan force=true kalau yakin mau menimpanya jadi nilai tetap (rumusnya akan hilang).'
+      },
+      existingFormula: existingFormula
+    };
+  }
+
+  let newValue = payload && payload.value;
+  if (typeof newValue === 'string') newValue = applyFormulaGuard_(newValue);
+  const oldValue = cell.getValue();
+  cell.setValue(newValue);
+  SpreadsheetApp.flush();
+  const verified = cell.getValue();
+
+  logAuditEvent_({
+    event: 'ADMIN_CELL_UPDATE', stage: 'ADMIN_CRUD', operation: sheetName,
+    actorReported: guard.session.username, authenticatedActor: guard.session.actorName,
+    stateDiff: { row: rowIndex, col: colIndex, header: headerLabel, oldValue: oldValue, newValue: verified, overwroteFormula: !!existingFormula }
+  });
+
+  return { success: true, rowIndex: rowIndex, colIndex: colIndex, value: verified, overwroteFormula: !!existingFormula };
+}
+
+/** Tambah baris baru di akhir sheet. Sheet "Users" dikecualikan -- lihat adminUpsertUser_. */
+function adminAddRow_(payload) {
+  const guard = requireAdminSession_(payload && payload.sessionToken);
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  const sheetNameCheck = validateStringField_(payload, 'sheetName', true);
+  if (!sheetNameCheck.ok) return { success: false, error: { code: sheetNameCheck.errorCode, message: sheetNameCheck.error } };
+  const sheetName = sheetNameCheck.value;
+
+  if (sheetName === 'Users') {
+    return {
+      success: false,
+      error: { code: 'USE_DEDICATED_ACTION', message: 'Untuk menambah user, gunakan menu "Tambah User" (supaya password ter-hash dengan benar), bukan tambah baris generik.' }
+    };
+  }
+
+  const values = payload && payload.values;
+  if (!Array.isArray(values)) {
+    return { success: false, error: { code: 'INVALID_PAYLOAD', message: 'Data baris (values) harus berupa array.' } };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, error: { code: 'SHEET_NOT_FOUND', message: 'Sheet "' + sheetName + '" tidak ditemukan.' } };
+
+  const lastCol = Math.max(sheet.getLastColumn(), values.length);
+  const safeRow = [];
+  for (let c = 0; c < lastCol; c++) {
+    let v = values[c];
+    if (v === undefined || v === null) v = '';
+    if (typeof v === 'string') v = applyFormulaGuard_(v);
+    safeRow.push(v);
+  }
+  sheet.appendRow(safeRow);
+  SpreadsheetApp.flush();
+  const newRowIndex = sheet.getLastRow();
+
+  logAuditEvent_({
+    event: 'ADMIN_ROW_ADD', stage: 'ADMIN_CRUD', operation: sheetName,
+    actorReported: guard.session.username, authenticatedActor: guard.session.actorName,
+    stateDiff: { rowIndex: newRowIndex, values: safeRow }
+  });
+
+  return { success: true, rowIndex: newRowIndex };
+}
+
+/** Hapus satu baris. Sheet "Users" dikecualikan -- lihat adminSetUserActive_ (nonaktifkan, bukan hapus). */
+function adminDeleteRow_(payload) {
+  const guard = requireAdminSession_(payload && payload.sessionToken);
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  const sheetNameCheck = validateStringField_(payload, 'sheetName', true);
+  if (!sheetNameCheck.ok) return { success: false, error: { code: sheetNameCheck.errorCode, message: sheetNameCheck.error } };
+  const sheetName = sheetNameCheck.value;
+
+  if (sheetName === 'Users') {
+    return {
+      success: false,
+      error: { code: 'USE_DEDICATED_ACTION', message: 'Untuk menonaktifkan user, gunakan tombol "Nonaktifkan" (akun tidak dihapus permanen, supaya riwayat/audit tetap utuh) -- bukan hapus baris.' }
+    };
+  }
+
+  const rowIndex = Math.floor(Number(payload && payload.rowIndex));
+  if (!Number.isInteger(rowIndex) || rowIndex < 2) {
+    return { success: false, error: { code: 'INVALID_ROW', message: 'Nomor baris tidak valid.' } };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return { success: false, error: { code: 'SHEET_NOT_FOUND', message: 'Sheet "' + sheetName + '" tidak ditemukan.' } };
+  if (rowIndex > sheet.getLastRow()) {
+    return { success: false, error: { code: 'OUT_OF_RANGE', message: 'Baris di luar jangkauan data sheet ini.' } };
+  }
+
+  const lastCol = sheet.getLastColumn();
+  const snapshot = lastCol > 0 ? sheet.getRange(rowIndex, 1, 1, lastCol).getValues()[0] : [];
+  sheet.deleteRow(rowIndex);
+
+  logAuditEvent_({
+    event: 'ADMIN_ROW_DELETE', stage: 'ADMIN_CRUD', operation: sheetName,
+    actorReported: guard.session.username, authenticatedActor: guard.session.actorName,
+    stateDiff: { deletedRowIndex: rowIndex, snapshot: snapshot }
+  });
+
+  return { success: true, deletedRowIndex: rowIndex };
+}
+
+/**
+ * Tambah user baru ATAU update user yang sudah ada. Password SELALU
+ * lewat upsertUserAccount_ (di-hash dgn pbkdf2Hash_ + salt baru) --
+ * tidak pernah ditulis mentah. Kalau field password dikosongkan saat
+ * mengedit user yang SUDAH ADA, hanya actorName/role yang diperbarui
+ * (Salt & PasswordHash lama TIDAK disentuh sama sekali).
+ */
+function adminUpsertUser_(payload) {
+  const guard = requireAdminSession_(payload && payload.sessionToken);
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  const usernameCheck = validateStringField_(payload, 'username', true);
+  if (!usernameCheck.ok) return { success: false, error: { code: usernameCheck.errorCode, message: usernameCheck.error } };
+  const actorNameCheck = validateStringField_(payload, 'actorName', true);
+  if (!actorNameCheck.ok) return { success: false, error: { code: actorNameCheck.errorCode, message: actorNameCheck.error } };
+
+  const username = usernameCheck.value;
+  const actorName = actorNameCheck.value;
+  const role = VALID_ROLES_.indexOf(payload && payload.role) >= 0 ? payload.role : ROLE_OPERATOR;
+
+  const password = payload && payload.password;
+  if (password !== undefined && password !== null && password !== '' && typeof password !== 'string') {
+    return { success: false, error: { code: 'INVALID_FIELD_TYPE', message: 'Password harus berupa teks.' } };
+  }
+
+  const sheet = getOrCreateUsersSheet_();
+  const data = sheet.getDataRange().getValues();
+  let existingRow = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][USERSCOL.USERNAME - 1]).trim() === username) { existingRow = i + 1; break; }
+  }
+
+  if (existingRow > 0 && !password) {
+    // Update profil TANPA ganti password -- kolom Salt/Hash tidak disentuh.
+    sheet.getRange(existingRow, USERSCOL.ACTOR_NAME).setValue(actorName);
+    sheet.getRange(existingRow, USERSCOL.ROLE).setValue(role);
+    logAuditEvent_({
+      event: 'ADMIN_USER_UPDATED', stage: 'ADMIN_CRUD', operation: 'Users',
+      actorReported: guard.session.username, authenticatedActor: guard.session.actorName,
+      note: 'username target: ' + username + ' (password tidak diubah)'
+    });
+    return { success: true, created: false, row: existingRow, passwordChanged: false };
+  }
+
+  if (!password) {
+    return { success: false, error: { code: 'MISSING_REQUIRED_FIELD', message: 'Password wajib diisi untuk akun baru.' } };
+  }
+
+  const result = upsertUserAccount_(username, password, actorName, role);
+  logAuditEvent_({
+    event: existingRow > 0 ? 'ADMIN_USER_UPDATED' : 'ADMIN_USER_CREATED', stage: 'ADMIN_CRUD', operation: 'Users',
+    actorReported: guard.session.username, authenticatedActor: guard.session.actorName,
+    note: 'username target: ' + username + (existingRow > 0 ? ' (password direset)' : '')
+  });
+  return { success: true, created: result.created, row: result.row, passwordChanged: true };
+}
+
+/** Aktifkan/nonaktifkan akun (tanpa menghapus barisnya -- riwayat/audit tetap utuh). */
+function adminSetUserActive_(payload) {
+  const guard = requireAdminSession_(payload && payload.sessionToken);
+  if (!guard.ok) return { success: false, error: guard.error };
+
+  const usernameCheck = validateStringField_(payload, 'username', true);
+  if (!usernameCheck.ok) return { success: false, error: { code: usernameCheck.errorCode, message: usernameCheck.error } };
+  const active = !!(payload && payload.active);
+
+  const sheet = getOrCreateUsersSheet_();
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][USERSCOL.USERNAME - 1]).trim() === usernameCheck.value) {
+      sheet.getRange(i + 1, USERSCOL.ACTIVE).setValue(active);
+      logAuditEvent_({
+        event: active ? 'ADMIN_USER_ENABLED' : 'ADMIN_USER_DISABLED', stage: 'ADMIN_CRUD', operation: 'Users',
+        actorReported: guard.session.username, authenticatedActor: guard.session.actorName,
+        note: 'username target: ' + usernameCheck.value
+      });
+      return { success: true, row: i + 1, active: active };
+    }
+  }
+  return { success: false, error: { code: 'NOT_FOUND', message: 'User tidak ditemukan.' } };
+}
+
 /** Salt acak 32 byte, sumber randomness dari 2x UUID (RFC4122 v4, GAS-native secure random). */
 function generateSalt_() {
   const raw = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
@@ -1581,6 +1946,35 @@ function doPost(e) {
 
   if (action === 'confirmPengajuanTumpul') {
     return jsonOutput_(confirmPengajuanTumpul_(payload));
+  }
+
+  /* ============================================================
+   * [ADMIN CRUD] Kelola isi spreadsheet langsung dari aplikasi.
+   * Semua action di bawah ini admin-only (dicek di masing-masing
+   * fungsi lewat requireAdminSession_) -- gate token di atas (baris
+   * isAuthorized_) cuma memverifikasi request datang dari app yang
+   * sah, BUKAN pengganti pengecekan role per-user.
+   * ============================================================ */
+  if (action === 'adminListSheets') {
+    return jsonOutput_(adminListSheets_(payload));
+  }
+  if (action === 'adminGetSheetData') {
+    return jsonOutput_(adminGetSheetData_(payload));
+  }
+  if (action === 'adminUpdateCell') {
+    return jsonOutput_(adminUpdateCell_(payload));
+  }
+  if (action === 'adminAddRow') {
+    return jsonOutput_(adminAddRow_(payload));
+  }
+  if (action === 'adminDeleteRow') {
+    return jsonOutput_(adminDeleteRow_(payload));
+  }
+  if (action === 'adminUpsertUser') {
+    return jsonOutput_(adminUpsertUser_(payload));
+  }
+  if (action === 'adminSetUserActive') {
+    return jsonOutput_(adminSetUserActive_(payload));
   }
 
   return jsonOutput_({ success: false, error: { code: 'UNKNOWN_ACTION', message: 'Action POST tidak dikenali: ' + action } });
