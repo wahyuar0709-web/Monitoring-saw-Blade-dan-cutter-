@@ -6769,14 +6769,14 @@ function loadFormReferenceData() {
         sel.appendChild(opt);
       });
     })
-    .catch(console.error);
+    .catch(logCaughtError_);
 
   apiGet('getMasterToolsList')
     .then((list) => {
       masterTools = list || [];
       populateKodeAlatSelect_(masterTools);
     })
-    .catch(console.error);
+    .catch(logCaughtError_);
 
   // [REVISI-02] Daftar mesin untuk field "Mesin" (mode mesin-dulu).
   apiGet('getMachineList')
@@ -7233,7 +7233,7 @@ function onKodeAlatChange() {
           .join('');
       mesinSel.disabled = false;
     })
-    .catch(console.error);
+    .catch(logCaughtError_);
 }
 
 /** Toggle tampilan field Unit antara dropdown (unit existing) dan input teks (unit baru). */
