@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
@@ -4570,6 +4570,21 @@ function logApiError_(action, requestId, err, note) {
 }
 
 /**
+ * [FIX — sumber console spam yang SEBENARNYA] logApiError_ di atas cuma
+ * dipanggil dari dalam apiGet/apiPost sendiri (P1). Tapi tiap loadX() punya
+ * .catch(err) SENDIRI2 yang manggil console.error(err) mentah lagi (13
+ * tempat berbeda: loadDashboard, loadMachineAnalytics, loadKontrolAsah,
+ * loadTransactions, loadStockStatus, dll) -- jalur KEDUA yang terlewat
+ * saat fix pertama. Helper ini dipakai gantinya di semua 13 tempat itu,
+ * sama-sama meredam CONFIGURATION_ERROR (state normal sebelum device
+ * dikonfigurasi) ke console.debug, error lain tetap console.error.
+ */
+function logCaughtError_(err) {
+  const logFn = err && err.code === 'CONFIGURATION_ERROR' ? console.debug : console.error;
+  logFn(err);
+}
+
+/**
  * P1-01 / K — wrapper request terpusat dipakai oleh apiGet & apiPost,
  * satu implementasi timeout (AbortController) untuk keduanya.
  * Melempar ApiError dengan code: TIMEOUT | NETWORK | HTTP | PARSE.
@@ -5598,7 +5613,7 @@ function loadDashboard() {
                 'loadDashboard'
               );
       }
-      console.error(err);
+      logCaughtError_(err);
     });
 }
 
@@ -5750,7 +5765,7 @@ function loadTransactions() {
               'Coba Lagi',
               'loadTransactions'
             );
-      console.error(err);
+      logCaughtError_(err);
     });
 }
 
@@ -5821,7 +5836,7 @@ function loadStockStatus() {
               'Coba Lagi',
               'loadStockStatus'
             );
-      console.error(err);
+      logCaughtError_(err);
     });
 }
 
@@ -6117,7 +6132,7 @@ function loadMachineAnalytics() {
               'Coba Lagi',
               'loadMachineAnalytics'
             );
-      console.error(err);
+      logCaughtError_(err);
     });
 
   apiGet('getLeadTimeByMachine')
@@ -6138,7 +6153,7 @@ function loadMachineAnalytics() {
               'Coba Lagi',
               'loadMachineAnalytics'
             );
-      console.error(err);
+      logCaughtError_(err);
     });
 }
 
@@ -6307,7 +6322,7 @@ function onAjukanMesinChange_() {
     })
     .catch((err) => {
       kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
-      console.error(err);
+      logCaughtError_(err);
     });
 }
 
@@ -6621,7 +6636,7 @@ function loadKontrolAsah() {
               'Coba Lagi',
               'loadKontrolAsah'
             );
-      console.error(err);
+      logCaughtError_(err);
     });
 
   apiGet('getKontrolAsahList')
@@ -6649,7 +6664,7 @@ function loadKontrolAsah() {
             );
       document.getElementById('ka-menunggu-list').innerHTML = msg;
       document.getElementById('ka-proses-list').innerHTML = msg;
-      console.error(err);
+      logCaughtError_(err);
     });
 }
 
@@ -6782,7 +6797,7 @@ function loadFormReferenceData() {
       // [v8.18.0] Sebelumnya cuma console.error -- operator tidak
       // pernah tahu kenapa dropdown Mesin kosong. Sekarang tampil
       // hint visible langsung di bawah field-nya.
-      console.error(err);
+      logCaughtError_(err);
       const hint = document.getElementById('f-mesin-driver-hint');
       if (hint) {
         hint.textContent =
@@ -7026,7 +7041,7 @@ function onMesinDriverChange() {
       })
       .catch((err) => {
         kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
-        console.error(err);
+        logCaughtError_(err);
       });
   } else {
     // DIPASANG KE MESIN — alat yang valid untuk dipasang di mesin ini
@@ -7039,7 +7054,7 @@ function onMesinDriverChange() {
       })
       .catch((err) => {
         kodeAlatSel.innerHTML = '<option value="">Gagal memuat kode alat</option>';
-        console.error(err);
+        logCaughtError_(err);
       });
   }
 }
@@ -7113,7 +7128,7 @@ function onKodeAlatChange() {
       })
       .catch((err) => {
         unitHint.textContent = 'Gagal cek unit existing (tetap bisa lanjut input manual).';
-        console.error(err);
+        logCaughtError_(err);
       });
   } else if (driven && activity === 'KEMBALI KE GUDANG (TUMPUL)') {
     // [REVISI-02] Unit sudah ditarik sekaligus saat Mesin dipilih
@@ -7178,7 +7193,7 @@ function onKodeAlatChange() {
       })
       .catch((err) => {
         unitSel.innerHTML = '<option value="">Gagal memuat unit</option>';
-        console.error(err);
+        logCaughtError_(err);
         updateInputWizardProgress_();
       });
   }
