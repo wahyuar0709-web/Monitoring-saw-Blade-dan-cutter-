@@ -4545,9 +4545,20 @@ class ApiError extends Error {
   }
 }
 
-/** Logging developer tanpa data sensitif (N). */
+/**
+ * Logging developer tanpa data sensitif (N).
+ * [FIX — console spam saat belum konfigurasi] CONFIGURATION_ERROR adalah
+ * state NORMAL sebelum user mengisi URL/Token (device baru, localStorage
+ * kosong) -- sudah ditangani jelas lewat badge "API belum dikonfigurasi"
+ * di UI. Sebelumnya tiap loadX() yang jalan otomatis saat start (6+ panggilan)
+ * masing-masing console.error() dengan stack trace penuh, membuat console
+ * banjir merah dan terlihat seperti error aplikasi padahal cuma menunggu
+ * konfigurasi. Downgrade ke console.debug supaya tetap bisa ditelusuri
+ * developer tanpa menakut-nakuti/menutupi error yang benar-benar penting.
+ */
 function logApiError_(action, requestId, err, note) {
-  console.error('[API ERROR]', {
+  const logFn = err && err.code === 'CONFIGURATION_ERROR' ? console.debug : console.error;
+  logFn('[API ERROR]', {
     version: APP_VERSION,
     action: action,
     requestId: requestId || null,
@@ -4876,6 +4887,24 @@ function wireThemeToggle_() {
 /* ============================================================
        P2-07/S/L — CONNECTIVITY INDICATOR
        ============================================================ */
+/**
+ * [FIX — panel tetap error setelah Simpan URL/Token] Sebelumnya menyimpan
+ * konfigurasi (baik lewat Pengaturan maupun gerbang login) HANYA menulis
+ * localStorage + update runtimeApiUrl_/runtimeApiToken_, tanpa memuat ulang
+ * data yang sudah kadung gagal saat start (Dashboard, Stok, Analitik Mesin,
+ * Kontrol Asah semua masih menampilkan "API belum dikonfigurasi" sampai user
+ * manual refresh browser). Helper ini menyatukan urutan reload yang sudah
+ * dipakai listener 'online' supaya dipakai juga persis setelah Simpan.
+ */
+function reloadAllData_() {
+  loadDashboard();
+  loadFormReferenceData();
+  loadTransactions();
+  loadStockStatus();
+  loadMachineAnalytics();
+  loadKontrolAsah();
+}
+
 function wireConnectivityIndicator_() {
   updateConnIndicator_();
   window.addEventListener('online', () => {
@@ -4883,11 +4912,7 @@ function wireConnectivityIndicator_() {
     // L — reconnect: refresh data read-only, TIDAK mengulang POST transaksi
     // yang sebelumnya gagal (Phase 1 idempotency tetap satu-satunya authority).
     if (appHasLoadedOnce_) {
-      loadDashboard();
-      loadTransactions();
-      loadStockStatus();
-      loadMachineAnalytics();
-      loadKontrolAsah();
+      reloadAllData_();
     }
   });
   window.addEventListener('offline', updateConnIndicator_);
@@ -4961,6 +4986,10 @@ function wireSettingsPanel_() {
     setSettingsStatus_('untested');
     showSettingsMsg_('success', 'URL & token berhasil disimpan.');
     updateConnIndicator_();
+    // [FIX] Muat ulang semua panel yang tadinya gagal karena belum
+    // dikonfigurasi -- tanpa ini user harus refresh manual (lihat catatan
+    // di reloadAllData_).
+    if (appHasLoadedOnce_) reloadAllData_();
   });
 
   btnTest.addEventListener('click', () => {
@@ -5152,6 +5181,10 @@ function wireLoginGate_() {
     if (settingsUrlField) settingsUrlField.value = raw;
     if (settingsTokenField) settingsTokenField.value = rawToken;
     updateConnIndicator_();
+    // [FIX] Sama seperti Pengaturan ▸ Koneksi -- muat ulang panel yang
+    // gagal saat start supaya begitu user login, Dashboard/Stok/dst
+    // sudah terisi, bukan masih menampilkan error lama.
+    if (appHasLoadedOnce_) reloadAllData_();
 
     showLoginView_();
     showGateMsg_('success', 'URL & token tersimpan. Silakan login.');
