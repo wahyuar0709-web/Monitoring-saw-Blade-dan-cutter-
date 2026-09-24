@@ -4547,18 +4547,19 @@ class ApiError extends Error {
 
 /**
  * Logging developer tanpa data sensitif (N).
- * [FIX — console spam saat belum konfigurasi] CONFIGURATION_ERROR adalah
- * state NORMAL sebelum user mengisi URL/Token (device baru, localStorage
- * kosong) -- sudah ditangani jelas lewat badge "API belum dikonfigurasi"
- * di UI. Sebelumnya tiap loadX() yang jalan otomatis saat start (6+ panggilan)
- * masing-masing console.error() dengan stack trace penuh, membuat console
- * banjir merah dan terlihat seperti error aplikasi padahal cuma menunggu
- * konfigurasi. Downgrade ke console.debug supaya tetap bisa ditelusuri
- * developer tanpa menakut-nakuti/menutupi error yang benar-benar penting.
+ * [FIX v2 — console.debug TERNYATA TETAP mencetak stack trace penuh kalau
+ * argumennya objek Error (perilaku bawaan Chrome DevTools, bukan soal
+ * level log) -- jadi downgrade ke console.debug di fix pertama TIDAK
+ * benar2 menghilangkan blok "ApiError: ... Promise.catch" itu, cuma
+ * ganti ikon severity-nya. Sekarang untuk CONFIGURATION_ERROR (state
+ * NORMAL sebelum device dikonfigurasi, sudah jelas ditangani lewat badge
+ * "API belum dikonfigurasi" di UI) -- TIDAK dicetak ke console SAMA
+ * SEKALI. Error lain (NETWORK/TIMEOUT/PARSE/dll, yang memang tak
+ * terduga) tetap console.error penuh seperti biasa.
  */
 function logApiError_(action, requestId, err, note) {
-  const logFn = err && err.code === 'CONFIGURATION_ERROR' ? console.debug : console.error;
-  logFn('[API ERROR]', {
+  if (err && err.code === 'CONFIGURATION_ERROR') return;
+  console.error('[API ERROR]', {
     version: APP_VERSION,
     action: action,
     requestId: requestId || null,
@@ -4570,18 +4571,15 @@ function logApiError_(action, requestId, err, note) {
 }
 
 /**
- * [FIX — sumber console spam yang SEBENARNYA] logApiError_ di atas cuma
- * dipanggil dari dalam apiGet/apiPost sendiri (P1). Tapi tiap loadX() punya
- * .catch(err) SENDIRI2 yang manggil console.error(err) mentah lagi (13
- * tempat berbeda: loadDashboard, loadMachineAnalytics, loadKontrolAsah,
- * loadTransactions, loadStockStatus, dll) -- jalur KEDUA yang terlewat
- * saat fix pertama. Helper ini dipakai gantinya di semua 13 tempat itu,
- * sama-sama meredam CONFIGURATION_ERROR (state normal sebelum device
- * dikonfigurasi) ke console.debug, error lain tetap console.error.
+ * [FIX v2] Sama seperti logApiError_ di atas -- CONFIGURATION_ERROR
+ * dipakai di 13 titik .catch(err) lain (loadDashboard, loadMachineAnalytics,
+ * loadKontrolAsah, loadTransactions, loadStockStatus, dll) dan TIDAK
+ * dicetak ke console sama sekali kalau memang cuma karena belum
+ * dikonfigurasi -- bukan cuma diturunkan levelnya.
  */
 function logCaughtError_(err) {
-  const logFn = err && err.code === 'CONFIGURATION_ERROR' ? console.debug : console.error;
-  logFn(err);
+  if (err && err.code === 'CONFIGURATION_ERROR') return;
+  console.error(err);
 }
 
 /**
@@ -6817,6 +6815,7 @@ function loadFormReferenceData() {
       console.log('[APP] Backend version:', (res && res.version) || '(tidak diketahui)');
     })
     .catch((err) => {
+      if (err && err.code === 'CONFIGURATION_ERROR') return;
       console.warn(
         '[APP] Gagal cek versi backend (kemungkinan deployment lama, belum punya action getBackendVersion):',
         err && err.message
