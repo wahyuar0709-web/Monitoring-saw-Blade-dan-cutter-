@@ -749,7 +749,7 @@
  *  CHANGELOG v4 -> v5 (hasil validasi terhadap sheet asli)
  *  ============================================================
  *  [CHANGE-02] KRITIS — Ternyata "Regrind Count" BUKAN cuma istilah:
- *    itu KOLOM ASLI di sheet "Tool Unit" (kolom H / TUCOL.REGRIND_COUNT),
+ *    itu KOLOM ASLI di sheet "Tool Unit" (kolom K / TUCOL.REGRIND_COUNT).
  *    terpisah dari Cycle_ID/Counter di Movement Log. Sebelumnya kolom
  *    ini TIDAK PERNAH ditulis oleh script sama sekali — nilai yang ada
  *    di sheet murni manual/lama. Sekarang di-increment +1 di
@@ -766,10 +766,26 @@
  * BAGIAN 1 — WEB APP (dulu WebApp_v3.gs)
  * ================================================================ */
 
-// [v5.19.0] Versi backend yang BENAR-BENAR live -- dicek via action
+// [v5.19.3] AUDIT-BE-2026-10 — FIX BESAR jalur tulis sesuai workbook nyata
+// (bukti: header nyata Tool Unit/Movement Log + diag rumus per baris):
+//  1. TUCOL & COL diperbarui ke posisi header ASLI (Regrind Count=K/11,
+//     Last Event=M/13, Status Unit=N/14, Lokasi=O/15, Kode Mesin=P/16;
+//     ML PIC=M/13, Remark=N/14, Vendor Tujuan=L/12).
+//  2. Tool Unit C..U adalah RUMUS turunan dari Movement Log — backend TIDAK
+//     menulis ke sana. Unit existing: TIDAK ADA write (status unit otomatis
+//     oleh mesin formula dari baris ML). Unit baru (PEMBELIAN BARU):
+//     appendRow hanya A,B lalu pasang rumus C..U dengan copyTo(PASTE_FORMULA)
+//     dari baris template di atasnya.
+//  3. Movement Log: appendRow tapi TIDAK menulis E,F,J,K,P,Q (semuanya
+//     rumus per baris). Rumus E..Q dipasang via copyTo(PASTE_FORMULA),
+//     lalu nilai input ditulis per-chunk range: A..D, G..I, L..N.
+//  4. verify* hanya memverifikasi kolom INPUT + keberadaan rumus di kolom
+//     rumus (getFormulas — bukan menuntut nilai hasil recompute).
+//  5. Rollback Tool Unit existing = no-op (tidak ada yang tertulis).
+// Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.19.2';
+const BACKEND_VERSION = 'v5.19.3';
 
 const SHEET_MASTER_TOOLS = 'Master Tools';
 const SHEET_TOOL_UNIT = 'Tool Unit';
@@ -777,7 +793,7 @@ const SHEET_MAPPING = 'Mapping Alat Mesin';
 const SHEET_STOCK_STATUS = 'Stock Status';
 
 const MTCOL = { KODE_ALAT: 1, NAMA_ALAT: 2, SPESIFIKASI: 6 };
-const TUCOL = { KODE_ALAT: 1, UNIT_ID: 2, REGRIND_COUNT: 8, LAST_EVENT: 10, STATUS_UNIT: 11, LOKASI: 12, KODE_MESIN: 13 };
+const TUCOL = { KODE_ALAT: 1, UNIT_ID: 2, REGRIND_COUNT: 11, LAST_EVENT: 13, STATUS_UNIT: 14, LOKASI: 15, KODE_MESIN: 16 };
 const MAPCOL = { KODE_ALAT: 1, KODE_MESIN: 4, MESIN: 5 };
 
 const SHEET_KONTROL_ASAH = 'Kontrol Asah';
@@ -792,11 +808,21 @@ const SHEET_PERFORMA_VENDOR = 'Performa Vendor';
  * formula tanggal-vs-hari-ini) — jadi di sisi Apps Script cukup dibaca
  * apa adanya, TIDAK perlu dihitung ulang dari tanggal.
  */
+/**
+ * [FITUR-KONTROL-ASAH] Kolom sheet "Kontrol Asah" — [AUDIT-BE-2026-10]
+ * diperbarui ke posisi header ASLI (bukti: read header A..Y workbook):
+ * B=Unit_ID, C=Cycle_ID (dulunya tertukar), L=Tgl Masuk WH, M=PR, N=BC,
+ * T=Tgl Terima Asah, U=Qty Terima, V=Counter, W=Lead Time Asah,
+ * X=Vendor Pengasahan, Y=Status Asah. "Lead Time Tunggu (Hari Kerja)"
+ * dan "Lead Time Asah (Hari)" SUDAH berupa angka berjalan (live, dihitung
+ * sheet-nya sendiri via formula tanggal-vs-hari-ini) — jadi di sisi Apps
+ * Script cukup dibaca apa adanya.
+ */
 const KACOL = {
-  KODE_ALAT: 1, CYCLE_ID: 2, UNIT_ID: 3, BRAND: 4, CUTTING_TOOL: 5, IDENT_NR: 6, TOOL_ID: 7,
-  MATERIAL: 8, SPESIFIKASI: 9, MESIN: 10, KODE_MESIN: 11, TGL_PENGAJUAN_PR: 12, TGL_PENGAJUAN_BC: 13,
-  TGL_MASUK_WH: 14, QTY_MASUK: 15, UNIT: 16, BERAT: 17, TGL_KIRIM_ASAH: 18, LEAD_TIME_TUNGGU: 19,
-  VENDOR: 20, TGL_TERIMA_ASAH: 21, QTY_TERIMA: 22, COUNTER: 23, LEAD_TIME_ASAH: 24, STATUS_ASAH: 25
+  KODE_ALAT: 1, UNIT_ID: 2, CYCLE_ID: 3, BRAND: 4, CUTTING_TOOL: 5, IDENT_NR: 6, TOOL_ID: 7,
+  MATERIAL: 8, SPESIFIKASI: 9, MESIN: 10, KODE_MESIN: 11, TGL_MASUK_WH: 12, TGL_PENGAJUAN_PR: 13,
+  TGL_PENGAJUAN_BC: 14, QTY_MASUK: 15, UNIT: 16, BERAT: 17, TGL_KIRIM_ASAH: 18, LEAD_TIME_TUNGGU: 19,
+  TGL_TERIMA_ASAH: 20, QTY_TERIMA: 21, COUNTER: 22, LEAD_TIME_ASAH: 23, VENDOR: 24, STATUS_ASAH: 25
 };
 
 /**
@@ -2534,22 +2560,47 @@ function getKontrolAsahList() {
     .sort(function (a, b) { return b.hariBerjalan - a.hariBerjalan; });
 }
 
-/** Ringkasan performa vendor asah (rata-rata & maksimum lead time), dari sheet "Performa Vendor". */
+/**
+ * [AUDIT-BE-2026-10] Ringkasan performa vendor asah. Sheet "Performa
+ * Vendor" TIDAK ADA di workbook produksi; sumber data sekarang = sheet
+ * "Master Vendor" (A Nama Vendor, B Aktif, C Jumlah siklus, D LT rata-rata,
+ * E LT maksimum — C..E rumus). selisihTelat = LT maks − LT rata-rata
+ * (seberapa jauh transaksi terest telat vs normal). Sheet lama tetap
+ * dipakai kalau suatu saat ada, supaya tidak kehilangan data historis.
+ */
 function getVendorPerformance() {
-  const sheet = getSheet_(SHEET_PERFORMA_VENDOR);
-  const numRows = sheet.getLastRow() - 1;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetLama = ss.getSheetByName(SHEET_PERFORMA_VENDOR);
+  if (sheetLama) {
+    const numRowsLama = sheetLama.getLastRow() - 1;
+    if (numRowsLama > 0) {
+      return sheetLama.getRange(2, 1, numRowsLama, 4).getValues()
+        .filter(function (row) { return String(row[0]).trim(); })
+        .map(function (row) {
+          return {
+            vendor: String(row[0]).trim(),
+            avgLeadTime: Math.round(num_(row[1]) * 10) / 10,
+            maxLeadTime: num_(row[2]),
+            selisihTelat: Math.round(num_(row[3]) * 10) / 10
+          };
+        });
+    }
+  }
+
+  const master = ss.getSheetByName('Master Vendor');
+  if (!master) return [];
+  const numRows = master.getLastRow() - 1;
   if (numRows <= 0) return [];
-
-  const data = sheet.getRange(2, 1, numRows, 4).getValues();
-
-  return data
+  return master.getRange(2, 1, numRows, 5).getValues()
     .filter(function (row) { return String(row[0]).trim(); })
     .map(function (row) {
+      const avg = num_(row[3]);
+      const maks = num_(row[4]);
       return {
         vendor: String(row[0]).trim(),
-        avgLeadTime: Math.round(num_(row[1]) * 10) / 10,
-        maxLeadTime: num_(row[2]),
-        selisihTelat: Math.round(num_(row[3]) * 10) / 10
+        avgLeadTime: Math.round(avg * 10) / 10,
+        maxLeadTime: maks,
+        selisihTelat: Math.round((maks - avg) * 10) / 10
       };
     });
 }
@@ -2746,9 +2797,20 @@ const COL = {
   QTY: 9,
   CYCLE_ID: 10,
   COUNTER: 11,
-  PIC: 12,
-  REMARK: 13
+  VENDOR_TUJUAN: 12,
+  PIC: 13,
+  REMARK: 14
 };
+
+/**
+ * [AUDIT-BE-2026-10] Kolom SPESIFIKASI(E), MESIN(F), CYCLE_ID(J), COUNTER(K)
+ * adalah RUMUS per baris di sheet Movement Log (VLOOKUP dari B / COUNTIFS
+ * baris sendiri) — backend TIDAK PERNAH menulisnya. Yang ditulis backend
+ * hanya kolom INPUT: A,B,C,D,G,H,I,L,M,N (lihat commitMovementLog_).
+ */
+const ML_KOLOM_INPUT_ = [COL.TANGGAL, COL.KODE_ALAT, COL.UNIT_ID, COL.ID_TRANSAKSI, COL.KODE_MESIN, COL.ACTIVITY, COL.QTY, COL.VENDOR_TUJUAN, COL.PIC, COL.REMARK];
+/** Range kolom rumus ML yang di-pasang copyTo(PASTE_FORMULA) pada baris baru: E..Q. */
+const ML_RUMUS_RANGE_ = { dari: COL.SPESIFIKASI, sampai: 17 };
 
 /** Kata kunci header yang diharapkan per posisi kolom, untuk validasi runtime (urutan mengikuti COL di atas). */
 const MOVEMENT_LOG_HEADER_KEYWORDS = [
@@ -2763,6 +2825,7 @@ const MOVEMENT_LOG_HEADER_KEYWORDS = [
   ['qty', 'quantity', 'jumlah'],
   ['cycle id', 'cycle_id', 'cycle', 'siklus'],
   ['counter', 'hitung', 'jumlah siklus'],
+  ['vendor tujuan', 'tujuan vendor', 'vendor'],
   ['pic'],
   ['remark', 'catatan', 'keterangan']
 ];
@@ -3402,12 +3465,21 @@ function addMovementRow(payload) {
 
     // 10. Siapkan baris Movement Log (belum ditulis) — pakai effectiveKodeAlat
     // (hasil validasi referensial §7a), bukan p.kodeAlat mentah dari payload.
+    // [AUDIT-BE-2026-10] Array 14 posisi sesuai COL. Posisi E (Spesifikasi),
+    // F (Mesin), J (Cycle_ID), K (Counter) = RUMUS — berisi '' dan TIDAK
+    // ditulis (lihat ML_CHUNK_WRITE_ di commitMovementLog_). E & F otomatis
+    // terisi VLOOKUP dari kode alat, J & K dari mesin formula baris sendiri.
     const movementRowValues = [
-      p.tanggal, effectiveKodeAlat, p.unitId, idTransaksi, p.spesifikasi,
-      p.mesin, p.kodeMesin, p.activity, p.qty, cycleInfo.cycleId, cycleInfo.counter,
-      p.pic, p.remark
+      p.tanggal, effectiveKodeAlat, p.unitId, idTransaksi,
+      /*E rumus*/ '', /*F rumus*/ '',
+      p.kodeMesin, p.activity, p.qty,
+      /*J rumus*/ '', /*K rumus*/ '',
+      /*L vendor*/ '', p.pic, p.remark
     ];
 
+    // 10b. [AUDIT-BE-2026-10] Guard struktur Tool Unit — posisi kolom syarat
+    // TUCOL dicek SEBELUM commit apa pun ke sana.
+    assertToolUnitHeaders_(toolUnitSheet);
     // 11. Snapshot Tool Unit SEBELUM diubah (dasar rollback §8/§15/§16)
     toolUnitSnapshot = unitInfo
       ? { existed: true, rowIndex: unitInfo.rowIndex, values: unitInfo.row.slice() }
@@ -3920,26 +3992,79 @@ function buildToolUnitStateDiff_(beforeValues, afterStatus, afterLokasi, afterKo
  * ada perubahan lifecycle/Cycle_ID/Regrind Count di sini, cuma dipecah
  * supaya hasil commit bisa diverifikasi & di-rollback.
  */
+/* ------------------------------------------------------------
+ * [AUDIT-BE-2026-10] HELPER RUMUS & GUARD HEADER TOOL UNIT
+ * ------------------------------------------------------------ */
+/**
+ * Pasang rumus pada baris baru dengan menyalin rumus dari baris template
+ * di atasnya (PASTE_FORMULA — referensi relatif ikut bergeser, persis
+ * perilaku drag-copy di UI Sheets). Kembali {ok:true, templateRow} atau
+ * {ok:false, error}.
+ */
+function pasangRumusDariBarisAtas_(sheet, targetRow, kolomDari, kolomSampai) {
+  const lebar = kolomSampai - kolomDari + 1;
+  const minBaris = Math.max(2, targetRow - 60);
+  for (let srcRow = targetRow - 1; srcRow >= minBaris; srcRow--) {
+    const rumusRow = sheet.getRange(srcRow, kolomDari, 1, lebar).getFormulas()[0];
+    if (!rumusRow || !rumusRow.some(function (f) { return !!String(f || ''); })) continue;
+    sheet.getRange(srcRow, kolomDari, 1, lebar)
+      .copyTo(sheet.getRange(targetRow, kolomDari), SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+    return { ok: true, templateRow: srcRow };
+  }
+  return { ok: false, error: 'Baris template berisi rumus tidak ditemukan di ' + sheet.getName() + ' baris ' + minBaris + '-' + (targetRow - 1) };
+}
+
+/**
+ * Guard struktur Tool Unit runtime — posisi kolom INPUT (A,B) dan kolom
+ * kunci turunan (K,M,N,O,P) wajib seperti TUCOL. Kalau header digeser/
+ * berubah, transaksi ditolak SEBELUM write apa pun.
+ */
+function assertToolUnitHeaders_(sheet) {
+  const cek = function (noKolom, options) {
+    const h = normalizeHeader_(sheet.getRange(1, noKolom, 1, 1).getValue());
+    return options.some(function (opt) { return h.indexOf(normalizeHeader_(opt)) !== -1; });
+  };
+  const posisi = [
+    { no: TUCOL.KODE_ALAT, teks: 'Kode Alat', pilihan: ['kode alat'] },
+    { no: TUCOL.UNIT_ID, teks: 'Unit_ID', pilihan: ['unit id', 'unit_id', 'unit'] },
+    { no: TUCOL.REGRIND_COUNT, teks: 'Regrind Count', pilihan: ['regrind count', 'regrind'] },
+    { no: TUCOL.LAST_EVENT, teks: 'Last Event', pilihan: ['last event', 'event'] },
+    { no: TUCOL.STATUS_UNIT, teks: 'Status Unit', pilihan: ['status unit', 'status'] },
+    { no: TUCOL.LOKASI, teks: 'Lokasi', pilihan: ['lokasi'] },
+    { no: TUCOL.KODE_MESIN, teks: 'Kode mesin', pilihan: ['kode mesin'] }
+  ];
+  const problems = posisi.filter(function (x) { return !cek(x.no, x.pilihan); })
+    .map(function (x) { return 'Kolom ke-' + x.no + ': header tidak sesuai "' + x.teks + '"'; });
+  if (problems.length) {
+    throw new Error('Struktur header sheet "' + SHEET_TOOL_UNIT + '" tidak sesuai asumsi TUCOL.\n' + problems.join('\n'));
+  }
+}
+
+
 function commitToolUnit_(sheet, unitInfo, p) {
   const newStatus = STATUS_AFTER_ACTIVITY[p.activity] ||
     (unitInfo ? String(unitInfo.row[TUCOL.STATUS_UNIT - 1]).trim() : 'GUDANG');
 
   const isPasang = p.activity === 'DIPASANG KE MESIN';
   const isSelesaiDiasah = p.activity === 'SELESAI DIASAH';
-  const lokasi = isPasang ? p.mesin : (unitInfo ? String(unitInfo.row[TUCOL.LOKASI - 1]).trim() : '');
+  const lokasi = isPasang ? 'MESIN' : (unitInfo ? String(unitInfo.row[TUCOL.LOKASI - 1]).trim() : '');
   const kodeMesin = isPasang ? p.kodeMesin : (unitInfo ? String(unitInfo.row[TUCOL.KODE_MESIN - 1]).trim() : '');
 
   if (!unitInfo) {
-    const newRow = new Array(TUCOL.KODE_MESIN).fill('');
-    newRow[TUCOL.KODE_ALAT - 1] = p.kodeAlat;
-    newRow[TUCOL.UNIT_ID - 1] = p.unitId;
-    newRow[TUCOL.REGRIND_COUNT - 1] = 0;
-    newRow[TUCOL.LAST_EVENT - 1] = p.activity;
-    newRow[TUCOL.STATUS_UNIT - 1] = newStatus;
-    newRow[TUCOL.LOKASI - 1] = lokasi;
-    newRow[TUCOL.KODE_MESIN - 1] = kodeMesin;
-    sheet.appendRow(newRow); // atomic: seluruh row ini masuk atau exception (tidak ada row baru)
-    const newRowIndex = sheet.getLastRow();
+    // [AUDIT-BE-2026-10] Tool Unit kolom C..U = RUMUS turunan ML. Jangan
+    // pernah menulis nilai ke sana. Unit baru: append A,B saja, lalu
+    // rumus C..U dipasang dari baris template di atasnya.
+    const oldLastRow = sheet.getLastRow();
+    sheet.appendRow([p.kodeAlat, p.unitId]); // atomic: seluruh row ini masuk atau exception (tidak ada row baru)
+    const newRowIndex = oldLastRow + 1;
+    const rumus = pasangRumusDariBarisAtas_(sheet, newRowIndex, TUCOL.KODE_ALAT + 2, 21); // C..U
+    if (!rumus.ok) {
+      // [AUDIT-BE-2026-10] self-cleanup: appendRow sudah membuat baris —
+      // jangan tinggalkan baris yatim tanpa rumus (rollback pemanggil untuk
+      // unit baru mengandalkan commitInfo yang belum ter-registrasi).
+      try { sheet.deleteRow(newRowIndex); } catch (e2) { /* biarkan caller lapor rollback gagal */ }
+      throw new Error('Pasang rumus Tool Unit gagal: ' + rumus.error);
+    }
     return {
       rowIndex: newRowIndex,
       isNew: true,
@@ -3959,17 +4084,11 @@ function commitToolUnit_(sheet, unitInfo, p) {
     };
   }
 
-  sheet.getRange(unitInfo.rowIndex, TUCOL.LAST_EVENT).setValue(p.activity);
-  sheet.getRange(unitInfo.rowIndex, TUCOL.STATUS_UNIT).setValue(newStatus);
-  if (isPasang) {
-    sheet.getRange(unitInfo.rowIndex, TUCOL.LOKASI).setValue(lokasi);
-    sheet.getRange(unitInfo.rowIndex, TUCOL.KODE_MESIN).setValue(kodeMesin);
-  }
+  // [AUDIT-BE-2026-10] Unit existing: TIDAK ADA write sama sekali — kolom
+  // M/N/O/P dst. adalah rumus yang otomatis berubah begitu baris ML masuk.
+  // menulis nilai ke sana hanya akan MENGHAPUS rumus (corNSSetup data).
   let expectedRegrind = Number(unitInfo.row[TUCOL.REGRIND_COUNT - 1]) || 0;
-  if (isSelesaiDiasah) {
-    expectedRegrind = expectedRegrind + 1;
-    sheet.getRange(unitInfo.rowIndex, TUCOL.REGRIND_COUNT).setValue(expectedRegrind);
-  }
+  if (isSelesaiDiasah) expectedRegrind = expectedRegrind + 1;
   return {
     rowIndex: unitInfo.rowIndex,
     isNew: false,
@@ -3984,30 +4103,28 @@ function commitToolUnit_(sheet, unitInfo, p) {
 }
 
 /**
- * [WO-2.1.1] Baca ulang row Tool Unit yang barusan ditulis, cocokkan
- * dengan expected. Diperluas dari versi sebelumnya (hanya unitId/
- * lastEvent/statusUnit) supaya benar-benar memverifikasi SEMUA field
- * yang commitToolUnit_() bisa tulis: lokasi & kodeMesin (saat DIPASANG
- * KE MESIN) dan regrindCount (saat SELESAI DIASAH, atau tetap sama
- * kalau tidak). Sebelumnya celah ini memungkinkan verifikasi PASS
- * walau salah satu field tsb gagal tersimpan/salah nilai.
+ * [AUDIT-BE-2026-10] Verifikasi baris Tool Unit yang barusan disentuh.
+ *  - isNew: A (Kode Alat) & B (Unit_ID) tepat + rumus C..U benar-benar
+ *    terpasang (getFormulas — NILAI kolom rumus tidak bisa dijadikan acuan
+ *    karena recompute Sheets bisa 30-90 dtk).
+ *  - existing: tidak ada write — langsung aman. Nilai kolom rumus hanya
+ *    dikelola mesin formula, memaksa membaca nilai = baca nilai basi.
  */
 function verifyToolUnitWrite_(sheet, commitInfo) {
   if (!commitInfo) return false;
   try {
-    const row = sheet.getRange(commitInfo.rowIndex, 1, 1, TUCOL.KODE_MESIN).getValues()[0];
-    const actualUnitId = String(row[TUCOL.UNIT_ID - 1]).trim().toUpperCase();
-    const actualLastEvent = String(row[TUCOL.LAST_EVENT - 1]).trim();
-    const actualStatus = String(row[TUCOL.STATUS_UNIT - 1]).trim();
-    const actualLokasi = String(row[TUCOL.LOKASI - 1]).trim();
-    const actualKodeMesin = String(row[TUCOL.KODE_MESIN - 1]).trim();
-    const actualRegrind = Number(row[TUCOL.REGRIND_COUNT - 1]) || 0;
-    if (actualUnitId !== String(commitInfo.expected.unitId).trim().toUpperCase()) return false;
-    if (actualLastEvent !== commitInfo.expected.lastEvent) return false;
-    if (actualStatus !== commitInfo.expected.statusUnit) return false;
-    if (actualLokasi !== String(commitInfo.expected.lokasi || '').trim()) return false;
-    if (actualKodeMesin !== String(commitInfo.expected.kodeMesin || '').trim()) return false;
-    if (actualRegrind !== Number(commitInfo.expected.regrindCount || 0)) return false;
+    if (!commitInfo.isNew) return true; // tidak ada write — tidak ada yang perlu diverifikasi
+    const row = sheet.getRange(commitInfo.rowIndex, 1, 1, TUCOL.KODE_MESIN);
+    const vals = row.getValues()[0];
+    const formulas = row.getFormulas()[0];
+    if (String(vals[TUCOL.KODE_ALAT - 1] || '').trim() === '') return false;
+    if (String(vals[TUCOL.UNIT_ID - 1] || '').trim().toUpperCase() !==
+        String(commitInfo.expected.unitId || '').trim().toUpperCase()) return false;
+    // gauge kolom rumus wajib terpasang: C, K, M, N, O, P
+    const gauge = [3, TUCOL.REGRIND_COUNT, TUCOL.LAST_EVENT, TUCOL.STATUS_UNIT, TUCOL.LOKASI, TUCOL.KODE_MESIN];
+    for (let i = 0; i < gauge.length; i++) {
+      if (!String(formulas[gauge[i] - 1] || '')) return false;
+    }
     return true;
   } catch (e) {
     return false;
@@ -4015,22 +4132,16 @@ function verifyToolUnitWrite_(sheet, commitInfo) {
 }
 
 /**
- * Kembalikan Tool Unit ke state SEBELUM transaksi ini. Tiga kasus:
+ * [AUDIT-BE-2026-10] Rollback Tool Unit:
  *  1. commitInfo.isNew -> baris baru dihapus, TAPI hanya kalau identity
  *     (Unit_ID) cocok DAN posisinya masih baris terakhir sheet (guard
- *     §11/§19 — jangan menghapus baris transaksi lain).
- *  2. commitInfo ada & bukan baru (update existing) -> restore SELURUH
- *     row dari snapshot (bukan cuma field yang diubah — §8), dengan
- *     guard identity Unit_ID.
- *  3. commitInfo null (commitToolUnit_ sendiri yang throw) -> kalau unit
- *     sebelumnya sudah ada, tetap restore dari snapshot (kemungkinan ada
- *     setValue() yang sempat sukses sebelum yang berikutnya gagal); kalau
- *     unit baru (insert), appendRow() bersifat atomic jadi exception di
- *     situ berarti TIDAK ADA baris yang sempat masuk -> tidak ada yang
- *     perlu di-rollback.
- * Return true kalau state berhasil dipastikan kembali aman, false kalau
- * rollback tidak bisa dilakukan dengan aman (caller wajib melaporkan
- * TRANSACTION_ROLLBACK_FAILED, bukan mengklaim data aman).
+ *     §11/§19 — jangan menghapus baris transaksi lain). Rumus yang sempat
+ *     dipasang ikut terhapus bersama barisnya.
+ *  2. Unit existing -> TIDAK ADA yang ditulis (v5.19.3), jadi tidak ada
+ *     yang perlu dikembalikan. Snapshot tidak dipakai lagi untuk restore
+ *     (restore setValues penuh justru akan MENGHAPUS rumus di baris itu).
+ *  3. commitInfo null (commitToolUnit_ sendiri throw saat unit baru):
+ *     appendRow() bersifat atomic jadi tidak ada baris yang sempat masuk.
  */
 function rollbackToolUnit_(sheet, snapshot, commitInfo, unitId) {
   try {
@@ -4045,13 +4156,11 @@ function rollbackToolUnit_(sheet, snapshot, commitInfo, unitId) {
       return true;
     }
 
-    // Update pada row existing (baik commitInfo sukses maupun commitToolUnit_ throw
-    // di tengah jalan) -> restore dari snapshot penuh.
+    // Unit existing: tidak pernah ditulis. Snapshot hanya referensi audit.
     if (snapshot && snapshot.existed) {
       const actualUnitId = String(sheet.getRange(snapshot.rowIndex, TUCOL.UNIT_ID).getValue()).trim().toUpperCase();
       if (actualUnitId !== targetUnitId) return false; // baris sudah berubah identitas -> abort
-      sheet.getRange(snapshot.rowIndex, 1, 1, TUCOL.KODE_MESIN).setValues([snapshot.values]);
-      return true;
+      return true; // tidak ada write — tidak ada yang di-rollback
     }
 
     // !commitInfo && !snapshot.existed -> appendRow() throw sebelum sempat
@@ -4062,37 +4171,70 @@ function rollbackToolUnit_(sheet, snapshot, commitInfo, unitId) {
   }
 }
 
-/** Tulis baris baru ke Movement Log, kembalikan identitas row untuk verify/rollback. */
+/**
+ * [AUDIT-BE-2026-10] Tulis baris baru ke Movement Log TANPA menyentuh kolom
+ * rumus (E Spesifikasi, F Mesin, J Cycle_ID, K Counter, P flag, Q tgl-awal):
+ *  1. appendRow('') — buat baris kosong di ujung sheet (di luar zona rumus
+ *     preseed yang berhenti di baris terakhir grid).
+ *  2. pasangRumusDariBarisAtas_ — rumus E..Q di-copy dari baris atas
+ *     (PASTE_FORMULA; referensi relatif ikut bergeser).
+ *  3. setValues per-chunk range INPUT saja: A..D, G..I, L..N. Kolom rumus
+ *     tidak disentuh sehingga tidak pernah terhapus.
+ * rowValues = array 14 posisi sesuai COL; posisi E,F,J,K,L? — L adalah input
+ * (Vendor Tujuan, diisi kosong karena payload transaksi tidak membawa vendor),
+ * posisi E,F,J,K WAJIB berisi '' (tidak ditulis, hanya di-skip).
+ */
+const ML_CHUNK_WRITE_ = [
+  { dari: 1, sampai: COL.ID_TRANSAKSI },      // A..D
+  { dari: COL.KODE_MESIN, sampai: COL.QTY },  // G..I
+  { dari: COL.VENDOR_TUJUAN, sampai: COL.REMARK } // L..N
+];
+const ML_GAUGE_RUMUS_ = [COL.SPESIFIKASI, COL.MESIN, COL.CYCLE_ID, COL.COUNTER, 16]; // E,F,J,K,P
+
 function commitMovementLog_(sheet, rowValues) {
   const oldLastRow = sheet.getLastRow();
-  sheet.appendRow(rowValues); // atomic: seluruh row masuk atau exception, tidak ada partial row
-  return { rowIndex: oldLastRow + 1, oldLastRow: oldLastRow };
+  sheet.appendRow(['']); // atomic: baris baru di ujung, tanpa menindih preseed
+  const rowIndex = sheet.getLastRow();
+  const rumus = pasangRumusDariBarisAtas_(sheet, rowIndex, ML_RUMUS_RANGE_.dari, ML_RUMUS_RANGE_.sampai);
+  if (!rumus.ok) {
+    // [AUDIT-BE-2026-10] self-cleanup: hapus baris yatim, jangan tinggalkan
+    // baris tanpa rumus di Movement Log (nilai input belum tertulis di sini).
+    try { sheet.deleteRow(rowIndex); } catch (e2) { /* biarkan laporan rollback */ }
+    throw new Error('Pasang rumus Movement Log gagal: ' + rumus.error);
+  }
+  ML_CHUNK_WRITE_.forEach(function (c) {
+    sheet.getRange(rowIndex, c.dari, 1, c.sampai - c.dari + 1)
+      .setValues([rowValues.slice(c.dari - 1, c.sampai)]);
+  });
+  return { rowIndex: rowIndex, oldLastRow: oldLastRow };
 }
 
 /**
- * [WO-2.1.1] Baca ulang row Movement Log yang barusan ditulis, cocokkan
- * SELURUH 13 kolom dengan expectedRowValues (array persis seperti yang
- * dikirim ke commitMovementLog_/appendRow, urutan sesuai const COL).
- * Diperluas dari versi sebelumnya (hanya ID_TRANSAKSI/Unit_ID/Activity)
- * -- itu tidak menutup kemungkinan qty/kodeMesin/pic/dll salah tersimpan
- * tapi tetap dianggap PASS. Angka (QTY, ID_TRANSAKSI, COUNTER) dibanding
- * sbg Number, sisanya sbg string ter-trim (longgar terhadap perbedaan
- * whitespace yang tidak signifikan, ketat terhadap isi).
+ * [AUDIT-BE-2026-10] Verifikasi baris Movement Log yang barusan ditulis:
+ *  - NILAI: hanya kolom INPUT (A,B,C,D,G,H,I,L,M,N) dicocokkan dgn expected;
+ *    angka (ID_TRANSAKSI, QTY) dibanding sbg Number.
+ *  - RUMUS: E,F,J,K,P wajib terpasang (getFormulas), karena nilai hasil
+ *    recompute bisa butuh 30-90 dtk — menuntut nilai = kegagalan palsu.
  */
 function verifyMovementLogWrite_(sheet, commitInfo, expectedRowValues) {
   if (!commitInfo || !expectedRowValues) return false;
   try {
-    const row = sheet.getRange(commitInfo.rowIndex, 1, 1, COL.REMARK).getValues()[0];
-    const NUMERIC_COLS = [COL.ID_TRANSAKSI, COL.QTY, COL.COUNTER];
+    const rng = sheet.getRange(commitInfo.rowIndex, 1, 1, COL.REMARK);
+    const row = rng.getValues()[0];
+    const formulas = rng.getFormulas()[0];
     for (let i = 0; i < expectedRowValues.length; i++) {
-      const colIndex = i + 1; // COL.* 1-based, sejajar posisi array
+      const colIndex = i + 1;
+      if (ML_KOLOM_INPUT_.indexOf(colIndex) === -1) continue; // kolom rumus — lewati
       const expectedVal = expectedRowValues[i];
       const actualVal = row[i];
-      if (NUMERIC_COLS.indexOf(colIndex) !== -1) {
+      if (colIndex === COL.ID_TRANSAKSI || colIndex === COL.QTY) {
         if (Number(actualVal) !== Number(expectedVal)) return false;
       } else {
         if (String(actualVal == null ? '' : actualVal).trim() !== String(expectedVal == null ? '' : expectedVal).trim()) return false;
       }
+    }
+    for (let i = 0; i < ML_GAUGE_RUMUS_.length; i++) {
+      if (!String(formulas[ML_GAUGE_RUMUS_[i] - 1] || '')) return false; // rumus tidak terpasang
     }
     return true;
   } catch (e) {
