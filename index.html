@@ -4241,14 +4241,14 @@ table.admin-table td.admin-actions {
       </div>
     </section>
 
-    <!-- ============== PANEL: KONFIRMASI PENGAJUAN TUMPUL (khusus Admin/WH) ============== -->
+    <!-- ============== PANEL: KONFIRMASI PENGAJUAN ASAH — antrian form QR produksi (khusus Admin/WH) ============== -->
     <section class="panel" id="panel-konfirmasi-tumpul">
       <button type="button" class="panel-back-btn" data-back="panel-lainnya"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span>Lainnya</button>
       <div class="section-title">
         <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
         Konfirmasi Pengajuan
       </div>
-      <p class="rank-desc">Pengajuan pengembalian tumpul dari operator, menunggu dicek fisik &amp; dikonfirmasi. Konfirmasi = langsung tercatat sebagai transaksi resmi "Kembali ke Gudang (Tumpul)".</p>
+      <p class="rank-desc">Antrian pengajuan asah dari produksi (form QR, sheet "Pengajuan Asah") yang menunggu dicek fisik. Konfirmasi = status DIVERIFIKASI; Tolak = DITOLAK. Tidak langsung membuat transaksi ledger.</p>
       <div class="form-msg" id="konfirmasi-tumpul-msg"></div>
       <div id="kt-pending-list">
         <div class="skeleton-block sk-row"></div>
@@ -4317,7 +4317,7 @@ table.admin-table td.admin-actions {
           <span class="li-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
           <span class="li-text">
             <span class="li-title">Konfirmasi Pengajuan</span>
-            <span class="li-desc">Antrian pengajuan tumpul dari operator</span>
+            <span class="li-desc">Verifikasi pengajuan asah dari produksi (form QR)</span>
           </span>
           <span class="li-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
         </button>
@@ -4434,10 +4434,10 @@ function setSession_(sessionToken, actorName, role, persist) {
 /**
  * [WO-ROLE] Terapkan tampilan sesuai role: operator TIDAK melihat tab
  * "Input" (transaksi langsung), Master Mesin, atau Kontrol Asah --
- * hanya Dashboard, Stok (view), dan "Ajukan Tumpul". Admin/WH melihat
- * semuanya PLUS panel "Konfirmasi Pengajuan". Ini hanya kosmetik --
- * backend (addMovementRow) TETAP menolak operator secara independen,
- * jadi sembunyi/tampil di sini bukan satu-satunya lapis pengamanan.
+ * hanya Dashboard dan Stok (view). Admin/WH melihat semuanya PLUS
+ * panel "Konfirmasi Pengajuan" (antrian form QR produksi). Ini hanya
+ * kosmetik -- backend tetap menegakkan role secara independen, jadi
+ * sembunyi/tampil di sini bukan satu-satunya lapis pengamanan.
  */
 // [REVISI] Ikon & label asli tab tengah (raised) utk role admin --
 // disimpan sekali di sini supaya applyRoleUI_ bisa mengembalikannya
@@ -4445,39 +4445,36 @@ function setSession_(sessionToken, actorName, role, persist) {
 // (mis. logout lalu login ulang sbg admin), tanpa perlu reload halaman.
 const RAISED_TAB_HTML_ADMIN_ =
   '<span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>Input';
-const RAISED_TAB_HTML_OPERATOR_ =
-  '<span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l5-5v3h9v4H8v3l-5-5z"></path></svg></span>Ajukan Tumpul';
 
 function applyRoleUI_() {
   const op = isOperatorRole_();
-  // v8.19 — querySelectorAll: sinkron ke tombol Input/Ajukan Tumpul
-  // di BOTH bottom-nav mobile & sidebar desktop (dua elemen DOM
-  // terpisah, sama-sama class .raised), bukan cuma salah satu.
+  // v8.19 — querySelectorAll: sinkron ke tombol Input di BOTH bottom-nav
+  // mobile & sidebar desktop (dua elemen DOM terpisah, sama-sama class
+  // .raised), bukan cuma salah satu.
   const inputTabs = document.querySelectorAll('.tab-btn.raised');
   const lainnyaMesinItem = document.querySelector('.lainnya-item[data-panel="panel-mesin"]');
   const lainnyaKontrolAsahItem = document.querySelector('.lainnya-item[data-panel="panel-kontrol-asah"]');
   const lainnyaAjukanItem = document.querySelector('.lainnya-item[data-panel="panel-ajukan-tumpul"]');
   const lainnyaKonfirmasiItem = document.querySelector('.lainnya-item[data-panel="panel-konfirmasi-tumpul"]');
   const lainnyaKelolaDataItem = document.querySelector('.lainnya-item[data-panel="panel-kelola-data"]');
-  // [REVISI] Tab tengah (raised) tidak lagi disembunyikan utk operator --
-  // sekarang DIALIHKAN ke "Ajukan Tumpul" (satu-satunya transaksi yang
-  // memang boleh dimulai operator), sementara utk admin tetap "Input"
-  // seperti semula. Backend (addMovementRow) tetap independen menegakkan
-  // role, jadi ini murni navigasi/kosmetik.
+  // [v8.24.0 — antrian tunggal] Operator tidak lagi punya transaksi apa
+  // pun di app (pengajuan dilakukan lewat form QR produksi); tab raised
+  // disembunyikan utk operator dan selalu "Input" utk admin.
   inputTabs.forEach((inputTab) => {
-    inputTab.dataset.panel = op ? 'panel-ajukan-tumpul' : 'panel-input';
-    inputTab.innerHTML = op ? RAISED_TAB_HTML_OPERATOR_ : RAISED_TAB_HTML_ADMIN_;
+    inputTab.dataset.panel = 'panel-input';
+    inputTab.innerHTML = RAISED_TAB_HTML_ADMIN_;
     // Sidebar icon-only pakai tooltip (::after, attr(data-tooltip)),
     // bukan label teks permanen -- disinkronkan terpisah dari
     // innerHTML supaya tooltip ikut benar walau teks visualnya
     // disembunyikan (font-size:0) di sidebar.
-    inputTab.dataset.tooltip = op ? 'Ajukan Tumpul' : 'Input';
+    inputTab.dataset.tooltip = 'Input';
+    inputTab.style.display = op ? 'none' : '';
   });
   if (lainnyaMesinItem) lainnyaMesinItem.style.display = op ? 'none' : '';
   if (lainnyaKontrolAsahItem) lainnyaKontrolAsahItem.style.display = op ? 'none' : '';
-  // [REVISI] Item "Ajukan Pengembalian Tumpul" di menu Lainnya dihapus
-  // dari tampilan operator (sekarang aksesnya lewat tab tengah, bukan
-  // lagi lewat Lainnya) -- tetap disembunyikan dari admin seperti semula.
+  // [v8.24.0] Panel "Ajukan Pengembalian Tumpul" keluar dari alur UI
+  // (boleh diakses siapa pun SEKALIPUN tidak ada pintu menu lagi) --
+  // disembunyikan di menu Lainnya untuk semua role.
   if (lainnyaAjukanItem) lainnyaAjukanItem.style.display = 'none';
   if (lainnyaKonfirmasiItem) lainnyaKonfirmasiItem.style.display = op ? 'none' : '';
   if (lainnyaKelolaDataItem) lainnyaKelolaDataItem.style.display = op ? 'none' : '';
@@ -4485,7 +4482,7 @@ function applyRoleUI_() {
   // (mis. reload persis di tab Input), lempar balik ke Dashboard.
   if (op && isLoggedIn_()) {
     const activePanel = document.querySelector('.panel.active');
-    const restricted = ['panel-input', 'panel-mesin', 'panel-kontrol-asah', 'panel-konfirmasi-tumpul', 'panel-kelola-data'];
+    const restricted = ['panel-input', 'panel-mesin', 'panel-kontrol-asah', 'panel-konfirmasi-tumpul', 'panel-kelola-data', 'panel-ajukan-tumpul'];
     if (activePanel && restricted.indexOf(activePanel.id) >= 0) {
       goToPanel('panel-summary');
     }
@@ -4512,8 +4509,8 @@ function getConfiguredApiUrl() {
   return runtimeApiUrl_;
 }
 const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-const APP_VERSION = 'v8.23.2-fix-chevron-focus'; // versi lengkap, dipakai di log developer
-const APP_VERSION_SHORT = 'v8.23.2'; // versi ringkas, ditampilkan di badge UI
+const APP_VERSION = 'v8.24.0-antrian-tunggal-pa'; // versi lengkap, dipakai di log developer
+const APP_VERSION_SHORT = 'v8.24.0'; // versi ringkas, ditampilkan di badge UI
 // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
 // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
 // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
@@ -5466,7 +5463,7 @@ const TAB_TITLES = {
   'panel-settings': 'Pengaturan',
   'panel-kontrol-asah': 'Kontrol Asah',
   'panel-ajukan-tumpul': 'Ajukan Tumpul',
-  'panel-konfirmasi-tumpul': 'Konfirmasi Tumpul',
+  'panel-konfirmasi-tumpul': 'Konfirmasi Pengajuan Asah',
   'panel-kelola-data': 'Kelola Data',
 };
 
@@ -5516,18 +5513,12 @@ function goToPanel(panelId) {
   document.querySelectorAll('.tab-btn').forEach((b) => {
     b.classList.remove('active');
   });
-  // Mesin, Pengaturan, Kontrol Asah, Konfirmasi Pengajuan tidak pernah
-  // punya tab sendiri — sorot tab "Lainnya". [REVISI] panel-ajukan-tumpul
-  // DIKELUARKAN dari daftar ini: sekarang punya tab sendiri (tab tengah)
-  // khusus utk role operator (lihat applyRoleUI_) -- kalau tab tengah
-  // sedang menunjuk ke panel ini, querySelector di bawah otomatis
-  // menemukannya lewat data-panel yang sudah dialihkan. Utk admin (tab
-  // tengahnya masih "panel-input"), tetap fallback ke "Lainnya".
-  const NO_OWN_TAB = ['panel-mesin', 'panel-settings', 'panel-kontrol-asah', 'panel-konfirmasi-tumpul', 'panel-kelola-data'];
+  // Mesin, Pengaturan, Kontrol Asah, panel-ajukan-tumpul (v8.24.0 —
+  // keluar dari alur UI, tidak ada pintu lagi), dan Konfirmasi Pengajuan
+  // tidak pernah punya tab sendiri — sorot tab "Lainnya".
+  const NO_OWN_TAB = ['panel-mesin', 'panel-settings', 'panel-kontrol-asah', 'panel-konfirmasi-tumpul', 'panel-kelola-data', 'panel-ajukan-tumpul'];
   let tabPanelId = panelId;
   if (NO_OWN_TAB.indexOf(panelId) >= 0) {
-    tabPanelId = 'panel-lainnya';
-  } else if (panelId === 'panel-ajukan-tumpul' && !isOperatorRole_()) {
     tabPanelId = 'panel-lainnya';
   }
   // v8.19 — querySelectorAll (bukan querySelector) supaya tombol yang
@@ -6493,12 +6484,12 @@ function loadKonfirmasiTumpulPanel_() {
   const el = document.getElementById('kt-pending-list');
   if (!el) return;
   el.innerHTML = '<div class="skeleton-block sk-row"></div><div class="skeleton-block sk-row"></div>';
-  apiGet('getPengajuanTumpulList', { status: 'Menunggu Konfirmasi WH', sessionToken: runtimeSessionToken_ })
+  // [v8.24.0 — antrian tunggal] Sumber antrian = sheet "Pengajuan Asah"
+  // (form QR produksi), bukan lagi sheet "Pengajuan Tumpul".
+  apiGet('getPengajuanAsahQueue', { status: 'BARU', sessionToken: runtimeSessionToken_ })
     .then((rows) => {
-      // Data rows sudah valid dari apiGet (session berhasil divalidasi di server),
-      // render langsung tanpa pengecekan sesi di sini.
       if (!rows || rows.length === 0) {
-        el.innerHTML = emptyStateHtml_('Tidak ada antrian', 'Semua pengajuan sudah dikonfirmasi.');
+        el.innerHTML = emptyStateHtml_('Antrian kosong', 'Tidak ada pengajuan asah yang menunggu verifikasi.');
         return;
       }
       el.innerHTML =
@@ -6506,51 +6497,61 @@ function loadKonfirmasiTumpulPanel_() {
         rows
           .map(
             (r) =>
-              '<div class="rank-row" data-pengajuan-id="' +
-              escapeAttr(r.id) +
+              '<div class="rank-row" data-pa-ticket="' +
+              escapeAttr(r.tiket) +
               '">' +
               '<div class="rank-info">' +
               '<div class="rk-title">' +
-              escapeHtml(r.unitId) +
-              ' ┬╖ ' +
-              escapeHtml(r.kodeAlat) +
+              escapeHtml(r.kodeAlat || '—') +
+              (r.qty ? ' × ' + escapeHtml(String(r.qty)) : '') +
               '</div>' +
-              // [REVISI] Tampilkan PIC (nama yang mengajukan, diisi manual)
-              // sebagai info utama -- WH perlu mencocokkan ke orang yang
-              // bawa fisik alatnya. Nama akun login (actorName) tetap
-              // ditampilkan sebagai info sekunder kalau beda dari PIC
-              // (mis. device dipakai bergantian).
+              // Baris identitas: siapa pengaju, di mesin apa, kondisi apa, kapan.
               '<div class="rk-sub">' +
-              escapeHtml(r.pic || r.actorName) +
-              (r.pic && r.pic !== r.actorName
-                ? ' <span style="opacity:.7">(akun: ' + escapeHtml(r.actorName) + ')</span>'
-                : '') +
+              escapeHtml(r.nama || '—') +
               ' ┬╖ ' +
               escapeHtml(r.mesin || r.kodeMesin || '—') +
               ' ┬╖ ' +
-              escapeHtml(r.timestamp) +
+              escapeHtml(r.kondisi || '—') +
+              ' ┬╖ ' +
+              escapeHtml(r.timestamp || r.tanggal || '') +
+              '</div>' +
+              // Baris teknis: tiket + brand + spesifikasi + catatan.
+              '<div class="rk-sub" style="opacity:.75">' +
+              'Tiket ' +
+              escapeHtml(r.tiket) +
+              (r.brand || r.spek || r.pemakaian || r.catatan
+                ? ' ┬╖ ' +
+                  [r.brand, r.spek, r.pemakaian, r.catatan ? 'Catatan: ' + r.catatan : '']
+                    .filter(Boolean)
+                    .map(function (x) { return escapeHtml(x); })
+                    .join(' ┬╖ ')
+                : '') +
               '</div>' +
               '</div>' +
               '<div class="rank-metric" style="display:flex; gap:6px;">' +
-              '<button type="button" class="btn-secondary kt-reject-btn" data-id="' +
-              escapeAttr(r.id) +
+              (r.foto
+                ? '<a href="' +
+                  escapeAttr(r.foto) +
+                  '" target="_blank" rel="noopener" style="align-self:center;font-size:12px;">Foto</a> '
+                : '') +
+              '<button type="button" class="btn-secondary kt-reject-btn" data-ticket="' +
+              escapeAttr(r.tiket) +
               '">Tolak</button>' +
-              '<button type="button" class="btn-primary kt-approve-btn" data-id="' +
-              escapeAttr(r.id) +
+              '<button type="button" class="btn-primary kt-approve-btn" data-ticket="' +
+              escapeAttr(r.tiket) +
               '">Konfirmasi</button>' +
               '</div></div>'
           )
           .join('') +
         '</div>';
-
       el.querySelectorAll('.kt-approve-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          handleKonfirmasiTumpul_(btn.dataset.id, true, btn);
+          handleKonfirmasiTumpul_(btn.dataset.ticket, true, btn);
         });
       });
       el.querySelectorAll('.kt-reject-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          handleKonfirmasiTumpul_(btn.dataset.id, false, btn);
+          handleKonfirmasiTumpul_(btn.dataset.ticket, false, btn);
         });
       });
     })
@@ -6571,15 +6572,17 @@ function loadKonfirmasiTumpulPanel_() {
     });
 }
 
-function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
+function handleKonfirmasiTumpul_(ticket, approve, triggerBtn) {
   const row = triggerBtn.closest('.rank-row');
   row.querySelectorAll('button').forEach((b) => {
     b.disabled = true;
   });
-  apiPost('confirmPengajuanTumpul', {
+  // [v8.24.0 — antrian tunggal] Aksi = verifikasi baris sheet
+  // "Pengajuan Asah" (status DIVERIFIKASI / DITOLAK), bukan transaksi.
+  apiPost('verifyPengajuanAsah', {
     sessionToken: runtimeSessionToken_,
-    id: id,
-    approve: approve,
+    ticket: ticket,
+    setuju: approve,
   })
     .then((res) => {
       if (!res || res.success !== true) {
@@ -6591,7 +6594,7 @@ function handleKonfirmasiTumpul_(id, approve, triggerBtn) {
       }
       showKonfirmasiTumpulMsg_(
         'success',
-        approve ? 'Dikonfirmasi — transaksi resmi sudah tercatat.' : 'Pengajuan ditolak.'
+        approve ? 'Diverifikasi — status jadi DIVERIFIKASI di sheet Pengajuan Asah.' : 'Pengajuan ditolak (DITOLAK).'
       );
       row.remove();
       loadKonfirmasiTumpulPanel_();

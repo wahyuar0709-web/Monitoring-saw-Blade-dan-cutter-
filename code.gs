@@ -1,7 +1,30 @@
 /**
  * ============================================================
- *  Code.gs — v5.21.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
+ *  Code.gs — v5.22.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
  *  Sistem Monitoring Saw Blade & Cutter
+ *
+ *  ============================================================
+ *  CHANGELOG v5.21.0 -> v5.22.0 (FITUR — antrian tunggal Pengajuan Asah)
+ *  ============================================================
+ *  Keputusan gudang (26 Okt 2026): "pengajuan tumpul" dan "pengajuan
+ *  asah" adalah SATU proses. Satu-satunya pintu operator = form QR
+ *  produksi (sheet "Pengajuan Asah"); WH memverifikasi dari aplikasi,
+ *  bukan lagi dari spreadsheet manual.
+ *  [1] GET getPengajuanAsahQueue — baris berstatus BARU dari sheet
+ *      "Pengajuan Asah", khusus admin/WH (sesi wajib, operator ditolak).
+ *      Kolom dicocokkan lewat NAMA header, bukan posisi.
+ *  [2] POST verifyPengajuanAsah — kunci baris lewat No. Tiket; status
+ *      jadi DIVERIFIKASI/DITOLAK; verifikator + waktu (serial, jam TZ)
+ *      + catatan ditulis ke kolom baru P/Q/R ("Diverifikasi Oleh" /
+ *      "Waktu Verifikasi" / "Catatan Verifikasi"). Tulis via RAW
+ *      Advanced Service (anti formula-injection, pola writeRow_).
+ *      Baris yang bukan lagi BARU -> ALREADY_PROCESSED.
+ *  [3] Alur "Ajukan Pengembalian Tumpul" keluar dari alur operator/
+ *      WH (endpoint & sheet "Pengajuan Tumpul" tetap ada, tidak dihapus).
+ *      Frontend v8.24.0: panel Konfirmasi membaca [1] dan aksi [2].
+ *  >>> WAJIB: Deploy > Manage deployments > Edit deployment aktif >
+ *      New version, setelah upload kedua file ini. <<<
+ *  ============================================================
  *
  *  ============================================================
  *  CHANGELOG v5.20.0 -> v5.21.0 (BUGFIX — formula-injection + guard Tumpul)
@@ -828,7 +851,7 @@
 // Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.21.0';
+const BACKEND_VERSION = 'v5.22.0';
 
 // [v5.20.0] Token FORM "Pengajuan Asah" (dipakai PengajuanAsah.gs).
 // SENGAJA di code.gs (bukan di PengajuanAsah.gs) supaya salah satu file
@@ -1303,6 +1326,180 @@ function confirmPengajuanTumpul_(payload) {
   sheet.getRange(rowIndex, PTCOL.KONFIRMASI_OLEH).setValue(sessionCheck.actorName);
   sheet.getRange(rowIndex, PTCOL.CATATAN_WH).setValue(applyFormulaGuard_(String((payload && payload.catatan) || '')));
   return { success: true, id: id, status: PENGAJUAN_STATUS_SELESAI, idTransaksi: txResult.idTransaksi };
+}
+
+/* ================================================================
+ * [v5.22.0] ANTRIAN TUNGGAL — sheet "Pengajuan Asah" (form QR produksi)
+ * Panel Konfirmasi WH membaca baris BARU dari sini dan memverifikasinya.
+ * Semua tulisan lewat RAW Advanced Service (paRestRawWrite_) supaya
+ * teks tidak pernah dialihkan jadi formula (pola sama writeRow_).
+ * ================================================================ */
+const SHEET_PENGAJUAN_ASAH_ = 'Pengajuan Asah';
+const PA_STATUS_BARU = 'BARU';
+const PA_STATUS_DIVERIFIKASI = 'DIVERIFIKASI';
+const PA_STATUS_DITOLAK = 'DITOLAK';
+const PA_VERIF_HEADERS_ = {
+  oleh: 'Diverifikasi Oleh',
+  waktu: 'Waktu Verifikasi',
+  catatan: 'Catatan Verifikasi'
+};
+
+/** Peta NAMA header -> nomor kolom sheet Pengajuan Asah (baris 1). */
+function paAsahHeaderMap_(sheet) {
+  const heads = sheet.getRange(1, 1, 1, sheet.getMaxColumns()).getValues()[0];
+  const map = {};
+  for (let i = 0; i < heads.length; i++) {
+    const t = String(heads[i]).trim();
+    if (t && !map[t]) map[t] = i + 1;
+  }
+  return map;
+}
+
+/** Pastikan kolom verifikasi (P/Q/R) ada & berheader. Kalau nama belum
+ *  ada di baris-1, ambil sel header kosong pertama (pola ensureHeaders_
+ *  PengajuanAsah.gs: sel header berisi tidak pernah ditimpa), beri bold,
+ *  lalu set format sel datanya (Waktu=datetime, lainnya teks '@').
+ *  @return {{oleh, waktu, catatan}} nomor kolom 1-based */
+function paAsahEnsureVerifCols_(sheet) {
+  const maxC = sheet.getMaxColumns();
+  const cur = sheet.getRange(1, 1, 1, maxC).getValues()[0].map(function (x) { return String(x).trim(); });
+  const res = {};
+  const baru = [];
+  ['oleh', 'waktu', 'catatan'].forEach(function (k) {
+    let idx = cur.indexOf(PA_VERIF_HEADERS_[k]) + 1;
+    if (!idx) {
+      let slot = cur.indexOf('') + 1;
+      if (!slot) {
+        slot = cur.length + 1;
+        sheet.insertColumnAfter(maxC);
+        cur.push('');
+      }
+      cur[slot - 1] = PA_VERIF_HEADERS_[k];
+      sheet.getRange(1, slot).setValue(PA_VERIF_HEADERS_[k]).setFontWeight('bold');
+      idx = slot;
+      baru.push(idx);
+    }
+    res[k] = idx;
+  });
+  if (baru.length) {
+    const rowsN = Math.max(sheet.getMaxRows() - 1, 1);
+    res.waktu && sheet.getRange(2, res.waktu, rowsN, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+    ['oleh', 'catatan'].forEach(function (k) {
+      res[k] && sheet.getRange(2, res[k], rowsN, 1).setNumberFormat('@');
+    });
+  }
+  return res;
+}
+
+/**
+ * [Action GET: getPengajuanAsahQueue] Antrian form QR produksi utk
+ * admin/WH: baris sheet "Pengajuan Asah" sesuai statusFilter (default
+ * BARU). Sesi wajib; operator ditolak (pola confirmPengajuanTumpul_).
+ */
+function getPengajuanAsahQueue_(params) {
+  const sessionCheck = validateSession_(params && params.sessionToken);
+  if (!sessionCheck.ok) {
+    return { error: sessionCheck.error.code + ': ' + sessionCheck.error.message };
+  }
+  if (sessionCheck.role === ROLE_OPERATOR) {
+    return { error: 'FORBIDDEN_ROLE: Antrian pengajuan asah khusus admin/WH.' };
+  }
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGAJUAN_ASAH_);
+  if (!sheet) return [];
+  const map = paAsahHeaderMap_(sheet);
+  if (!map['Status'] || !map['No. Tiket']) return [];
+  const statusFilter = String((params && params.status) || PA_STATUS_BARU).trim() || PA_STATUS_BARU;
+  const data = sheet.getDataRange().getValues();
+  const out = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const status = String(row[map['Status'] - 1] || '').trim();
+    if (statusFilter !== 'ALL' && status !== statusFilter) continue;
+    if (!status && !String(row[map['No. Tiket'] - 1] || '').trim()) continue;
+    out.push({
+      rowNo: i + 1,
+      timestamp: formatDateCell_(row[(map['Timestamp'] || 1) - 1]),
+      tanggal: row[(map['Tanggal Pengajuan'] || 2) - 1],
+      nama: row[(map['Nama Pengaju / Operator Produksi'] || 3) - 1],
+      mesin: row[(map['Mesin'] || 4) - 1],
+      brand: row[(map['Pilih Brand/Merk'] || 5) - 1],
+      spek: row[(map['Pilih Spesifikasi'] || 6) - 1],
+      qty: row[(map['QTY'] || 7) - 1],
+      kondisi: row[(map['Kondisi'] || 8) - 1],
+      pemakaian: row[(map['Aktual Pemakaian (di mesin)'] || 9) - 1],
+      catatan: row[(map['Catatan'] || 10) - 1],
+      tiket: row[map['No. Tiket'] - 1],
+      foto: row[(map['Foto'] || 12) - 1],
+      status: status,
+      kodeAlat: row[(map['Kode Alat'] || 14) - 1],
+      kodeMesin: row[(map['Kode Mesin'] || 15) - 1]
+    });
+  }
+  return out;
+}
+
+/**
+ * [Action POST: verifyPengajuanAsah] Admin/WH verifikasi baris antrian
+ * form QR produksi. Kunci baris = No. Tiket (bukan indeks baris, agar
+ * tahan geser). setuju=false -> status DITOLAK (+catatan). Tulis status/
+ * verifikator/waktu/catatan via RAW. Baris bukan lagi BARU ditolak.
+ */
+function verifyPengajuanAsah_(payload) {
+  const sessionCheck = validateSession_(payload && payload.sessionToken);
+  if (!sessionCheck.ok) {
+    return { success: false, error: sessionCheck.error };
+  }
+  if (sessionCheck.role === ROLE_OPERATOR) {
+    return { success: false, error: { code: 'FORBIDDEN_ROLE', message: 'Hanya admin/WH yang bisa verifikasi pengajuan asah.' } };
+  }
+  const ticket = String((payload && payload.ticket) || '').trim();
+  if (!ticket) {
+    return { success: false, error: { code: 'VALIDATION', message: 'No. Tiket wajib disertakan.' } };
+  }
+  const setuju = !(payload && payload.setuju === false);
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PENGAJUAN_ASAH_);
+  if (!sheet) {
+    return { success: false, error: { code: 'NOT_FOUND', message: 'Sheet "Pengajuan Asah" tidak ada.' } };
+  }
+  const map = paAsahHeaderMap_(sheet);
+  if (!map['Status'] || !map['No. Tiket']) {
+    return { success: false, error: { code: 'SERVER', message: 'Header sheet "Pengajuan Asah" tidak lengkap.' } };
+  }
+  const data = sheet.getDataRange().getValues();
+  const colStatus = map['Status'];
+  const colTiket = map['No. Tiket'];
+  let rowIndex = -1;
+  let statusNow = '';
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][colTiket - 1] || '').trim() === ticket) {
+      rowIndex = i + 1;
+      statusNow = String(data[i][colStatus - 1] || '').trim();
+      break;
+    }
+  }
+  if (rowIndex < 0) {
+    return { success: false, error: { code: 'NOT_FOUND', message: 'Pengajuan dengan tiket ' + ticket + ' tidak ditemukan.' } };
+  }
+  if (statusNow !== PA_STATUS_BARU) {
+    return { success: false, error: { code: 'ALREADY_PROCESSED', message: 'Pengajuan ini sudah diproses (status ' + statusNow + ').' } };
+  }
+
+  const cols = paAsahEnsureVerifCols_(sheet);
+  const status = setuju ? PA_STATUS_DIVERIFIKASI : PA_STATUS_DITOLAK;
+  const catatan = applyFormulaGuard_(String((payload && payload.catatan) || ''));
+  paRestRawWrite_(sheet.getName(), [
+    { a1: paColA1_(colStatus) + rowIndex, values: [[status]] },
+    { a1: paColA1_(cols.oleh) + rowIndex, values: [[sessionCheck.actorName]] },
+    { a1: paColA1_(cols.waktu) + rowIndex, values: [[dateToSerial_(new Date())]] },
+    { a1: paColA1_(cols.catatan) + rowIndex, values: [[catatan]] }
+  ]);
+  logAuditEvent_({
+    event: 'PENGAJUAN_ASAH_VERIFIKASI', stage: 'PENGAJUAN_ASAH',
+    ticket: ticket, status: status,
+    verifiedBy: sessionCheck.actorName, username: sessionCheck.username
+  });
+  return { success: true, ticket: ticket, status: status };
 }
 
 /* ================================================================
@@ -2042,6 +2239,11 @@ function doPost(e) {
     return jsonOutput_(confirmPengajuanTumpul_(payload));
   }
 
+  // [v5.22.0] Antrian tunggal: verifikasi pengajuan asah (admin/WH).
+  if (action === 'verifyPengajuanAsah') {
+    return jsonOutput_(verifyPengajuanAsah_(payload));
+  }
+
   /* ============================================================
    * [ADMIN CRUD] Kelola isi spreadsheet langsung dari aplikasi.
    * Semua action di bawah ini admin-only (dicek di masing-masing
@@ -2261,6 +2463,9 @@ function handleApiRequest_(params) {
         break;
       case 'getPengajuanTumpulList':
         result = getPengajuanTumpulList_(params);
+        break;
+      case 'getPengajuanAsahQueue':
+        result = getPengajuanAsahQueue_(params);
         break;
       case 'getLeadTimeByMachine':
         result = getLeadTimeByMachine();
