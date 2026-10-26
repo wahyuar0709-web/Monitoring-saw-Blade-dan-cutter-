@@ -1,7 +1,26 @@
 /**
  * ============================================================
- *  Code.gs — v5.20.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
+ *  Code.gs — v5.21.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
  *  Sistem Monitoring Saw Blade & Cutter
+ *
+ *  ============================================================
+ *  CHANGELOG v5.20.0 -> v5.21.0 (BUGFIX — formula-injection + guard Tumpul)
+ *  ============================================================
+ *  Temuan: menjalankan ujiFormula() di project gabungan GAGAL — "=1+1"
+ *  tersimpan sebagai FORMULA meski sel berformat '@' (tampil "2").
+ *  Eksperimen sandbox Sheets API membuktikan hal sama untuk input
+ *  USER_ENTERED; input RAW menyimpan teks utuh.
+ *  [1] PengajuanAsah.gs: nilai baris kini ditulis lewat Sheets REST RAW
+ *      (paRestRawWrite_ — UrlFetchApp + Script token) dengan fallback
+ *      setValues bila REST gagal. Izin tambahan yang diminta: external
+ *      service (UrlFetch) — muncul saat jalankan ujiFormula di editor.
+ *  [2] applyFormulaGuard_ dipasang di 3 titik tulis sheet "Pengajuan
+ *      Tumpul" yang membawa teks milik user: PIC (submitPengajuanTumpul_)
+ *      dan CATATAN_WH (2 jalur konfirmasi). Pola sama dengan kolom
+ *      remark Movement Log yang sudah berjalan.
+ *  >>> WAJIB: Deploy > Manage deployments > Edit deployment aktif >
+ *      New version, setelah upload kedua file ini. <<<
+ *  ============================================================
  *
  *  ============================================================
  *  CHANGELOG v5.19.3 -> v5.20.0 (FITUR — Pengajuan Asah ikut satu deployment)
@@ -807,7 +826,7 @@
 // Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.20.0';
+const BACKEND_VERSION = 'v5.21.0';
 
 // [v5.20.0] Token FORM "Pengajuan Asah" (dipakai PengajuanAsah.gs).
 // SENGAJA di code.gs (bukan di PengajuanAsah.gs) supaya salah satu file
@@ -1155,7 +1174,10 @@ function submitPengajuanTumpul_(payload) {
   const id = 'PT-' + Utilities.getUuid().slice(0, 8).toUpperCase();
   sheet.appendRow([
     id, new Date(), sessionCheck.username, sessionCheck.actorName,
-    kodeAlat, unitId, mesin, kodeMesin, PENGAJUAN_STATUS_MENUNGGU, '', '', '', pic
+    kodeAlat, unitId, mesin, kodeMesin, PENGAJUAN_STATUS_MENUNGGU, '', '', '',
+    // PIC = teks bebas milik operator -> guard formula-injection
+    // (pola sama dengan remark Movement Log).
+    applyFormulaGuard_(pic)
   ]);
   logAuditEvent_({
     event: 'PENGAJUAN_TUMPUL_SUBMITTED', stage: 'PENGAJUAN_TUMPUL',
@@ -1246,7 +1268,7 @@ function confirmPengajuanTumpul_(payload) {
     sheet.getRange(rowIndex, PTCOL.STATUS).setValue(PENGAJUAN_STATUS_DITOLAK);
     sheet.getRange(rowIndex, PTCOL.TIMESTAMP_KONFIRMASI).setValue(new Date());
     sheet.getRange(rowIndex, PTCOL.KONFIRMASI_OLEH).setValue(sessionCheck.actorName);
-    sheet.getRange(rowIndex, PTCOL.CATATAN_WH).setValue((payload && payload.catatan) || '');
+    sheet.getRange(rowIndex, PTCOL.CATATAN_WH).setValue(applyFormulaGuard_(String((payload && payload.catatan) || '')));
     return { success: true, id: id, status: PENGAJUAN_STATUS_DITOLAK };
   }
 
@@ -1277,7 +1299,7 @@ function confirmPengajuanTumpul_(payload) {
   sheet.getRange(rowIndex, PTCOL.STATUS).setValue(PENGAJUAN_STATUS_SELESAI);
   sheet.getRange(rowIndex, PTCOL.TIMESTAMP_KONFIRMASI).setValue(new Date());
   sheet.getRange(rowIndex, PTCOL.KONFIRMASI_OLEH).setValue(sessionCheck.actorName);
-  sheet.getRange(rowIndex, PTCOL.CATATAN_WH).setValue((payload && payload.catatan) || '');
+  sheet.getRange(rowIndex, PTCOL.CATATAN_WH).setValue(applyFormulaGuard_(String((payload && payload.catatan) || '')));
   return { success: true, id: id, status: PENGAJUAN_STATUS_SELESAI, idTransaksi: txResult.idTransaksi };
 }
 

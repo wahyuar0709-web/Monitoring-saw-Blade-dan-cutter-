@@ -18,6 +18,15 @@
  *   5. Deploy > Manage deployments > Edit (pensil) > Version: New version.
  *      Execute as: Me | Who has access: Anyone.
  *
+ * PERUBAHAN v4.1 (26 Okt 2026 — penyembuhan ujiFormula/GAGAL formula)
+ *  - Nilai baris ditulis lewat Sheets REST RAW (paRestRawWrite_) sebagai
+ *    ganti setValues(): string '=' tidak lagi berubah jadi formula. Terbukti
+ *    ulang 26 Okt 2026: setValues menulis "=1+1" sebagai FORMULA meski sel
+ *    berformat '@' (ujiFormula GAGAL di deployment live).
+ *  - Fallback SETVALUES dipakai hanya bila REST gagal; ujiFormula
+ *    menampilkan mekanisme yang terpakai (mekanisme=RAW / SETVALUES).
+ *  - Izin baru saat jalankan: "connect to an external service" (UrlFetch).
+ *
  * PERUBAHAN v4
  *  - Master data ditarik frontend secara live lewat GET ?action=master
  *    (di-cache 5 menit). Kode mesin / alat / stok yang ditambah di sheet
@@ -191,13 +200,13 @@ function submit_(data, opt) {
 
   var r = scan.last + 1;
   if (r > sheet.getMaxRows()) sheet.insertRowsAfter(sheet.getMaxRows(), 200);
-  writeRow_(sheet, map, r, row);
+  var tulisVia = writeRow_(sheet, map, r, row);
 
   use.n++;
   saveUsage_(use);
   if (!opt.noMail) notify_(sheet, r, row);
 
-  return { ok: true, ticket: ticket, row: r, foto: fotoUrl, fotoError: fotoError };
+  return { ok: true, ticket: ticket, row: r, foto: fotoUrl, fotoError: fotoError, tulisVia: tulisVia };
 }
 
 function validate_(d) {
@@ -250,19 +259,100 @@ function sameSubmission_(sheet, map, row, d) {
   return nama === clean_(d.namaPengaju, 60) && alat === clean_(d.kodeAlat, 40) && qty === Number(d.qty);
 }
 
+/** Tulis 1 baris pengajuan. Kembalikan mekanisme tulis: 'RAW' (Sheets REST,
+ * teks utuh) atau 'SETVALUES' (fallback jalur lama).
+ *
+ * Kenapa REST RAW: SpreadsheetApp setValues() mengubah string berawalan
+ * '=' menjadi FORMULA meski sel sudah berformat '@' — diverifikasi live
+ * deployment 26 Okt 2026 (ujiFormula GAGAL, "=1+1" menjadi formula, tampil 2),
+ * plus eksperimen sandbox (values USER_ENTERED + format TEXT -> FORMULA;
+ * values RAW -> TEKS). Raw menulis string apa adanya: '=1+1' tetap teks,
+ * '123' tidak jadi angka, '10/11' tidak jadi tanggal. */
 function writeRow_(sheet, map, r, values) {
   var contiguous = true, i;
   for (i = 0; i < HEADERS.length; i++) if (map[i] !== i + 1) { contiguous = false; break; }
+  var vals = [];
+  for (i = 0; i < HEADERS.length; i++) vals.push(values[i] == null ? '' : values[i]);
+
+  // Format kolom tetap diset dari GAS (@ = teks murni, tanggal utk kolom A).
   if (contiguous) {
-    var vals = [];
-    for (i = 0; i < HEADERS.length; i++) vals.push(values[i] == null ? '' : values[i]);
-    var rng = sheet.getRange(r, 1, 1, HEADERS.length);
-    rng.setNumberFormats([FORMATS]);     // "@" = teks murni -> kebal formula-injection
-    rng.setValues([vals]);
-    return;
+    sheet.getRange(r, 1, 1, HEADERS.length).setNumberFormats([FORMATS]);
+  } else {
+    for (i = 0; i < HEADERS.length; i++) sheet.getRange(r, map[i]).setNumberFormat(FORMATS[i]);
   }
-  for (i = 0; i < HEADERS.length; i++) {   // kolom sudah tergeser: tulis per sel
-    sheet.getRange(r, map[i]).setNumberFormat(FORMATS[i]).setValue(values[i] == null ? '' : values[i]);
+  SpreadsheetApp.flush();            // pastikan format benar-benar nempel dulu
+
+  // Nilai via REST RAW. Timestamp dikonversi ke serial tanggal Sheets
+  // (setara Date yang ditulis setValues) supaya tipe datanya sama persis
+  // dengan baris-baris historis.
+  try {
+    var seal = vals.slice();
+    if (values[C.TS] instanceof Date) seal[C.TS] = dateToSerial_(values[C.TS]);
+    var entries;
+    if (contiguous) {
+      entries = [{ a1: 'A' + r, values: [seal] }];
+    } else {
+      entries = [];
+      for (i = 0; i < HEADERS.length; i++) {
+        entries.push({ a1: paColA1_(map[i]) + r, values: [[seal[i]]] });
+      }
+    }
+    paRestRawWrite_(sheet.getName(), entries);
+    return 'RAW';
+  } catch (err) {
+    console.error('Tulis REST RAW gagal, fallback setValues: ' + err);
+  }
+
+  // Fallback jalur lama (hanya bila REST tidak sedia): '=' berpotensi
+  // tersimpan sebagai formula — tercatat lewat console.error di atas.
+  if (contiguous) {
+    sheet.getRange(r, 1, 1, HEADERS.length).setValues([vals]);
+  } else {
+    for (i = 0; i < HEADERS.length; i++) {
+      sheet.getRange(r, map[i]).setValue(vals[i]);
+    }
+  }
+  return 'SETVALUES';
+}
+
+/** Serial tanggal Sheets (hari sejak 1899-12-30) dari Date, pakai jam dinding TZ. */
+function dateToSerial_(d) {
+  var p = Utilities.formatDate(d, TZ, 'yyyy,MM,dd,HH,mm,ss').split(',');
+  return Date.UTC(+p[0], +p[1] - 1, +p[2], +p[3], +p[4], +p[5]) / 86400000 + 25569;
+}
+
+/** Nomor kolom (1-based) -> huruf kolom A1 ("5" -> "E"): untuk tulis per-sel. */
+function paColA1_(col) {
+  var s = '';
+  while (col > 0) {
+    var m = (col - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    col = (col - 1 - m) / 26;
+  }
+  return s;
+}
+
+/** Tulis nilai apa adanya lewat Sheets REST batchUpdate (valueInputOption RAW).
+ * Token: ScriptApp.getOAuthToken() (scope spreadsheets + urlfetch). */
+function paRestRawWrite_(sheetName, entries) {
+  var res = UrlFetchApp.fetch(
+    'https://sheets.googleapis.com/v4/spreadsheets/' +
+      SpreadsheetApp.getActiveSpreadsheet().getId() + '/values:batchUpdate',
+    {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+      payload: JSON.stringify({
+        valueInputOption: 'RAW',
+        data: entries.map(function (e) {
+          return { range: "'" + sheetName + "'!" + e.a1, majorDimension: 'ROWS', values: e.values };
+        }),
+      }),
+      muteHttpExceptions: true,
+    }
+  );
+  if (res.getResponseCode() !== 200) {
+    throw new Error('REST ' + res.getResponseCode() + ': ' + String(res.getContentText()).slice(0, 150));
   }
 }
 
@@ -544,9 +634,11 @@ function ujiFormula() {
   var cell = sheet.getRange(res.row, map[C.CAT]);
   var formula = cell.getFormula(), shown = cell.getDisplayValue();
   sheet.deleteRow(res.row);
+  var via = res.tulisVia || '?';
+  var ket = ' (mekanisme=' + via + (via === 'SETVALUES' ? ' — tulis REST RAW gagal; cek izin UrlFetch & pesan console)' : ')');
   Logger.log((formula === '' && shown === '=1+1')
-    ? 'LULUS: "=1+1" tersimpan sebagai teks. Baris uji sudah dihapus.'
-    : 'GAGAL: sel dianggap formula! formula="' + formula + '" tampil="' + shown + '"');
+    ? 'LULUS: "=1+1" tersimpan sebagai teks (mekanisme=' + via + '). Baris uji sudah dihapus.'
+    : 'GAGAL: sel dianggap formula! formula="' + formula + '" tampil="' + shown + '"' + ket);
 }
 
 /** SAKLAR DARURAT: tutup / buka penerimaan pengajuan tanpa deploy ulang. */
