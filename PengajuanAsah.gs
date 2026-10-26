@@ -54,7 +54,8 @@
  *  index.html, deploy versi baru, lalu lanjutPengajuan().
  */
 
-var PA_SHARED_TOKEN = 'VjAb48xWwzFkrtJlP0TaJUYK';
+/* Token form "Pengajuan Asah" didefine di code.gs sebagai PA_SHARED_TOKEN
+ * (gabungan satu deployment tunggal -- bukan di file ini). */
 
 /* ---- KONFIGURASI ---- */
 var NOTIFY_EMAIL = '';          // WAJIB DIISI, mis. 'wahyu.susanto425@gmail.com'. Boleh beberapa, pisah koma.

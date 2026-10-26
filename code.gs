@@ -1,6 +1,6 @@
 /**
  * ============================================================
- *  Code.gs — v5.9 (GABUNGAN 1 FILE + DIVALIDASI KE SHEET ASLI)
+ *  Code.gs — v5.20.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
  *  Sistem Monitoring Saw Blade & Cutter
  *
  *  ============================================================
@@ -808,6 +808,13 @@
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
 const BACKEND_VERSION = 'v5.20.0';
+
+// [v5.20.0] Token FORM "Pengajuan Asah" (dipakai PengajuanAsah.gs).
+// SENGAJA di code.gs (bukan di PengajuanAsah.gs) supaya salah satu file
+// tidak ikut ter-upload tak pernah bikin seluruh deployment gugur —
+// bila PengajuanAsah.gs hilang, PA gagal terkendali (UNAUTHORIZED),
+// Monitoring tetap hidup.
+const PA_SHARED_TOKEN = 'VjAb48xWwzFkrtJlP0TaJUYK';
 
 const SHEET_MASTER_TOOLS = 'Master Tools';
 const SHEET_TOOL_UNIT = 'Tool Unit';
@@ -1936,9 +1943,11 @@ function validateSession_(sessionToken) {
 function doGet(e) {
   const params = (e && e.parameter) || {};
   // [v5.20.0] Kontrak form "Pengajuan Asah" (produksi): GET ?action=master
-  // pakai token FORM (PA_SHARED_TOKEN), bukan token API aplikasi — verifikasi
-  // harus terjadi SEBELUM gate token API di bawah.
-  if (params.action === 'master' && params.token === PA_SHARED_TOKEN) {
+  // pakai token FORM (PA_SHARED_TOKEN), bukan token API aplikasi. Route
+  // ini harus SEBELUM gate token API; token salah/salah diputuskan di
+  // dalam paMasterRoute_ (bentuk jawaban {ok:false,code:'UNAUTHORIZED'},
+  // konsisten v4 — tidak menaikkan penghitung kunci API app).
+  if (params.action === 'master') {
     return paMasterRoute_(params);
   }
   if (params.action) {
