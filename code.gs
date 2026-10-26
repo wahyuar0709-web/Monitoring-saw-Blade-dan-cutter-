@@ -10,10 +10,12 @@
  *  tersimpan sebagai FORMULA meski sel berformat '@' (tampil "2").
  *  Eksperimen sandbox Sheets API membuktikan hal sama untuk input
  *  USER_ENTERED; input RAW menyimpan teks utuh.
- *  [1] PengajuanAsah.gs: nilai baris kini ditulis lewat Sheets REST RAW
- *      (paRestRawWrite_ — UrlFetchApp + Script token) dengan fallback
- *      setValues bila REST gagal. Izin tambahan yang diminta: external
- *      service (UrlFetch) — muncul saat jalankan ujiFormula di editor.
+ *  [1] PengajuanAsah.gs: nilai baris kini ditulis lewat Advanced Service
+ *      "Google Sheets API" (paRestRawWrite_ — Sheets.Spreadsheets.Values
+ *      .batchUpdate RAW) dengan fallback setValues bila panggilan gagal.
+ *      SYARAT di editor: + Services > Google Sheets API > Add (tanpa
+ *      izin/scope baru). Rute UrlFetch pertama batal (403 API belum
+ *      di-enable di project GCP default script).
  *  [2] applyFormulaGuard_ dipasang di 3 titik tulis sheet "Pengajuan
  *      Tumpul" yang membawa teks milik user: PIC (submitPengajuanTumpul_)
  *      dan CATATAN_WH (2 jalur konfirmasi). Pola sama dengan kolom

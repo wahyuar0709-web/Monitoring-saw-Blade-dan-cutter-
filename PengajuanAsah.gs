@@ -19,13 +19,15 @@
  *      Execute as: Me | Who has access: Anyone.
  *
  * PERUBAHAN v4.1 (26 Okt 2026 — penyembuhan ujiFormula/GAGAL formula)
- *  - Nilai baris ditulis lewat Sheets REST RAW (paRestRawWrite_) sebagai
- *    ganti setValues(): string '=' tidak lagi berubah jadi formula. Terbukti
- *    ulang 26 Okt 2026: setValues menulis "=1+1" sebagai FORMULA meski sel
- *    berformat '@' (ujiFormula GAGAL di deployment live).
+ *  - Nilai baris ditulis lewat Advanced Service "Google Sheets API"
+ *    (RAW) sebagai ganti setValues(): string '=' tidak lagi berubah jadi
+ *    formula. Terbukti ulang 26 Okt 2026: setValues menulis "=1+1" sebagai
+ *    FORMULA meski sel berformat '@' (ujiFormula GAGAL di deployment live).
  *  - Fallback SETVALUES dipakai hanya bila REST gagal; ujiFormula
  *    menampilkan mekanisme yang terpakai (mekanisme=RAW / SETVALUES).
- *  - Izin baru saat jalankan: "connect to an external service" (UrlFetch).
+ *  - SYARAT di editor Apps Script: + Services > Google Sheets API > Add.
+ *    (Rute UrlFetch pertama dicoba & batal: 403 "API not used in project"
+ *    karena project GCP default script tidak mengaktifkan Sheets API.)
  *
  * PERUBAHAN v4
  *  - Master data ditarik frontend secara live lewat GET ?action=master
@@ -332,28 +334,20 @@ function paColA1_(col) {
   return s;
 }
 
-/** Tulis nilai apa adanya lewat Sheets REST batchUpdate (valueInputOption RAW).
- * Token: ScriptApp.getOAuthToken() (scope spreadsheets + urlfetch). */
+/** Tulis nilai apa adanya lewat Advanced Service "Google Sheets API"
+ * (Spreadsheets.Values.batchUpdate, valueInputOption RAW) — teks ditulis
+ * persis apa adanya ('=1+1' tetap teks, '123' tetap teks).
+ * SYARAT: layanan sudah di-add di editor Apps Script (kiri: + Services >
+ * Google Sheets API > Add). Kalau belum, panggilan melempar error
+ * (Sheets is not defined / 403) dan writeRow_ jatuh ke fallback. */
 function paRestRawWrite_(sheetName, entries) {
-  var res = UrlFetchApp.fetch(
-    'https://sheets.googleapis.com/v4/spreadsheets/' +
-      SpreadsheetApp.getActiveSpreadsheet().getId() + '/values:batchUpdate',
-    {
-      method: 'post',
-      contentType: 'application/json',
-      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
-      payload: JSON.stringify({
-        valueInputOption: 'RAW',
-        data: entries.map(function (e) {
-          return { range: "'" + sheetName + "'!" + e.a1, majorDimension: 'ROWS', values: e.values };
-        }),
-      }),
-      muteHttpExceptions: true,
-    }
-  );
-  if (res.getResponseCode() !== 200) {
-    throw new Error('REST ' + res.getResponseCode() + ': ' + String(res.getContentText()).slice(0, 150));
-  }
+  var res = Sheets.Spreadsheets.Values.batchUpdate({
+    valueInputOption: 'RAW',
+    data: entries.map(function (e) {
+      return { range: "'" + sheetName + "'!" + e.a1, majorDimension: 'ROWS', values: e.values };
+    }),
+  }, SpreadsheetApp.getActiveSpreadsheet().getId());
+  console.log('tulis RAW: sel ter-update=' + (res && res.totalUpdatedCells));
 }
 
 /* Pastikan setiap header standar ada di baris 1 dan kembalikan peta
@@ -639,7 +633,7 @@ function ujiFormula() {
   var formula = cell.getFormula(), shown = cell.getDisplayValue();
   sheet.deleteRow(res.row);
   var via = res.tulisVia || '?';
-  var ket = ' (mekanisme=' + via + (via === 'SETVALUES' ? ' — tulis REST RAW gagal; cek izin UrlFetch & pesan console)' : ')');
+  var ket = ' (mekanisme=' + via + (via === 'SETVALUES' ? ' — tulis RAW gagal; cek layanan "Google Sheets API" sudah di-add (+ Services) & lihat pesan console)' : ')');
   Logger.log((formula === '' && shown === '=1+1')
     ? 'LULUS: "=1+1" tersimpan sebagai teks (mekanisme=' + via + '). Baris uji sudah dihapus.'
     : 'GAGAL: sel dianggap formula! formula="' + formula + '" tampil="' + shown + '"' + ket);
