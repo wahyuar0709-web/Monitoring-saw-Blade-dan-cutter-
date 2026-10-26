@@ -4,6 +4,28 @@
  *  Sistem Monitoring Saw Blade & Cutter
  *
  *  ============================================================
+ *  CHANGELOG v5.19.3 -> v5.20.0 (FITUR — Pengajuan Asah ikut satu deployment)
+ *  ============================================================
+ *  Form "Pengajuan Asah" (produksi, repo Penajuan-Asah-Saw-blade-Cutter)
+ *  selama ini memanggil URL Web App deployment yang SAMA dengan backend
+ *  Monitoring. Pas v5.19.3 dipasang di deployment itu, kontrak API form
+ *  (GET ?action=master + POST token SHARED_TOKEN-form) hilang — bukti:
+ *  baris sheet "Pengajuan Asah" berhenti per 2026-10-23 00:58.
+ *  Fix (backend SAMA, dua aplikasi):
+ *   [1] File baru "PengajuanAsah.gs" berisi backend form v4 (fungsi v4 asli,
+ *       doGet/doPost v4 dihapus karena dipanggil dari sini; getSheet_ v4
+ *       jadi paGetSheet_).
+ *   [2] doGet: route ?action=master&token=PA_SHARED_TOKEN SEBELUM gate
+ *       token API aplikasi -> paMasterRoute_(params).
+ *   [3] doPost: body tanpa "action" & token form = pengajuan PA, dicek
+ *       SEBELUM gate token API -> paHandleSubmission_(body, rawLen).
+ *  Frontend form TIDAK diubah kontraknya -> perangkat operator tidak perlu
+ *  apa-apa (URL & token & QR tetap).
+ *  >>> WAJIB: Deploy > Manage deployments > Edit deployment aktif >
+ *      New version, setelah upload kedua file ini. <<<
+ *  ============================================================
+ *
+ *  ============================================================
  *  CHANGELOG v5.19.1 -> v5.19.2 (BUGFIX — Filter Mesin di menu Stok kosong)
  *  ============================================================
  *  [Bug] Dropdown "Filter Mesin" di panel Stok selalu kosong (cuma "Semua
@@ -785,7 +807,7 @@
 // Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.19.3';
+const BACKEND_VERSION = 'v5.20.0';
 
 const SHEET_MASTER_TOOLS = 'Master Tools';
 const SHEET_TOOL_UNIT = 'Tool Unit';
@@ -1913,6 +1935,12 @@ function validateSession_(sessionToken) {
 
 function doGet(e) {
   const params = (e && e.parameter) || {};
+  // [v5.20.0] Kontrak form "Pengajuan Asah" (produksi): GET ?action=master
+  // pakai token FORM (PA_SHARED_TOKEN), bukan token API aplikasi — verifikasi
+  // harus terjadi SEBELUM gate token API di bawah.
+  if (params.action === 'master' && params.token === PA_SHARED_TOKEN) {
+    return paMasterRoute_(params);
+  }
   if (params.action) {
     if (!isAuthorized_(params.token)) {
       return jsonOutput_({ error: 'UNAUTHORIZED: token API tidak valid atau tidak disertakan.' });
@@ -1942,6 +1970,13 @@ function doPost(e) {
     body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
   } catch (err) {
     return jsonOutput_({ success: false, error: { code: 'PARSE', message: 'Body request tidak valid (bukan JSON).' } });
+  }
+
+  // [v5.20.0] Kontrak form "Pengajuan Asah": POST body TANPA field "action"
+  // dengan token FORM. GATE ini harus sebelum gate token API aplikasi —
+  // token form != token API, jadi kalau sampai ke gate bawah pasti ditolak.
+  if (!body.action && body.token === PA_SHARED_TOKEN) {
+    return jsonOutput_(paHandleSubmission_(body, ((e && e.postData && e.postData.contents) || '').length));
   }
 
   // [WO-2.0.1] Gate token — dicek SEBELUM apa pun lain (termasuk sebelum
