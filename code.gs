@@ -3926,21 +3926,27 @@ function getOrCreateAuditLogSheet_() {
 function logAuditEvent_(d) {
   try {
     const sheet = getOrCreateAuditLogSheet_();
+    // [v5.21.0] Guard formula-injection di SEMUA field string audit:
+    // actorReported/unitId/kodeAlat berasal dari payload client yang tidak
+    // dibatasi charset-nya, dan sheet audit ditulis appendRow mentah --
+    // string berawalan =/+/-/@ bakal jadi formula live (vulnerability sama
+    // yang ditemukan di sheet Pengajuan Tumpul & Pengajuan Asah).
+    const GA1 = (x) => (x == null || x === '' ? '' : applyFormulaGuard_(String(x)));
     sheet.appendRow([
       new Date(),
-      d.event || '',
-      d.requestId || '',
-      d.transactionId || '',
-      d.stage || '',
-      d.operation || '',
-      d.unitId || '',
-      d.kodeAlat || '',
-      d.actorReported ? String(d.actorReported) : 'UNKNOWN',
-      d.authenticatedActor ? String(d.authenticatedActor) : '',
-      d.errorCode || '',
-      d.stateDiff ? JSON.stringify(d.stateDiff) : '',
-      d.rollbackStatus || '',
-      d.note || ''
+      GA1(d.event),
+      GA1(d.requestId),
+      GA1(d.transactionId),
+      GA1(d.stage),
+      GA1(d.operation),
+      GA1(d.unitId),
+      GA1(d.kodeAlat),
+      d.actorReported ? GA1(d.actorReported) : 'UNKNOWN',
+      d.authenticatedActor ? GA1(d.authenticatedActor) : '',
+      GA1(d.errorCode),
+      GA1(d.stateDiff ? JSON.stringify(d.stateDiff) : ''),
+      GA1(d.rollbackStatus),
+      GA1(d.note)
     ]);
   } catch (e) {
     // Audit log TIDAK BOLEH pernah menggagalkan business transaction.

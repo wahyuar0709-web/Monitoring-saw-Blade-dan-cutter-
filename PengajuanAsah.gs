@@ -631,6 +631,10 @@ function ujiFormula() {
   var res = submit_(data, { noMail: true, skipCap: true });
   if (!res.ok) { Logger.log('GAGAL uji: ' + JSON.stringify(res)); return; }
   var sheet = paGetSheet_(), map = ensureHeaders_(sheet, false);
+  // Tulisan terakhir lewat REST (di luar SpreadsheetApp) -> paksa GAS
+  // menyegarkan tampilan sheet sebelum baca balik, supaya tidak salah
+  // membaca cache GAS sebagai GAGAL.
+  SpreadsheetApp.flush();
   var cell = sheet.getRange(res.row, map[C.CAT]);
   var formula = cell.getFormula(), shown = cell.getDisplayValue();
   sheet.deleteRow(res.row);
