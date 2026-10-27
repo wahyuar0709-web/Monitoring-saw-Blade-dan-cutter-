@@ -5151,7 +5151,7 @@ function wireLoginGate_() {
     configTokenInput.value = runtimeApiToken_;
     hideConfigMsg_();
     viewLogin.style.display = 'none';
-    viewConfig.style.display = '';
+    viewConfig.style.display = 'block';
   }
   function showLoginView_() {
     viewConfig.style.display = 'none';
@@ -5306,7 +5306,7 @@ function renderAccountState_() {
 
   if (isLoggedIn_()) {
     loginForm.style.display = 'none';
-    loggedInBlock.style.display = '';
+    loggedInBlock.style.display = 'block';
     statusEl.className = 'settings-status st-connected';
     statusText.textContent = 'Login sebagai ' + runtimeActorName_;
   } else {
@@ -6331,7 +6331,7 @@ function onAjukanKodeAlatChange_() {
     unitSel.innerHTML = '<option value="">Tidak ada unit tersedia</option>';
     unitSel.disabled = true;
     unitHint.textContent = 'Tidak ada unit dengan Kode Alat ini yang statusnya sedang dipakai di mesin ini.';
-    unitHint.style.display = '';
+    unitHint.style.display = 'block';
     return;
   }
   // [REVISI] Ukuran/spesifikasi ikut ditampilkan di label Unit --
