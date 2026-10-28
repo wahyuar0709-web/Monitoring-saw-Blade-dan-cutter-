@@ -1,6 +1,6 @@
 {
   "name": "monitoring-saw-blade-cutter",
-  "version": "8.25.0",
+  "version": "8.26.0",
   "description": "Monitoring stok & sirkulasi saw blade dan cutter — gudang, mesin, vendor asah",
   "type": "module",
   "private": true,
