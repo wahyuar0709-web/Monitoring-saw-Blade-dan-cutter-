@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Monitoring Saw Blade & Cutter</title>
   <meta name="theme-color" content="#3B6E7D">
   <meta name="description" content="Monitoring stok & sirkulasi saw blade dan cutter — gudang, mesin, vendor asah.">
@@ -294,7 +294,7 @@
   --border-soft: var(--color-border);
   --ink: var(--color-text);
   --ink-muted: var(--color-muted);
-  --ink-faint: #a2adc2;
+  --ink-faint: #62757b;
 
   --grad-1: #4c8c9e;
   --grad-2: #3b6e7d;
@@ -349,7 +349,7 @@ html[data-theme="dark"] {
   --color-info: #57d8e0;
   --color-info-soft: #0c2e33;
 
-  --ink-faint: #55648a;
+  --ink-faint: #879fab;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
   --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 18px 34px -12px rgba(0, 0, 0, 0.6);
@@ -2606,7 +2606,7 @@ nav.tabbar button {
   border: none;
   padding: 7px 4px;
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--ink-faint);
   cursor: pointer;
@@ -3697,7 +3697,7 @@ table.admin-table td.admin-actions {
         <h2 class="login-gate-title" id="login-gate-title">Sign In</h2>
         <p class="login-gate-subtitle">Monitoring Saw Blade &amp; Cutter</p>
 
-        <div class="login-gate-msg" id="login-gate-msg"></div>
+        <div class="login-gate-msg" id="login-gate-msg" aria-live="assertive"></div>
 
         <div class="login-gate-field">
           <span class="login-gate-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
@@ -3726,7 +3726,7 @@ table.admin-table td.admin-actions {
         <h2 class="login-gate-title login-gate-title--sm">Pengaturan Koneksi</h2>
         <p class="login-gate-subtitle">Khusus admin — sekali per perangkat</p>
 
-        <div class="login-gate-msg" id="login-gate-config-msg"></div>
+        <div class="login-gate-msg" id="login-gate-config-msg" aria-live="assertive"></div>
 
         <div class="login-gate-field">
           <span class="login-gate-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></span>
@@ -3764,19 +3764,19 @@ table.admin-table td.admin-actions {
        mobile (display:none default), jadi tidak makan DOM/tap-target di
        layar kecil. -->
   <nav class="sidebar-nav" aria-label="Navigasi utama">
-    <button class="tab-btn active" data-panel="panel-summary" data-tooltip="Dashboard">
+    <button class="tab-btn active" data-panel="panel-summary" data-tooltip="Dashboard" aria-label="Dashboard">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg></span>
     </button>
-    <button class="tab-btn" data-panel="panel-stok" data-tooltip="Stok">
+    <button class="tab-btn" data-panel="panel-stok" data-tooltip="Stok" aria-label="Stok">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V16L12 21L3 16V8L12 3Z"></path><path d="M3 8L12 13L21 8"></path><path d="M12 13V21"></path></svg></span>
     </button>
-    <button class="tab-btn raised" data-panel="panel-input" data-tooltip="Input">
+    <button class="tab-btn raised" data-panel="panel-input" data-tooltip="Input" aria-label="Input">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
     </button>
-    <button class="tab-btn" data-panel="panel-dashboard" data-tooltip="Riwayat">
+    <button class="tab-btn" data-panel="panel-dashboard" data-tooltip="Riwayat" aria-label="Riwayat">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg></span>
     </button>
-    <button class="tab-btn" data-panel="panel-lainnya" data-tooltip="Lainnya">
+    <button class="tab-btn" data-panel="panel-lainnya" data-tooltip="Lainnya" aria-label="Lainnya">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg></span>
     </button>
   </nav>
@@ -4249,7 +4249,7 @@ table.admin-table td.admin-actions {
         Konfirmasi Pengajuan
       </div>
       <p class="rank-desc">Antrian pengajuan asah dari produksi (form QR, sheet "Pengajuan Asah") yang menunggu dicek fisik. Konfirmasi = status DIVERIFIKASI; Tolak = DITOLAK. Tidak langsung membuat transaksi ledger.</p>
-      <div class="form-msg" id="konfirmasi-tumpul-msg"></div>
+      <div class="form-msg" id="konfirmasi-tumpul-msg" aria-live="polite"></div>
       <div id="kt-pending-list">
         <div class="skeleton-block sk-row"></div>
         <div class="skeleton-block sk-row"></div>
@@ -4509,8 +4509,8 @@ function getConfiguredApiUrl() {
   return runtimeApiUrl_;
 }
 const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-const APP_VERSION = 'v8.24.0-antrian-tunggal-pa'; // versi lengkap, dipakai di log developer
-const APP_VERSION_SHORT = 'v8.24.0'; // versi ringkas, ditampilkan di badge UI
+const APP_VERSION = 'v8.25.0-ui-ux-audit'; // versi lengkap, dipakai di log developer
+const APP_VERSION_SHORT = 'v8.25.0'; // versi ringkas, ditampilkan di badge UI
 // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
 // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
 // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
@@ -5512,6 +5512,9 @@ function goToPanel(panelId) {
 
   document.querySelectorAll('.tab-btn').forEach((b) => {
     b.classList.remove('active');
+    // [UI-UX AUDIT] aria-current = posisi navigasi user untuk screen reader;
+    // dihapus dulu di SEMUA tombol supaya tidak ada tab lama yang nyangkut.
+    b.removeAttribute('aria-current');
   });
   // Mesin, Pengaturan, Kontrol Asah, panel-ajukan-tumpul (v8.24.0 —
   // keluar dari alur UI, tidak ada pintu lagi), dan Konfirmasi Pengajuan
@@ -5526,6 +5529,7 @@ function goToPanel(panelId) {
   // "active", bukan cuma yang pertama ketemu di DOM.
   document.querySelectorAll('.tab-btn[data-panel="' + tabPanelId + '"]').forEach((b) => {
     b.classList.add('active');
+    b.setAttribute('aria-current', 'true');
   });
 
   const headerTitleEl = document.getElementById('header-title');
