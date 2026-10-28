@@ -1366,6 +1366,56 @@ main {
   color: var(--color-danger);
   border-color: rgba(214, 40, 57, 0.18);
 }
+/* [v8.27.0 — Perjalanan Alat] badge fase tambahan: proses aktif (biru)
+   & netral (abu) supaya fase DIPAKAI/DIASAH tidak tertukar dgn aman. */
+.badge.info {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+  border-color: rgba(11, 114, 133, 0.2);
+}
+.badge.muted {
+  background: var(--surface-2);
+  color: var(--ink-faint);
+  border-color: rgba(127, 145, 152, 0.25);
+}
+/* Timeline siklus asah: Tumpul → Masuk WH → Kirim → Terima */
+.pj-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 14px;
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+.pj-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.pj-step i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-border, #cfd8dc);
+  flex: none;
+}
+.pj-step.done {
+  color: var(--ink);
+}
+.pj-step.done i {
+  background: var(--color-success);
+}
+.pj-step.now i {
+  background: var(--color-info);
+  box-shadow: 0 0 0 3px var(--color-info-soft);
+}
+.pj-more {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
 
 /* ---------- KARTU STATUS STOK ---------- */
 /* v8.4: dipadatkan (padding/gap dikecilkan, siap-pakai jadi chip
@@ -4191,6 +4241,35 @@ table.admin-table td.admin-actions {
       </div>
     </section>
 
+    <!-- ============== PANEL: PERJALANAN ALAT (v8.27.0, semua role, read-only) ==============
+         Satu tampilan siklus hidup per unit fisik: SIAP → DIPAKAI → TUMPUL →
+         MENUNGGU KIRIM → SEDANG DIASAH → kembali SIAP. Sumber: action GET
+         getToolJourneyList (backend v5.24.0); kalau backend masih lama,
+         panel menampilkan error terkendali + tombol coba lagi. -->
+    <section class="panel" id="panel-perjalanan">
+      <button type="button" class="panel-back-btn" data-back="panel-lainnya"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span>Lainnya</button>
+      <div class="section-title">
+        <span class="st-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.2"></circle><circle cx="18" cy="5" r="2.2"></circle><path d="M8 17.5c4-1.5 5-4 5-7 0-1.6.6-3.2 2.5-4.6"></path><path d="M14.5 4.5l2.4-.4.4 2.4"></path></svg></span>
+        Perjalanan Alat
+      </div>
+      <p class="rank-desc">Posisi setiap unit alat dalam siklusnya: siap pakai, dipakai di mesin, tumpul, menunggu kirim, sampai sedang diasah di vendor dan kembali siap.</p>
+
+      <input type="search" class="search-input" id="pj-search" placeholder="Cari unit, kode alat, mesin, vendor…">
+      <div class="filter-chip-row" id="pj-fase-row">
+        <button type="button" class="filter-chip active" data-fase="">Semua</button>
+        <button type="button" class="filter-chip" data-fase="TUMPUL">Tumpul</button>
+        <button type="button" class="filter-chip" data-fase="MENUNGGU">Menunggu Kirim</button>
+        <button type="button" class="filter-chip" data-fase="DIASAH">Sedang Diasah</button>
+        <button type="button" class="filter-chip" data-fase="DIPAKAI">Dipakai</button>
+        <button type="button" class="filter-chip" data-fase="SIAP">Siap</button>
+      </div>
+      <div id="pj-list">
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+        <div class="skeleton-block sk-row"></div>
+      </div>
+    </section>
+
     <!-- ============== PANEL: AJUKAN PENGEMBALIAN TUMPUL (khusus Operator) ============== -->
     <section class="panel" id="panel-ajukan-tumpul">
       <button type="button" class="panel-back-btn" data-back="panel-lainnya"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span>Lainnya</button>
@@ -4302,6 +4381,14 @@ table.admin-table td.admin-actions {
           <span class="li-text">
             <span class="li-title">Kontrol Asah</span>
             <span class="li-desc">Pantau unit menunggu kirim &amp; sedang diasah di vendor</span>
+          </span>
+          <span class="li-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+        </button>
+        <button type="button" class="lainnya-item" data-panel="panel-perjalanan">
+          <span class="li-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2.2"></circle><circle cx="18" cy="5" r="2.2"></circle><path d="M8 17.5c4-1.5 5-4 5-7 0-1.6.6-3.2 2.5-4.6"></path><path d="M14.5 4.5l2.4-.4.4 2.4"></path></svg></span>
+          <span class="li-text">
+            <span class="li-title">Perjalanan Alat</span>
+            <span class="li-desc">Lacak siklus tiap unit: siap, dipakai, tumpul, diasah</span>
           </span>
           <span class="li-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
         </button>
@@ -4509,8 +4596,8 @@ function getConfiguredApiUrl() {
   return runtimeApiUrl_;
 }
 const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-const APP_VERSION = 'v8.26.0-fix-stok-brand'; // versi lengkap, dipakai di log developer
-const APP_VERSION_SHORT = 'v8.26.0'; // versi ringkas, ditampilkan di badge UI
+const APP_VERSION = 'v8.27.0-perjalanan-alat'; // versi lengkap, dipakai di log developer
+const APP_VERSION_SHORT = 'v8.27.0'; // versi ringkas, ditampilkan di badge UI
 // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
 // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
 // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
@@ -4790,6 +4877,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyRoleUI_(); // [WO-ROLE] terapkan tampilan sesuai role dari session tersimpan
   wireAjukanTumpulForm_();
   wireAdminPanel_();
+  wirePerjalananPanel_();
   registerServiceWorker_();
   loadDashboard();
   loadFormReferenceData();
@@ -4913,6 +5001,9 @@ function reloadAllData_() {
   loadStockStatus();
   loadMachineAnalytics();
   loadKontrolAsah();
+  // [v8.27.0] Perjalanan Alat di-refresh hanya kalau panel sudah pernah
+  // dibuka (lazy-load; tidak memicu fetch pertama saat reconnect).
+  if (pjHasData_) loadPerjalananAlat();
 }
 
 function wireConnectivityIndicator_() {
@@ -5465,6 +5556,7 @@ const TAB_TITLES = {
   'panel-ajukan-tumpul': 'Ajukan Tumpul',
   'panel-konfirmasi-tumpul': 'Konfirmasi Pengajuan Asah',
   'panel-kelola-data': 'Kelola Data',
+  'panel-perjalanan': 'Perjalanan Alat',
 };
 
 /* ============================================================
@@ -5519,7 +5611,7 @@ function goToPanel(panelId) {
   // Mesin, Pengaturan, Kontrol Asah, panel-ajukan-tumpul (v8.24.0 —
   // keluar dari alur UI, tidak ada pintu lagi), dan Konfirmasi Pengajuan
   // tidak pernah punya tab sendiri — sorot tab "Lainnya".
-  const NO_OWN_TAB = ['panel-mesin', 'panel-settings', 'panel-kontrol-asah', 'panel-konfirmasi-tumpul', 'panel-kelola-data', 'panel-ajukan-tumpul'];
+  const NO_OWN_TAB = ['panel-mesin', 'panel-settings', 'panel-kontrol-asah', 'panel-konfirmasi-tumpul', 'panel-kelola-data', 'panel-ajukan-tumpul', 'panel-perjalanan'];
   let tabPanelId = panelId;
   if (NO_OWN_TAB.indexOf(panelId) >= 0) {
     tabPanelId = 'panel-lainnya';
@@ -5561,6 +5653,8 @@ function wireTabBar() {
   document.querySelectorAll('.lainnya-item').forEach((btn) => {
     btn.addEventListener('click', () => {
       goToPanel(btn.dataset.panel);
+      // [v8.27.0] Perjalanan Alat dimuat lazy: pertama kali panel dibuka.
+      if (btn.dataset.panel === 'panel-perjalanan') ensurePerjalananLoaded_();
     });
   });
   document.querySelectorAll('.panel-back-btn').forEach((btn) => {
@@ -6769,8 +6863,165 @@ function renderKontrolAsahList_(elId, rows, emptyText) {
 }
 
 /* ============================================================
-       FORM INPUT — data referensi (dropdown)
+       PERJALANAN ALAT (v8.27.0 — read-only, semua role)
+       Sumber: GET getToolJourneyList (backend v5.24.0) — gabungan
+       Tool Unit + siklus asah aktif per unit. Muat LAZY (saat panel
+       pertama dibuka), bukan saat app start, supaya payload ±1200
+       unit tidak membebani setiap kali app dibuka & tidak memunculkan
+       error UNKNOWN_ACTION di semua device selama backend produksi
+       masih versi lama.
        ============================================================ */
+const PJ_FASE_META_ = {
+  TUMPUL: { label: 'Tumpul', badge: 'kritis' },
+  MENUNGGU: { label: 'Menunggu Kirim', badge: 'kritis' },
+  DIASAH: { label: 'Sedang Diasah', badge: 'info' },
+  DIPAKAI: { label: 'Dipakai', badge: 'info' },
+  SIAP: { label: 'Siap', badge: 'aman' },
+  LAINNYA: { label: 'Lainnya', badge: 'muted' },
+};
+const PJ_MAX_RENDER_ = 300; // batas render kartu (daftar penuh tetap bisa difilter/cari)
+let pjAllRows_ = [];
+let pjFaseFilter_ = '';
+let pjHasData_ = false;
+let pjLoading_ = false;
+
+function ensurePerjalananLoaded_() {
+  if (pjHasData_ || pjLoading_) return;
+  loadPerjalananAlat();
+}
+
+function loadPerjalananAlat() {
+  pjLoading_ = true;
+  apiGet('getToolJourneyList')
+    .then((res) => {
+      pjLoading_ = false;
+      const payload = res && res.rows ? res : { rows: res || [], ringkasan: {} };
+      pjAllRows_ = payload.rows || [];
+      pjHasData_ = true;
+      renderPerjalananChips_(payload.ringkasan || {});
+      applyPerjalananFilters_();
+    })
+    .catch((err) => {
+      pjLoading_ = false;
+      document.getElementById('pj-list').innerHTML =
+        err && err.code === 'CONFIGURATION_ERROR'
+          ? stateCardHtml_('config', 'Koneksi belum diatur', 'Hubungkan Google Apps Script terlebih dahulu.', 'Buka Pengaturan')
+          : stateCardHtml_('error', 'Data belum dapat dimuat', 'Periksa koneksi aplikasi atau versi backend (butuh backend v5.24.0).', 'Coba Lagi', 'loadPerjalananAlat');
+      logCaughtError_(err);
+    });
+}
+
+/** Chip fase diberi angka live dari ringkasan backend (bukan teks statis). */
+function renderPerjalananChips_(ringkasan) {
+  const row = document.getElementById('pj-fase-row');
+  if (!row) return;
+  row.querySelectorAll('.filter-chip[data-fase]').forEach((chip) => {
+    const fase = chip.dataset.fase;
+    const meta = PJ_FASE_META_[fase];
+    if (!meta) return;
+    const n = Number(ringkasan[fase]) || 0;
+    chip.textContent = meta.label + ' · ' + n;
+  });
+}
+
+function applyPerjalananFilters_() {
+  const q = (document.getElementById('pj-search') || {}).value || '';
+  const needle = q.trim().toLowerCase();
+  const fase = pjFaseFilter_;
+  const filtered = pjAllRows_.filter((r) => {
+    if (fase && r.fase !== fase) return false;
+    if (!needle) return true;
+    return (
+      String(r.unitId || '').toLowerCase().indexOf(needle) !== -1 ||
+      String(r.kodeAlat || '').toLowerCase().indexOf(needle) !== -1 ||
+      String(r.jenis || '').toLowerCase().indexOf(needle) !== -1 ||
+      String(r.brand || '').toLowerCase().indexOf(needle) !== -1 ||
+      String(r.kodeMesin || '').toLowerCase().indexOf(needle) !== -1 ||
+      String(r.vendor || '').toLowerCase().indexOf(needle) !== -1 ||
+      String(r.spesifikasi || '').toLowerCase().indexOf(needle) !== -1
+    );
+  });
+  renderPerjalananList_(filtered);
+}
+
+/** Satu kartu unit: badge fase + timeline siklus asah (bila ada). */
+function perjalananCardHtml_(r) {
+  const meta = PJ_FASE_META_[r.fase] || PJ_FASE_META_.LAINNYA;
+  const dalamSiklus = r.fase === 'MENUNGGU' || r.fase === 'DIASAH';
+  const badge =
+    '<span class="badge ' + meta.badge + '">' + escapeHtml(meta.label) + '</span>';
+  const infoParts = [];
+  if (r.jenis) infoParts.push(escapeHtml(r.jenis));
+  if (r.brand) infoParts.push(escapeHtml(r.brand));
+  if (r.material) infoParts.push(escapeHtml(r.material));
+  if (r.kodeMesin) infoParts.push('Mesin ' + escapeHtml(r.kodeMesin));
+  if (r.lokasi && !dalamSiklus) infoParts.push(escapeHtml(r.lokasi));
+  if (r.vendor) infoParts.push('Vendor ' + escapeHtml(r.vendor));
+  infoParts.push('Regrind ' + (Number(r.regrindCount) || 0));
+
+  let timelineHtml = '';
+  if (dalamSiklus) {
+    const stepMasuk = r.tglMasukWH ? 'Masuk WH ' + escapeHtml(r.tglMasukWH) : 'Masuk WH';
+    const stepKirim = r.tglKirimAsah ? 'Kirim ' + escapeHtml(r.tglKirimAsah) : 'Kirim —';
+    timelineHtml =
+      '<div class="pj-steps">' +
+      '<span class="pj-step done"><i></i>Tumpul</span>' +
+      '<span class="pj-step done"><i></i>' + stepMasuk + '</span>' +
+      '<span class="pj-step ' + (r.tglKirimAsah ? 'done' : 'now') + '"><i></i>' + stepKirim + '</span>' +
+      '<span class="pj-step"><i></i>Terima</span>' +
+      '</div>';
+  }
+
+  return (
+    '<div class="rank-row">' +
+    '<div class="rank-info">' +
+    '<div class="rk-title">' + escapeHtml(r.kodeAlat) + ' · ' + escapeHtml(r.unitId) + ' ' + badge + '</div>' +
+    '<div class="rk-sub">' + infoParts.join(' · ') + '</div>' +
+    timelineHtml +
+    '</div>' +
+    (dalamSiklus
+      ? '<div class="rank-metric"><div class="rk-num">' + (Number(r.hariBerjalan) || 0) + '</div><div class="rk-unit">hari</div></div>'
+      : '') +
+    '</div>'
+  );
+}
+
+function renderPerjalananList_(rows) {
+  const el = document.getElementById('pj-list');
+  if (!rows || rows.length === 0) {
+    el.innerHTML = emptyStateHtml_('Tidak ada unit yang cocok', 'Ubah kata kunci pencarian atau filter fase.');
+    return;
+  }
+  const shown = rows.slice(0, PJ_MAX_RENDER_);
+  let html =
+    '<div class="card">' +
+    shown.map(perjalananCardHtml_).join('') +
+    '</div>';
+  if (rows.length > shown.length) {
+    html +=
+      '<div class="pj-more">Menampilkan ' + shown.length + ' dari ' + rows.length +
+      ' unit — persempit dgn pencarian atau filter fase.</div>';
+  }
+  el.innerHTML = html;
+}
+
+function wirePerjalananPanel_() {
+  const search = document.getElementById('pj-search');
+  if (search) search.addEventListener('input', applyPerjalananFilters_);
+  const row = document.getElementById('pj-fase-row');
+  if (row) {
+    row.querySelectorAll('.filter-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        row.querySelectorAll('.filter-chip').forEach((c) => c.classList.remove('active'));
+        chip.classList.add('active');
+        pjFaseFilter_ = chip.dataset.fase || '';
+        applyPerjalananFilters_();
+      });
+    });
+  }
+}
+
+
 function loadFormReferenceData() {
   apiGet('getActivityOptions')
     .then((list) => {

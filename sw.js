@@ -20,7 +20,7 @@
  * dinaikkan supaya install pertama SW versi baru ini otomatis membuang
  * cache lama yang basi.
  */
-const CACHE_NAME = 'saw-blade-monitor-v8.29.0';
+const CACHE_NAME = 'saw-blade-monitor-v8.30.0';
 const APP_SHELL = [
   './',
   './index.html',

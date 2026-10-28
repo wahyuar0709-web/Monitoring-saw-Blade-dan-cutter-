@@ -1,8 +1,20 @@
 /**
  * ============================================================
- *  Code.gs — v5.23.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
+ *  Code.gs — v5.24.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
  *  Sistem Monitoring Saw Blade & Cutter
  *
+ *  ============================================================
+ *  CHANGELOG v5.23.0 -> v5.24.0 (FITUR — Perjalanan Alat)
+ *  ============================================================
+ *  27 Okt 2026 — fitur baru akses user: "Perjalanan Alat" (tool journey).
+ *  Aksi GET baru `getToolJourneyList`: gabungan Tool Unit (snapshot per
+ *  unit: status/lokasi/last event/regrind/tgl asah ke-1..3) + Kontrol
+ *  Asah aktif per Unit_ID (masuk WH → kirim vendor → terima). Fase unit:
+ *  SIAP / DIPAKAI / TUMPUL / MENUNGGU KIRIM / SEDANG DIASAH — siklus asah
+ *  aktif menimpa status unit (precedence). Ringkasan jumlah per fase
+ *  dikirim utk chip filter. Logika fase diverifikasi ke data produksi:
+ *  MENUNGGU KIRIM 51 (semua TglKirim kosong), SELESAI 213 (semua ada
+ *  TglTerima), distribusi Tool Unit DIPAKAI 100 / GUDANG 460 / TUMPUL 50.
  *  ============================================================
  *  CHANGELOG v5.22.0 -> v5.23.0 (FIX — Brand & Material tidak tampil)
  *  ============================================================
@@ -863,7 +875,7 @@
 // Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.23.0';
+const BACKEND_VERSION = 'v5.24.0';
 
 // [v5.20.0] Token FORM "Pengajuan Asah" (dipakai PengajuanAsah.gs).
 // SENGAJA di code.gs (bukan di PengajuanAsah.gs) supaya salah satu file
@@ -2473,6 +2485,10 @@ function handleApiRequest_(params) {
       case 'getKontrolAsahList':
         result = getKontrolAsahList();
         break;
+      case 'getToolJourneyList':
+        // [FITUR v5.24.0] Perjalanan alat per unit (fase siklus hidup)
+        result = getToolJourneyList();
+        break;
       case 'getVendorPerformance':
         result = getVendorPerformance();
         break;
@@ -2852,6 +2868,154 @@ function getKontrolAsahList() {
     })
     .filter(function (r) { return r.kodeAlat && r.unitId; })
     .sort(function (a, b) { return b.hariBerjalan - a.hariBerjalan; });
+}
+
+/**
+ * [FITUR v5.24.0 — PERJALANAN ALAT (Tool Journey)]
+ * Satu tampilan utk melacak posisi TIAP unit fisik dalam siklus hidupnya:
+ *   SIAP PAKAI → DIPAKAI DI MESIN → TUMPUL (di WH) → MENUNGGU KIRIM →
+ *   SEDANG DIASAH (di vendor) → kembali SIAP PAKAI.
+ * Sumber data:
+ *   - Tool Unit (snapshot tiap unit: status/lokasi/last event/regrind)
+ *   - Kontrol Asah (siklus asah aktif per Unit_ID: masuk WH/kirim/terima)
+ * Fase diputuskan dgn PRECEDENCE: siklus asah aktif MENIMPA status unit
+ * (unit TUMPUL yang sudah masuk Kontrol Asah = MENUNGGU KIRIM, bukan dobel).
+ * Logika fase SEDANG DIASAH dibuktikan dari data produksi 27 Okt: kolom
+ * Status Asah hanya berisi MENUNGGU KIRIM/SELESAI, dan "sedang di vendor"
+ * berarti Tgl Kirim Asah terisi padahal Status masih MENUNGGU KIRIM
+ * (atau Status = PROSES ASAH, dipertahankan utk data lama).
+ */
+function getToolJourneyList() {
+  // --- 1. Snapshot Tool Unit ---
+  const tu = getSheet_(SHEET_TOOL_UNIT);
+  const numRows = tu.getLastRow() - 1;
+  if (numRows <= 0) return { rows: [], ringkasan: {} };
+
+  // Kolom Tool Unit di-resolve dari header (bukan angka tetap) supaya
+  // tahan terhadap penyisipan kolom; fallback ke posisi TUCOL bila header
+  // tidak ketemu (konsisten dgn validator TUCOL yang sudah ada).
+  const lastColTu = Math.max(tu.getLastColumn(), 20);
+  const hdrTu = tu.getRange(1, 1, 1, lastColTu).getValues()[0];
+  const findTu = function (kw) {
+    const n = normalizeHeader_(kw);
+    for (let i = 0; i < hdrTu.length; i++) {
+      if (normalizeHeader_(hdrTu[i]).indexOf(n) !== -1) return i + 1;
+    }
+    return -1;
+  };
+  const TU = {
+    KODE_ALAT: findTu('kode alat') > 0 ? findTu('kode alat') : TUCOL.KODE_ALAT,
+    UNIT_ID: findTu('unit') > 0 ? findTu('unit') : TUCOL.UNIT_ID,
+    BRAND: findTu('brand'),
+    CUTTING_TOOL: findTu('cutting tool'),
+    MATERIAL: findTu('material bahan') > 0 ? findTu('material bahan') : findTu('material'),
+    SPESIFIKASI: findTu('spesifikasi'),
+    TGL_MASUK: findTu('tanggal masuk'),
+    REGRIND_COUNT: findTu('regrind count') > 0 ? findTu('regrind count') : TUCOL.REGRIND_COUNT,
+    LAST_EVENT: findTu('last event') > 0 ? findTu('last event') : TUCOL.LAST_EVENT,
+    STATUS_UNIT: findTu('status unit') > 0 ? findTu('status unit') : TUCOL.STATUS_UNIT,
+    LOKASI: findTu('lokasi') > 0 ? findTu('lokasi') : TUCOL.LOKASI,
+    KODE_MESIN: findTu('kode mesin') > 0 ? findTu('kode mesin') : TUCOL.KODE_MESIN,
+    LAST_UPDATE: findTu('last update'),
+    TGL_ASAH: [findTu('asah ke-1'), findTu('asah ke-2'), findTu('asah ke-3')]
+  };
+
+  const tuData = tu.getRange(2, 1, numRows, lastColTu).getValues();
+  const rows = [];
+  tuData.forEach(function (row) {
+    const unitId = String(row[TU.UNIT_ID - 1]).trim();
+    const kodeAlat = String(row[TU.KODE_ALAT - 1]).trim();
+    if (!unitId || !kodeAlat) return;
+    const statusUnit = String(row[TU.STATUS_UNIT - 1]).trim().toUpperCase();
+    let fase;
+    if (statusUnit === 'DIPAKAI') fase = 'DIPAKAI';
+    else if (statusUnit === 'TUMPUL') fase = 'TUMPUL';
+    else if (statusUnit === 'GUDANG') fase = 'SIAP';
+    else fase = 'LAINNYA';
+    rows.push({
+      kodeAlat: kodeAlat,
+      unitId: unitId,
+      brand: String(row[TU.BRAND - 1] || '').trim(),
+      jenis: String(row[TU.CUTTING_TOOL - 1] || '').trim(),
+      material: String(row[TU.MATERIAL - 1] || '').trim(),
+      spesifikasi: String(row[TU.SPESIFIKASI - 1] || '').trim(),
+      kodeMesin: String(row[TU.KODE_MESIN - 1] || '').trim(),
+      lokasi: String(row[TU.LOKASI - 1] || '').trim(),
+      lastEvent: String(row[TU.LAST_EVENT - 1] || '').trim(),
+      regrindCount: num_(row[TU.REGRIND_COUNT - 1]),
+      lastUpdate: formatDateCell_(row[TU.LAST_UPDATE - 1]),
+      tglMasuk: formatDateCell_(row[TU.TGL_MASUK - 1]),
+      riwayatAsah: TU.TGL_ASAH
+        .filter(function (c) { return c > 0; })
+        .map(function (c) { return formatDateCell_(row[c - 1]); })
+        .filter(function (d) { return d; }),
+      fase: fase,
+      // dari siklus asah aktif (diisi di langkah 2)
+      tglMasukWH: '', tglKirimAsah: '', vendor: '', hariBerjalan: 0
+    });
+  });
+
+  const byUnit = {};
+  rows.forEach(function (r) { byUnit[r.unitId.toUpperCase()] = r; });
+
+  // --- 2. Siklus asah aktif menimpa fase ---
+  const ka = getSheet_(SHEET_KONTROL_ASAH);
+  const numRowsKa = ka.getLastRow() - 1;
+  if (numRowsKa > 0) {
+    const lastColKa = Math.max(ka.getLastColumn(), KACOL.STATUS_ASAH);
+    const kaData = ka.getRange(2, 1, numRowsKa, lastColKa).getValues();
+    kaData.forEach(function (row) {
+      const status = String(row[KACOL.STATUS_ASAH - 1]).trim().toUpperCase();
+      if (status !== 'MENUNGGU KIRIM' && status !== 'PROSES ASAH') return;
+      const unitId = String(row[KACOL.UNIT_ID - 1]).trim().toUpperCase();
+      const tglKirim = row[KACOL.TGL_KIRIM_ASAH - 1];
+      const sedangDiasah = status === 'PROSES ASAH' || (tglKirim !== '' && tglKirim != null);
+      const r = byUnit[unitId];
+      if (r) {
+        r.fase = sedangDiasah ? 'DIASAH' : 'MENUNGGU';
+        r.tglMasukWH = formatDateCell_(row[KACOL.TGL_MASUK_WH - 1]);
+        r.tglKirimAsah = sedangDiasah ? formatDateCell_(tglKirim) : '';
+        r.vendor = String(row[KACOL.VENDOR - 1] || '').trim();
+        r.hariBerjalan = sedangDiasah
+          ? num_(row[KACOL.LEAD_TIME_ASAH - 1])
+          : num_(row[KACOL.LEAD_TIME_TUNGGU - 1]);
+      } else {
+        // Baris Kontrol Asah aktif tanpa unit di Tool Unit — tetap tampil
+        // supaya tidak ada unit "hilang" dari pelacakan.
+        rows.push({
+          kodeAlat: String(row[KACOL.KODE_ALAT - 1] || '').trim(),
+          unitId: String(row[KACOL.UNIT_ID - 1] || '').trim(),
+          brand: String(row[KACOL.BRAND - 1] || '').trim(),
+          jenis: String(row[KACOL.CUTTING_TOOL - 1] || '').trim(),
+          material: String(row[KACOL.MATERIAL - 1] || '').trim(),
+          spesifikasi: String(row[KACOL.SPESIFIKASI - 1] || '').trim(),
+          kodeMesin: String(row[KACOL.KODE_MESIN - 1] || '').trim(),
+          lokasi: '', lastEvent: '', regrindCount: 0, lastUpdate: '', tglMasuk: '',
+          riwayatAsah: [],
+          fase: sedangDiasah ? 'DIASAH' : 'MENUNGGU',
+          tglMasukWH: formatDateCell_(row[KACOL.TGL_MASUK_WH - 1]),
+          tglKirimAsah: sedangDiasah ? formatDateCell_(tglKirim) : '',
+          vendor: String(row[KACOL.VENDOR - 1] || '').trim(),
+          hariBerjalan: sedangDiasah
+            ? num_(row[KACOL.LEAD_TIME_ASAH - 1])
+            : num_(row[KACOL.LEAD_TIME_TUNGGU - 1])
+        });
+      }
+    });
+  }
+
+  // --- 3. Ringkasan + urutan (unit berjalan dulu, diurut lama-tunggu) ---
+  const FASE_ORDER = { DIASAH: 0, MENUNGGU: 1, TUMPUL: 2, DIPAKAI: 3, SIAP: 4, LAINNYA: 5 };
+  const ringkasan = { SIAP: 0, DIPAKAI: 0, TUMPUL: 0, MENUNGGU: 0, DIASAH: 0, LAINNYA: 0 };
+  rows.forEach(function (r) { ringkasan[r.fase] = (ringkasan[r.fase] || 0) + 1; });
+  rows.sort(function (a, b) {
+    if (FASE_ORDER[a.fase] !== FASE_ORDER[b.fase]) return FASE_ORDER[a.fase] - FASE_ORDER[b.fase];
+    if (b.hariBerjalan !== a.hariBerjalan) return b.hariBerjalan - a.hariBerjalan;
+    return String(a.kodeAlat).localeCompare(String(b.kodeAlat)) ||
+      String(a.unitId).localeCompare(String(b.unitId));
+  });
+
+  return { rows: rows, ringkasan: ringkasan };
 }
 
 /**
