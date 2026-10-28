@@ -492,8 +492,8 @@ body {
 
 /* ============================================================
        TYPOGRAPHY HIERARCHY
-       Page title 24-28/700-800 ┬╖ Section title 18-20/700 ┬╖
-       Body 14-16 ┬╖ Label 13-14/600 ┬╖ Helper 12-13
+       Page title 24-28/700-800 · Section title 18-20/700 ·
+       Body 14-16 · Label 13-14/600 · Helper 12-13
        ============================================================ */
 h1,
 h2,
@@ -4509,8 +4509,8 @@ function getConfiguredApiUrl() {
   return runtimeApiUrl_;
 }
 const API_TIMEOUT_MS = 30000; // P1-01: default request timeout
-const APP_VERSION = 'v8.25.0-ui-ux-audit'; // versi lengkap, dipakai di log developer
-const APP_VERSION_SHORT = 'v8.25.0'; // versi ringkas, ditampilkan di badge UI
+const APP_VERSION = 'v8.26.0-fix-stok-brand'; // versi lengkap, dipakai di log developer
+const APP_VERSION_SHORT = 'v8.26.0'; // versi ringkas, ditampilkan di badge UI
 // [v8.18.0] CHANGELOG — dropdown "Mesin" di form Transaksi kosong tanpa
 // pesan error apapun. Root cause: apiGet() sebelumnya TIDAK mengecek
 // field `error` pada respons GET (bentuknya {error:"..."} dgn HTTP 200,
@@ -5731,7 +5731,7 @@ function renderDashboard(d, rows) {
     '</div>';
 
   const footnoteHtml =
-    '<p class="dash-footnote">Distribusi Status dihitung per unit fisik ┬╖ Kondisi Alat dihitung per jenis alat (kode).</p>';
+    '<p class="dash-footnote">Distribusi Status dihitung per unit fisik · Kondisi Alat dihitung per jenis alat (kode).</p>';
 
   document.getElementById('kpi-strip').innerHTML = heroHtml + distHtml + condHtml + footnoteHtml;
 }
@@ -5786,7 +5786,7 @@ function renderTransactions(rows) {
           '</div>' +
           '<div class="meta"><span class="tag">' +
           escapeHtml(r.unitId || r.kodeAlat) +
-          '</span> ┬╖ ' +
+          '</span> · ' +
           escapeHtml(r.pic || '—') +
           '</div>' +
           '</div>' +
@@ -5860,6 +5860,13 @@ function renderStockList(rows) {
     .map((r) => {
       const cls = statusClass_(r.status);
       const jb = splitJenisBrand_(r.namaAlat);
+      // [UI-UX FIX 27 Okt] Backend (v5.23.0) kini mengirim kolom Brand &
+      // Material Bahan dari sheet "Stock Status" (kolom C & D) langsung —
+      // sebelumnya Brand dipecah dari Nama Alat dengan split '-', yang
+      // selalu gagal untuk nama tanpa tanda "-" (mis. "Saw blade AKE")
+      // sehingga Brand/Material selalu tampil "—". Fallback split tetap
+      // dipakai kalau field baru belum ada (deployment lama).
+      const brand = r.brand || jb.brand;
       const material = r.bahan ? escapeHtml(r.bahan) : '<span class="sc-value muted">—</span>';
       const ukuran = r.spesifikasi ? escapeHtml(r.spesifikasi) : '<span class="sc-value muted">—</span>';
       return (
@@ -5880,9 +5887,9 @@ function renderStockList(rows) {
         escapeHtml(jb.jenis) +
         '</div></div>' +
         '<div class="sc-field"><div class="sc-label">Brand</div><div class="sc-value' +
-        (jb.brand === '—' ? ' muted' : '') +
+        (brand === '—' ? ' muted' : '') +
         '">' +
-        escapeHtml(jb.brand) +
+        escapeHtml(brand) +
         '</div></div>' +
         '<div class="sc-field"><div class="sc-label">Material</div><div class="sc-value">' +
         material +
@@ -5919,7 +5926,7 @@ function emptyStateHtml_(title, sub) {
 
 /**
  * P3B — kartu state profesional untuk error jaringan vs configuration
- * error (API belum diatur). Dua state ini TIDAK dicampur (spec ┬º12).
+ * error (API belum diatur). Dua state ini TIDAK dicampur (spec §12).
  * onRetryFnName: nama fungsi global (string) yang dipanggil tombol retry.
  */
 function stateCardHtml_(kind, title, sub, actionLabel, onRetryFnName) {
@@ -6174,7 +6181,7 @@ function renderMachineWear_(rows) {
           '</div>' +
           '<div class="rk-sub">Rata-rata usia pakai: ' +
           escapeHtml(usia) +
-          ' ┬╖ ' +
+          ' · ' +
           r.totalPasang +
           'x dipasang</div>' +
           '</div>' +
@@ -6217,7 +6224,7 @@ function renderLeadTimeByMachine_(rows) {
           '</div>' +
           '<div class="rk-sub">' +
           r.jumlahSiklus +
-          ' siklus selesai ┬╖ maks ' +
+          ' siklus selesai · maks ' +
           r.maxLeadTime +
           ' hari</div>' +
           '</div>' +
@@ -6225,7 +6232,7 @@ function renderLeadTimeByMachine_(rows) {
           '<div class="rk-num">' +
           r.avgLeadTime +
           '</div>' +
-          '<div class="rk-unit">hari rata┬▓</div>' +
+          '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
           '</div>'
       )
@@ -6387,7 +6394,7 @@ function loadRiwayatPengajuanSaya_() {
               '<div class="rank-row"><div class="rank-info">' +
               '<div class="rk-title">' +
               escapeHtml(r.unitId) +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.kodeAlat) +
               '</div>' +
               '<div class="rk-sub">' +
@@ -6512,11 +6519,11 @@ function loadKonfirmasiTumpulPanel_() {
               // Baris identitas: siapa pengaju, di mesin apa, kondisi apa, kapan.
               '<div class="rk-sub">' +
               escapeHtml(r.nama || '—') +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.mesin || r.kodeMesin || '—') +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.kondisi || '—') +
-              ' ┬╖ ' +
+              ' · ' +
               escapeHtml(r.timestamp || r.tanggal || '') +
               '</div>' +
               // Baris teknis: tiket + brand + spesifikasi + catatan.
@@ -6524,11 +6531,11 @@ function loadKonfirmasiTumpulPanel_() {
               'Tiket ' +
               escapeHtml(r.tiket) +
               (r.brand || r.spek || r.pemakaian || r.catatan
-                ? ' ┬╖ ' +
+                ? ' · ' +
                   [r.brand, r.spek, r.pemakaian, r.catatan ? 'Catatan: ' + r.catatan : '']
                     .filter(Boolean)
                     .map(function (x) { return escapeHtml(x); })
-                    .join(' ┬╖ ')
+                    .join(' · ')
                 : '') +
               '</div>' +
               '</div>' +
@@ -6692,7 +6699,7 @@ function renderVendorPerformance_(rows) {
           '</div>' +
           '<div class="rk-sub">Maksimum ' +
           v.maxLeadTime +
-          ' hari ┬╖ selisih telat rata┬▓ ' +
+          ' hari · selisih telat rata² ' +
           v.selisihTelat +
           ' hari</div>' +
           '</div>' +
@@ -6700,7 +6707,7 @@ function renderVendorPerformance_(rows) {
           '<div class="rk-num">' +
           v.avgLeadTime +
           '</div>' +
-          '<div class="rk-unit">hari rata┬▓</div>' +
+          '<div class="rk-unit">hari rata²</div>' +
           '</div>' +
           '</div>'
       )
@@ -6738,14 +6745,14 @@ function renderKontrolAsahList_(elId, rows, emptyText) {
           '<div class="rank-info">' +
           '<div class="rk-title">' +
           escapeHtml(r.kodeAlat) +
-          ' ┬╖ ' +
+          ' · ' +
           escapeHtml(r.unitId) +
           ' ' +
           badge +
           '</div>' +
           '<div class="rk-sub">' +
           escapeHtml(r.vendor || '—') +
-          (r.mesin ? ' ┬╖ ' + escapeHtml(r.mesin) : '') +
+          (r.mesin ? ' · ' + escapeHtml(r.mesin) : '') +
           '</div>' +
           '</div>' +
           '<div class="rank-metric">' +
@@ -6841,7 +6848,7 @@ function kodeAlatOptionLabel_(t) {
   if (t.brand) bits.push(t.brand);
   if (t.bahan) bits.push(t.bahan);
   if (t.spesifikasi) bits.push(t.spesifikasi);
-  const extra = bits.length ? ' (' + bits.join(' ┬╖ ') + ')' : '';
+  const extra = bits.length ? ' (' + bits.join(' · ') + ')' : '';
   return t.kodeAlat + ' — ' + t.namaAlat + extra;
 }
 

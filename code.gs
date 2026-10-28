@@ -1,8 +1,20 @@
 /**
  * ============================================================
- *  Code.gs — v5.22.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
+ *  Code.gs — v5.23.0 (GABUNGAN 2 FILE: code.gs + PengajuanAsah.gs)
  *  Sistem Monitoring Saw Blade & Cutter
  *
+ *  ============================================================
+ *  CHANGELOG v5.22.0 -> v5.23.0 (FIX — Brand & Material tidak tampil)
+ *  ============================================================
+ *  27 Okt 2026 — user laporkan kartu Stok menampilkan Brand/Material
+ *  "—". Bukti: sheet "Stock Status" kolom C "Brand" & D "Material Bahan"
+ *  TERISI (mis. AKE-SB-01 = AKE / TCT), tapi getStockStatusList()
+ *  TIDAK PERNAH mengirimnya — resolveStockStatusColumns_ tidak punya
+ *  entry BRAND/BAHAN. Frontend pun memecah Brand dari Nama Alat dgn
+ *  split '-', yang gagal utk nama tanpa "-" ("Saw blade AKE").
+ *  Fix: resolve BRAND ['brand'] & BAHAN ['material bahan','material'],
+ *  map row kirim brand + bahan. Frontend render pakai r.brand dgn
+ *  fallback split lama (kompatibel dgn deployment lama).
  *  ============================================================
  *  CHANGELOG v5.21.0 -> v5.22.0 (FITUR — antrian tunggal Pengajuan Asah)
  *  ============================================================
@@ -851,7 +863,7 @@
 // Versi backend yang BENAR-BENAR live -- dicek via action
 // 'getBackendVersion', supaya deployment lama/basi bisa terdeteksi dari
 // console browser (bukan sekadar diasumsikan dari nama file lokal).
-const BACKEND_VERSION = 'v5.22.0';
+const BACKEND_VERSION = 'v5.23.0';
 
 // [v5.20.0] Token FORM "Pengajuan Asah" (dipakai PengajuanAsah.gs).
 // SENGAJA di code.gs (bukan di PengajuanAsah.gs) supaya salah satu file
@@ -939,6 +951,12 @@ function resolveStockStatusColumns_(sheet) {
   const map = {
     KODE_ALAT: find(['kode alat']),
     NAMA_ALAT: find(['nama alat']),
+    // [UI-UX FIX 27 Okt] Brand & Material Bahan kini di-resolve dan
+    // dikirim getStockStatusList() -- sebelumnya TIDAK ADA, padahal
+    // kolomnya ada di sheet (C="Brand", D="Material Bahan") dan frontend
+    // menampilkannya. Akibatnya Brand/Material di kartu Stok selalu "—".
+    BRAND: find(['brand']),
+    BAHAN: find(['material bahan', 'material']),
     SPESIFIKASI: find(['spesifikasi']),
     MESIN: find(['mesin'], ['kode mesin']),
     KODE_MESIN: find(['kode mesin']),
@@ -2566,6 +2584,9 @@ function getStockStatusList() {
       return {
         kodeAlat: String(row[col.KODE_ALAT - 1]).trim(),
         namaAlat: String(row[col.NAMA_ALAT - 1]).trim(),
+        // [UI-UX FIX 27 Okt] kirim Brand & Material untuk kartu Stok
+        brand: String(row[col.BRAND - 1]).trim(),
+        bahan: String(row[col.BAHAN - 1]).trim(),
         spesifikasi: String(row[col.SPESIFIKASI - 1]).trim(),
         // FIX BUG — "Filter Mesin di menu Stok tidak bisa dipakai": field
         // mesin/kodeMesin sebelumnya tidak pernah dikirim ke frontend sama
